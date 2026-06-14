@@ -1,0 +1,13 @@
+{
+  "@@locale": "vi",
+  "appTitle": "Quản Lý Canteen",
+  "splashTitle": "Quản Lý Canteen",
+  "loginTitle": "Đăng Nhập Nhân Viên",
+  "retry": "Thử lại",
+  "cancel": "Hủy",
+  "confirm": "Xác nhận",
+  "loading": "Đang tải…",
+  "errorGeneric": "Đã xảy ra lỗi",
+  "emptyStateTitle": "Chưa có dữ liệu",
+  "searchHint": "Tìm kiếm…"
+}

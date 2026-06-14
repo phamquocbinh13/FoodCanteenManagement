@@ -1,0 +1,16 @@
+{
+  "@@locale": "en",
+  "appTitle": "Food Canteen Management",
+  "@appTitle": {
+    "description": "Application title"
+  },
+  "splashTitle": "Food Canteen Management",
+  "loginTitle": "Staff Login",
+  "retry": "Retry",
+  "cancel": "Cancel",
+  "confirm": "Confirm",
+  "loading": "Loading…",
+  "errorGeneric": "Something went wrong",
+  "emptyStateTitle": "Nothing here yet",
+  "searchHint": "Search…"
+}
