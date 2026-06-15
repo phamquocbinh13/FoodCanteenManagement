@@ -104,11 +104,7 @@ final class InMemorySessionEngineDataSource implements SessionEngineDataSource {
   void revokeToken(String sessionId, DateTime revokedAt) {
     final token = _store.tokensBySessionId[sessionId];
     if (token == null) return;
-    final revoked = token.copyWith(revokedAt: revokedAt);
-    _store.tokensBySessionId[sessionId] = revoked;
-    _store.sessionIdByTokenValue.removeWhere(
-      (_, value) => value == sessionId,
-    );
+    _store.tokensBySessionId[sessionId] = token.copyWith(revokedAt: revokedAt);
   }
 
   @override

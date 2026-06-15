@@ -9,7 +9,6 @@ final cashierSessionControllerProvider =
     ChangeNotifierProvider<CashierSessionController>((ref) {
   final controller = CashierSessionController(
     createSession: sl(),
-    joinSession: sl(),
     closeSession: sl(),
     markWaitingPayment: sl(),
     restoreSession: sl(),

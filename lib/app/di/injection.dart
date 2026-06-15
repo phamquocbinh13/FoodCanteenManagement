@@ -3,6 +3,7 @@ import 'package:get_it/get_it.dart';
 import '../config/app_config.dart';
 import 'modules/admin_module.dart';
 import 'modules/auth_module.dart';
+import 'modules/customer_module.dart';
 import 'modules/core_module.dart';
 import 'modules/delivery_module.dart';
 import 'modules/kitchen_module.dart';
@@ -31,6 +32,7 @@ abstract final class Injection {
     AuthModule.register(sl);
     MenuModule.register(sl);
     SessionModule.register(sl);
+    CustomerModule.register(sl);
     KitchenModule.register(sl);
     RequestModule.register(sl);
     DeliveryModule.register(sl);

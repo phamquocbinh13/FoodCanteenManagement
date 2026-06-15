@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import '../../../../application/session/session_constants.dart';
 import '../../../../application/usecases/session/close_session_use_case.dart';
 import '../../../../application/usecases/session/create_session_use_case.dart';
-import '../../../../application/usecases/session/join_session_use_case.dart';
 import '../../../../application/usecases/session/mark_waiting_payment_use_case.dart';
 import '../../../../application/usecases/session/restore_session_use_case.dart';
 import '../../../../core/result/result.dart';
@@ -15,18 +14,15 @@ import '../../../../domain/services/session_state_machine.dart';
 final class CashierSessionController extends ChangeNotifier {
   CashierSessionController({
     required CreateSessionUseCase createSession,
-    required JoinSessionUseCase joinSession,
     required CloseSessionUseCase closeSession,
     required MarkWaitingPaymentUseCase markWaitingPayment,
     required RestoreSessionUseCase restoreSession,
   })  : _createSession = createSession,
-        _joinSession = joinSession,
         _closeSession = closeSession,
         _markWaitingPayment = markWaitingPayment,
         _restoreSession = restoreSession;
 
   final CreateSessionUseCase _createSession;
-  final JoinSessionUseCase _joinSession;
   final CloseSessionUseCase _closeSession;
   final MarkWaitingPaymentUseCase _markWaitingPayment;
   final RestoreSessionUseCase _restoreSession;
@@ -35,13 +31,11 @@ final class CashierSessionController extends ChangeNotifier {
   String? _sessionToken;
   String? _errorMessage;
   bool _isLoading = false;
-  bool _customerJoined = false;
 
   SessionEngineSnapshot? get activeSnapshot => _activeSnapshot;
   String? get sessionToken => _sessionToken;
   String? get errorMessage => _errorMessage;
   bool get isLoading => _isLoading;
-  bool get customerJoined => _customerJoined;
   bool get hasActiveSession => _activeSnapshot != null;
 
   SessionLifecyclePhase get lifecyclePhase {
@@ -84,28 +78,6 @@ final class CashierSessionController extends ChangeNotifier {
       case Success(:final value):
         _activeSnapshot = value.snapshot;
         _sessionToken = value.sessionTokenValue;
-        _customerJoined = false;
-        _errorMessage = null;
-      case Err(:final failure):
-        _errorMessage = failure.message;
-    }
-    notifyListeners();
-  }
-
-  Future<void> simulateCustomerJoin() async {
-    final token = _sessionToken;
-    if (token == null) return;
-
-    _setLoading(true);
-    final result = await _joinSession(
-      JoinSessionParams(sessionToken: token, deviceId: 'demo-device'),
-    );
-    _setLoading(false);
-
-    switch (result) {
-      case Success(:final value):
-        _activeSnapshot = value;
-        _customerJoined = true;
         _errorMessage = null;
       case Err(:final failure):
         _errorMessage = failure.message;
@@ -154,7 +126,6 @@ final class CashierSessionController extends ChangeNotifier {
       case Success():
         _activeSnapshot = null;
         _sessionToken = null;
-        _customerJoined = false;
         _errorMessage = null;
       case Err(:final failure):
         _errorMessage = failure.message;

@@ -10,6 +10,7 @@ abstract final class RoutePaths {
   static const join = '/join/:joinToken';
   static const joinPattern = '/join/:joinToken';
   static const customer = '/customer';
+  static const customerScan = '/customer/scan';
   static const session = '/s/:sessionToken';
   static const sessionPattern = '/s/:sessionToken';
   static const sessionMenu = '/s/:sessionToken/menu';
@@ -34,6 +35,7 @@ abstract final class RoutePaths {
   static const splashName = 'splash';
   static const loginName = 'login';
   static const customerName = 'customer';
+  static const customerScanName = 'customerScan';
   static const kitchenName = 'kitchen';
   static const cashierName = 'cashier';
   static const adminName = 'admin';

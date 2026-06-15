@@ -53,6 +53,13 @@ abstract final class AppRouter {
               path: RoutePaths.customer,
               name: RoutePaths.customerName,
               builder: (context, state) => const CustomerPage(),
+              routes: [
+                GoRoute(
+                  path: 'scan',
+                  name: RoutePaths.customerScanName,
+                  builder: (context, state) => const QrScanPage(),
+                ),
+              ],
             ),
             GoRoute(
               path: RoutePaths.joinPattern,

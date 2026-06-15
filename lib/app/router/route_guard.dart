@@ -78,6 +78,7 @@ abstract final class RouteGuard {
   static bool _isCustomerRoute(String location) {
     if (location.startsWith('/join/')) return true;
     if (location.startsWith('/s/')) return true;
+    if (location.startsWith('/customer')) return true;
     return location == RoutePaths.customer;
   }
 }

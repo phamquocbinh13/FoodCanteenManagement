@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/router/route_paths.dart';
+
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/widgets.dart';
@@ -142,6 +144,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       isLoading: auth.isLoading,
                       isExpanded: true,
                       onPressed: auth.isLoading ? null : _submit,
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    TextButton(
+                      onPressed: () => context.go(RoutePaths.customer),
+                      child: const Text('Customer? Join your session'),
                     ),
                   ],
                 ),

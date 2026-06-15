@@ -6,6 +6,7 @@ import '../../../../domain/enums/domain_enums.dart';
 import '../../../../shared/presentation/staff_scaffold.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/cashier_session_provider.dart';
+import '../widgets/session_qr_display.dart';
 
 class CashierPage extends ConsumerWidget {
   const CashierPage({super.key});
@@ -35,6 +36,16 @@ class CashierPage extends ConsumerWidget {
                 ),
                 const SizedBox(height: AppSpacing.md),
                 _StatusCard(session: session),
+                if (session.hasActiveSession &&
+                    session.sessionToken != null) ...[
+                  const SizedBox(height: AppSpacing.lg),
+                  _CustomerShareCard(
+                    tableLabel: session.activeSnapshot?.tableLabel ?? 'Table',
+                    displayNumber:
+                        session.activeSnapshot?.session.displayNumber ?? '',
+                    sessionToken: session.sessionToken!,
+                  ),
+                ],
                 const SizedBox(height: AppSpacing.lg),
                 if (session.errorMessage != null)
                   Padding(
@@ -54,23 +65,6 @@ class CashierPage extends ConsumerWidget {
                     child: const Text('Create Session — Table 1'),
                   ),
                 if (session.hasActiveSession) ...[
-                  if (session.sessionToken != null)
-                    SelectableText(
-                      'Join token: /join/${session.sessionToken}',
-                      style: theme.textTheme.bodySmall,
-                    ),
-                  const SizedBox(height: AppSpacing.sm),
-                  OutlinedButton(
-                    onPressed: session.isLoading || session.customerJoined
-                        ? null
-                        : () => session.simulateCustomerJoin(),
-                    child: Text(
-                      session.customerJoined
-                          ? 'Customer Joined'
-                          : 'Simulate Customer Join',
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
                   OutlinedButton(
                     onPressed: session.isLoading ||
                             session.lifecyclePhase ==
@@ -156,5 +150,54 @@ class _StatusCard extends StatelessWidget {
       SessionLifecyclePhase.waitingPayment => 'Waiting Payment',
       SessionLifecyclePhase.closed => 'Closed',
     };
+  }
+}
+
+class _CustomerShareCard extends StatelessWidget {
+  const _CustomerShareCard({
+    required this.tableLabel,
+    required this.displayNumber,
+    required this.sessionToken,
+  });
+
+  final String tableLabel;
+  final String displayNumber;
+  final String sessionToken;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Card(
+      color: theme.colorScheme.surfaceContainerHighest,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Customer Join',
+              style: theme.textTheme.titleMedium,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Text(tableLabel, style: theme.textTheme.headlineSmall),
+            const SizedBox(height: AppSpacing.sm),
+            Text('Session', style: theme.textTheme.labelLarge),
+            Text(displayNumber, style: theme.textTheme.titleMedium),
+            const SizedBox(height: AppSpacing.sm),
+            Text('Session Code', style: theme.textTheme.labelLarge),
+            SelectableText(
+              sessionToken,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontFamily: 'monospace',
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Center(child: SessionQrDisplay(sessionToken: sessionToken)),
+          ],
+        ),
+      ),
+    );
   }
 }
