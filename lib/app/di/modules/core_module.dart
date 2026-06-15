@@ -7,8 +7,8 @@ import '../../../core/lifecycle/app_lifecycle_service.dart';
 import '../../../core/logger/app_logger.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/stub_api_client.dart';
-import '../../../core/permissions/permission_service.dart';
 import '../../../core/storage/local_storage.dart';
+import '../../../core/storage/shared_preferences_local_storage.dart';
 import '../../../core/time/time_provider.dart';
 import '../../../domain/events/domain_events.dart';
 import '../../config/app_config.dart';
@@ -30,14 +30,11 @@ abstract final class CoreModule {
 
     sl.registerLazySingleton<IdGenerator>(() => UuidGenerator());
 
-    sl.registerLazySingleton<LocalStorage>(() => InMemoryLocalStorage());
+    final storage = await SharedPreferencesLocalStorage.create();
+    sl.registerLazySingleton<LocalStorage>(() => storage);
 
     sl.registerLazySingleton<ApiClient>(
       () => StubApiClient(logger: sl<AppLogger>()),
-    );
-
-    sl.registerLazySingleton<PermissionService>(
-      () => StubPermissionService(),
     );
 
     sl.registerLazySingleton<AppLifecycleService>(

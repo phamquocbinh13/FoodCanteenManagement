@@ -6,8 +6,11 @@ final class UserValidator implements Validator<UserValidationInput> {
 
   @override
   Result<void> validate(UserValidationInput input) {
-    if (input.email.trim().isEmpty) {
-      return validationError('Email is required', code: 'email');
+    if (input.username.trim().isEmpty) {
+      return validationError('Username is required', code: 'username');
+    }
+    if (input.password.isEmpty) {
+      return validationError('Password is required', code: 'password');
     }
     if (input.password.length < 6) {
       return validationError(
@@ -21,10 +24,10 @@ final class UserValidator implements Validator<UserValidationInput> {
 
 final class UserValidationInput {
   const UserValidationInput({
-    required this.email,
+    required this.username,
     required this.password,
   });
 
-  final String email;
+  final String username;
   final String password;
 }

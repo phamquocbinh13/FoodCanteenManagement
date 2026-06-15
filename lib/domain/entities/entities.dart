@@ -1,4 +1,6 @@
 export 'audit_log.dart';
+export 'auth_session.dart';
+export 'authenticated_user.dart';
 export 'batch_item.dart';
 export 'batch_item_customization.dart';
 export 'batch_item_status_history.dart';

@@ -1,4 +1,8 @@
 export 'auth/login_use_case.dart';
+export 'auth/logout_use_case.dart';
+export 'auth/get_current_user_use_case.dart';
+export 'auth/refresh_token_use_case.dart';
+export 'auth/check_authentication_use_case.dart';
 export 'batch/add_batch_use_case.dart';
 export 'batch/complete_batch_use_case.dart';
 export 'session/close_session_use_case.dart';

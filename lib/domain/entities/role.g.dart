@@ -22,6 +22,7 @@ Map<String, dynamic> _$RoleToJson(_Role instance) => <String, dynamic>{
 
 const _$RoleKeyEnumMap = {
   RoleKey.admin: 'admin',
+  RoleKey.manager: 'manager',
   RoleKey.cashier: 'cashier',
   RoleKey.kitchen: 'kitchen',
   RoleKey.shipper: 'shipper',

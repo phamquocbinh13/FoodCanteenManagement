@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/admin/presentation/pages/admin_page.dart';
+import '../../features/auth/presentation/controllers/auth_controller.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/cashier/presentation/pages/cashier_page.dart';
 import '../../features/customer/presentation/pages/customer_page.dart';
@@ -16,6 +17,7 @@ import '../shell/app_shell.dart';
 import 'guards/auth_guard.dart';
 import 'guards/role_guard.dart';
 import 'guards/session_guard.dart';
+import 'route_guard.dart';
 import 'route_paths.dart';
 
 /// Centralized go_router configuration.
@@ -23,13 +25,13 @@ abstract final class AppRouter {
   static final GlobalKey<NavigatorState> rootNavigatorKey =
       GlobalKey<NavigatorState>();
 
-  static final GoRouter router = createRouter();
-
-  static GoRouter createRouter() {
+  static GoRouter createRouter(AuthController authController) {
     return GoRouter(
       navigatorKey: rootNavigatorKey,
       initialLocation: RoutePaths.splash,
       debugLogDiagnostics: true,
+      refreshListenable: authController,
+      redirect: (context, state) => RouteGuard.globalRedirect(state),
       routes: [
         ShellRoute(
           builder: (context, state, child) => AppShell(child: child),
@@ -46,7 +48,7 @@ abstract final class AppRouter {
               builder: (context, state) => const LoginPage(),
             ),
 
-            // Customer surface
+            // Customer surface (no staff auth required)
             GoRoute(
               path: RoutePaths.customer,
               name: RoutePaths.customerName,

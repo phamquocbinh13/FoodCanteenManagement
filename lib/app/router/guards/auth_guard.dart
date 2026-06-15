@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-/// Staff authentication route guard (Sprint 2).
-///
-/// Returns redirect path when unauthenticated, or null to proceed.
+import '../../../app/di/injection.dart';
+import '../../../features/auth/presentation/controllers/auth_controller.dart';
+
+/// Staff authentication route guard.
 abstract final class AuthGuard {
   static String? redirect(BuildContext context, GoRouterState state) {
-    // Stub: allow all routes until auth is implemented.
+    final auth = sl<AuthController>();
+
+    if (auth.status == AuthenticationStatus.authenticated) {
+      return auth.homeRoute();
+    }
+
     return null;
   }
 }

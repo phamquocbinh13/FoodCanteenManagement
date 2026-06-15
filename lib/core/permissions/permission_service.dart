@@ -14,7 +14,7 @@ enum AppPermission {
   manageStaff,
 }
 
-/// Maps [RoleKey] to default permissions. Override per-user in Sprint 2.
+/// Maps [RoleKey] to default permissions.
 abstract final class RolePermissions {
   static const Map<RoleKey, Set<AppPermission>> defaults = {
     RoleKey.admin: {
@@ -28,6 +28,16 @@ abstract final class RolePermissions {
       AppPermission.reassignDelivery,
       AppPermission.viewAuditLog,
       AppPermission.manageStaff,
+    },
+    RoleKey.manager: {
+      AppPermission.viewKitchenQueue,
+      AppPermission.manageMenu,
+      AppPermission.closeSession,
+      AppPermission.handleRequests,
+      AppPermission.manageTables,
+      AppPermission.claimDelivery,
+      AppPermission.reassignDelivery,
+      AppPermission.viewAuditLog,
     },
     RoleKey.cashier: {
       AppPermission.closeSession,
@@ -43,6 +53,33 @@ abstract final class RolePermissions {
       AppPermission.claimDelivery,
     },
   };
+
+  static Set<AppPermission> forRole(RoleKey role) {
+    return defaults[role] ?? {};
+  }
+
+  static Set<AppPermission> fromNames(Iterable<String> names) {
+    return names
+        .map(
+          (name) => AppPermission.values.firstWhere(
+            (p) => p.name == name,
+            orElse: () => throw ArgumentError('Unknown permission: $name'),
+          ),
+        )
+        .toSet();
+  }
+
+  static Set<AppPermission> fromNamesSafe(Iterable<String> names) {
+    return names
+        .map(
+          (name) => AppPermission.values
+              .where((p) => p.name == name)
+              .cast<AppPermission?>()
+              .firstOrNull,
+        )
+        .whereType<AppPermission>()
+        .toSet();
+  }
 }
 
 /// Authorization service abstraction.
@@ -52,11 +89,23 @@ abstract interface class PermissionService {
   bool hasAllPermissions(Iterable<AppPermission> permissions);
 }
 
-/// Stub implementation using role defaults until auth sprint.
-final class StubPermissionService implements PermissionService {
-  StubPermissionService({Set<AppPermission> granted = const {}}) : _granted = granted;
+/// Role-backed permission service updated on login/logout.
+final class RoleBasedPermissionService implements PermissionService {
+  RoleBasedPermissionService();
 
-  final Set<AppPermission> _granted;
+  Set<AppPermission> _granted = {};
+
+  void updateFromRole(RoleKey role) {
+    _granted = RolePermissions.forRole(role);
+  }
+
+  void updateFromPermissionNames(Iterable<String> names) {
+    _granted = RolePermissions.fromNamesSafe(names);
+  }
+
+  void clear() {
+    _granted = {};
+  }
 
   @override
   bool hasPermission(AppPermission permission) => _granted.contains(permission);
@@ -70,4 +119,18 @@ final class StubPermissionService implements PermissionService {
   bool hasAllPermissions(Iterable<AppPermission> permissions) {
     return permissions.every(_granted.contains);
   }
+}
+
+/// Empty permission service for unauthenticated state.
+final class UnauthenticatedPermissionService implements PermissionService {
+  const UnauthenticatedPermissionService();
+
+  @override
+  bool hasPermission(AppPermission permission) => false;
+
+  @override
+  bool hasAnyPermission(Iterable<AppPermission> permissions) => false;
+
+  @override
+  bool hasAllPermissions(Iterable<AppPermission> permissions) => false;
 }

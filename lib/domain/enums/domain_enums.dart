@@ -187,6 +187,8 @@ enum ForceCloseReason {
 enum RoleKey {
   @JsonValue('admin')
   admin,
+  @JsonValue('manager')
+  manager,
   @JsonValue('cashier')
   cashier,
   @JsonValue('kitchen')

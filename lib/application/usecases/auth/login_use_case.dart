@@ -1,30 +1,43 @@
-import '../../../core/errors/failures.dart';
 import '../../../core/result/result.dart';
-import '../../../domain/repositories/restaurant_repository.dart';
+import '../../../domain/entities/auth_session.dart';
+import '../../../domain/repositories/auth_repository.dart';
+import '../../validators/user_validator.dart';
 import '../use_case.dart';
 
-/// Authenticates staff credentials. Implementation deferred to Sprint 2.
-final class LoginUseCase implements UseCase<Object?, LoginParams> {
-  LoginUseCase({required UserRepository userRepository})
-      : _userRepository = userRepository;
+/// Authenticates staff credentials against the auth repository.
+final class LoginUseCase implements UseCase<AuthSession, LoginParams> {
+  LoginUseCase({
+    required AuthRepository authRepository,
+    required UserValidator userValidator,
+  })  : _authRepository = authRepository,
+        _userValidator = userValidator;
 
-  // ignore: unused_field
-  final UserRepository _userRepository;
+  final AuthRepository _authRepository;
+  final UserValidator _userValidator;
 
   @override
-  Future<Result<Object?>> call(LoginParams params) async {
-    return const Err(UnknownFailure('LoginUseCase not implemented'));
+  Future<Result<AuthSession>> call(LoginParams params) async {
+    final validation = _userValidator.validate(
+      UserValidationInput(
+        username: params.username,
+        password: params.password,
+      ),
+    );
+    if (validation is Err<void>) return Err(validation.failure);
+
+    return _authRepository.login(
+      username: params.username.trim(),
+      password: params.password,
+    );
   }
 }
 
 final class LoginParams {
   const LoginParams({
-    required this.email,
+    required this.username,
     required this.password,
-    required this.restaurantId,
   });
 
-  final String email;
+  final String username;
   final String password;
-  final String restaurantId;
 }

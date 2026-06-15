@@ -53,7 +53,7 @@ void main() {
     test('rejects short password', () {
       const validator = UserValidator();
       final result = validator.validate(
-        const UserValidationInput(email: 'a@b.com', password: '123'),
+        const UserValidationInput(username: 'a@b.com', password: '123'),
       );
       expect(result, isA<Err<void>>());
     });

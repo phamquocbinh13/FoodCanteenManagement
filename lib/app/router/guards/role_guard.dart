@@ -1,16 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/di/injection.dart';
+import '../../../application/auth/role_resolver.dart';
+import '../../../features/auth/presentation/controllers/auth_controller.dart';
 import '../route_paths.dart';
 
-/// Role-based access guard for staff surfaces (Sprint 2).
+/// Role-based access guard for staff surfaces.
 abstract final class RoleGuard {
   static String? redirect(
     BuildContext context,
     GoRouterState state, {
     required String requiredRoute,
   }) {
-    // Stub: allow all routes until RBAC is implemented.
+    final auth = sl<AuthController>();
+
+    if (!auth.isAuthenticated) return RoutePaths.login;
+
+    final role = auth.currentRole;
+    if (role == null) return RoutePaths.login;
+
+    if (!RoleResolver.canAccessRoute(role, requiredRoute)) {
+      return RoleResolver.homeRouteFor(role);
+    }
+
     return null;
   }
 
