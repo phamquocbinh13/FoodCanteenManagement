@@ -10,7 +10,7 @@ import 'ordering_store.dart';
 
 /// Seeds demo menu catalog for Sprint 5 ordering flow.
 abstract final class DemoMenuSeed {
-  static const currency = 'USD';
+  static const currency = 'VND';
 
   static void seed(OrderingStore store, Clock clock) {
     if (store.categories.isNotEmpty) return;
@@ -32,9 +32,8 @@ abstract final class DemoMenuSeed {
       required String id,
       required String categoryId,
       required String name,
-      required double price,
+      required int priceVnd,
       String? description,
-      String? imageUrl,
       int sortOrder = 0,
     }) {
       store.menuItems[id] = MenuItem(
@@ -43,8 +42,7 @@ abstract final class DemoMenuSeed {
         categoryId: categoryId,
         name: name,
         description: description,
-        basePrice: Money.fromDecimal(amount: price, currencyCode: currency),
-        imageUrl: imageUrl,
+        basePrice: Money(amountMinor: priceVnd * 100, currencyCode: currency),
         sortOrder: sortOrder,
         createdAt: now,
         updatedAt: now,
@@ -81,7 +79,7 @@ abstract final class DemoMenuSeed {
       required String key,
       required String name,
       String? kitchenLabel,
-      double priceDelta = 0,
+      int priceDeltaVnd = 0,
       bool isDefault = false,
     }) {
       store.customizationOptions[id] = CustomizationOption(
@@ -90,120 +88,192 @@ abstract final class DemoMenuSeed {
         key: key,
         name: name,
         kitchenLabel: kitchenLabel ?? name,
-        priceDelta: Money.fromDecimal(amount: priceDelta, currencyCode: currency),
+        priceDelta: Money(
+          amountMinor: priceDeltaVnd * 100,
+          currencyCode: currency,
+        ),
         isDefault: isDefault,
         createdAt: now,
         updatedAt: now,
       );
     }
 
-    category('cat-rice', 'Rice Dishes', 1);
-    category('cat-noodles', 'Noodles', 2);
-    category('cat-drinks', 'Drinks', 3);
+    void attachRiceCustomizations(String itemId, String prefix) {
+      group(
+        id: 'grp-$prefix-size',
+        menuItemId: itemId,
+        key: 'rice_size',
+        name: 'Cỡ cơm',
+        type: CustomizationSelectionType.singleSelect,
+        required: true,
+        min: 1,
+        max: 1,
+      );
+      option(
+        id: 'opt-$prefix-less',
+        groupId: 'grp-$prefix-size',
+        key: 'less',
+        name: 'Ít cơm',
+        kitchenLabel: 'Ít cơm',
+      );
+      option(
+        id: 'opt-$prefix-normal',
+        groupId: 'grp-$prefix-size',
+        key: 'normal',
+        name: 'Bình thường',
+        kitchenLabel: 'Cơm bình thường',
+        isDefault: true,
+      );
+      option(
+        id: 'opt-$prefix-more',
+        groupId: 'grp-$prefix-size',
+        key: 'more',
+        name: 'Nhiều cơm',
+        kitchenLabel: 'Nhiều cơm',
+        priceDeltaVnd: 5000,
+      );
+
+      group(
+        id: 'grp-$prefix-soup',
+        menuItemId: itemId,
+        key: 'soup',
+        name: 'Canh',
+        type: CustomizationSelectionType.boolean,
+      );
+      option(
+        id: 'opt-$prefix-soup-yes',
+        groupId: 'grp-$prefix-soup',
+        key: 'yes',
+        name: 'Có canh',
+        kitchenLabel: '+ Canh',
+      );
+      option(
+        id: 'opt-$prefix-soup-no',
+        groupId: 'grp-$prefix-soup',
+        key: 'no',
+        name: 'Không canh',
+        kitchenLabel: 'Không canh',
+        isDefault: true,
+      );
+
+      group(
+        id: 'grp-$prefix-toppings',
+        menuItemId: itemId,
+        key: 'toppings',
+        name: 'Topping thêm',
+        type: CustomizationSelectionType.multiSelect,
+        min: 0,
+        max: 3,
+      );
+      option(
+        id: 'opt-$prefix-egg',
+        groupId: 'grp-$prefix-toppings',
+        key: 'egg',
+        name: 'Thêm trứng',
+        kitchenLabel: '+ Trứng',
+        priceDeltaVnd: 8000,
+      );
+      option(
+        id: 'opt-$prefix-chicken',
+        groupId: 'grp-$prefix-toppings',
+        key: 'chicken',
+        name: 'Thêm gà',
+        kitchenLabel: '+ Gà',
+        priceDeltaVnd: 15000,
+      );
+      option(
+        id: 'opt-$prefix-cha',
+        groupId: 'grp-$prefix-toppings',
+        key: 'cha',
+        name: 'Thêm chả',
+        kitchenLabel: '+ Chả',
+        priceDeltaVnd: 12000,
+      );
+    }
+
+    category('cat-rice', '🍛 Rice', 1);
+    category('cat-drinks', '🥤 Drinks', 2);
 
     item(
-      id: 'item-fried-rice',
+      id: 'item-curry-rice',
       categoryId: 'cat-rice',
-      name: 'Fried Rice',
-      price: 8.50,
-      description: 'Classic wok-fried rice with egg and vegetables',
+      name: 'Cơm cà ri gà',
+      description: 'Chicken Curry Rice',
+      priceVnd: 45000,
       sortOrder: 1,
     );
-    group(
-      id: 'grp-rice-size',
-      menuItemId: 'item-fried-rice',
-      key: 'rice_size',
-      name: 'Rice Size',
-      type: CustomizationSelectionType.singleSelect,
-      required: true,
-      min: 1,
-      max: 1,
-    );
-    option(
-      id: 'opt-normal',
-      groupId: 'grp-rice-size',
-      key: 'normal',
-      name: 'Normal',
-      isDefault: true,
-    );
-    option(id: 'opt-small', groupId: 'grp-rice-size', key: 'small', name: 'Small');
-    option(
-      id: 'opt-large',
-      groupId: 'grp-rice-size',
-      key: 'large',
-      name: 'Large',
-      priceDelta: 1.50,
-    );
-    group(
-      id: 'grp-soup',
-      menuItemId: 'item-fried-rice',
-      key: 'soup',
-      name: 'Soup',
-      type: CustomizationSelectionType.boolean,
-    );
-    option(
-      id: 'opt-soup-yes',
-      groupId: 'grp-soup',
-      key: 'yes',
-      name: 'Yes',
-      kitchenLabel: '+ Soup',
-    );
-    option(
-      id: 'opt-soup-no',
-      groupId: 'grp-soup',
-      key: 'no',
-      name: 'No',
-      kitchenLabel: 'No Soup',
-      isDefault: true,
-    );
-    group(
-      id: 'grp-toppings',
-      menuItemId: 'item-fried-rice',
-      key: 'toppings',
-      name: 'Toppings',
-      type: CustomizationSelectionType.multiSelect,
-      min: 0,
-      max: 3,
-    );
-    option(
-      id: 'opt-chicken',
-      groupId: 'grp-toppings',
-      key: 'chicken',
-      name: 'Chicken',
-      priceDelta: 2.00,
-    );
-    option(
-      id: 'opt-egg',
-      groupId: 'grp-toppings',
-      key: 'egg',
-      name: 'Egg',
-      priceDelta: 1.00,
-    );
-    option(
-      id: 'opt-sausage',
-      groupId: 'grp-toppings',
-      key: 'sausage',
-      name: 'Sausage',
-      priceDelta: 1.50,
-    );
+    attachRiceCustomizations('item-curry-rice', 'curry');
 
     item(
-      id: 'item-pho',
-      categoryId: 'cat-noodles',
-      name: 'Beef Pho',
-      price: 10.00,
-      description: 'Slow-simmered broth with rice noodles',
-      sortOrder: 1,
+      id: 'item-pork-roll-rice',
+      categoryId: 'cat-rice',
+      name: 'Cơm chả lá lốt',
+      description: 'Grilled Pork Roll Rice',
+      priceVnd: 42000,
+      sortOrder: 2,
     );
+    attachRiceCustomizations('item-pork-roll-rice', 'pork');
 
     item(
-      id: 'item-iced-tea',
+      id: 'item-mushroom-rice',
+      categoryId: 'cat-rice',
+      name: 'Cơm gà xào nấm',
+      description: 'Chicken Mushroom Rice',
+      priceVnd: 47000,
+      sortOrder: 3,
+    );
+    attachRiceCustomizations('item-mushroom-rice', 'mushroom');
+
+    item(
+      id: 'item-braised-pork-rice',
+      categoryId: 'cat-rice',
+      name: 'Cơm trứng thịt kho tàu',
+      description: 'Braised Pork Egg Rice',
+      priceVnd: 43000,
+      sortOrder: 4,
+    );
+    attachRiceCustomizations('item-braised-pork-rice', 'braised');
+
+    item(
+      id: 'item-fried-chicken-rice',
+      categoryId: 'cat-rice',
+      name: 'Cơm gà chiên giòn',
+      description: 'Crispy Fried Chicken Rice',
+      priceVnd: 49000,
+      sortOrder: 5,
+    );
+    attachRiceCustomizations('item-fried-chicken-rice', 'fried');
+
+    item(
+      id: 'item-tra-da',
       categoryId: 'cat-drinks',
-      name: 'Iced Tea',
-      price: 2.50,
+      name: 'Trà đá',
+      priceVnd: 5000,
       sortOrder: 1,
     );
+    item(
+      id: 'item-coca',
+      categoryId: 'cat-drinks',
+      name: 'Coca Cola',
+      priceVnd: 15000,
+      sortOrder: 2,
+    );
+    item(
+      id: 'item-pepsi',
+      categoryId: 'cat-drinks',
+      name: 'Pepsi',
+      priceVnd: 15000,
+      sortOrder: 3,
+    );
+    item(
+      id: 'item-sprite',
+      categoryId: 'cat-drinks',
+      name: 'Sprite',
+      priceVnd: 15000,
+      sortOrder: 4,
+    );
 
+    store.menuVersion = 1;
     store.menuCachedAt = now;
   }
 }

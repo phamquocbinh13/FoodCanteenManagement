@@ -6,11 +6,17 @@ import '../../../application/session/session_timeline_recorder.dart';
 import '../../../application/usecases/batch/add_batch_use_case.dart';
 import '../../../application/usecases/batch/complete_batch_use_case.dart';
 import '../../../application/usecases/cart/add_to_cart_use_case.dart';
+import '../../../application/usecases/cart/clear_session_cart_use_case.dart';
+import '../../../application/usecases/cart/edit_cart_item_use_case.dart';
 import '../../../application/usecases/cart/get_session_cart_use_case.dart';
+import '../../../application/usecases/cart/remove_cart_item_use_case.dart';
+import '../../../application/usecases/cart/update_cart_item_quantity_use_case.dart';
 import '../../../application/usecases/session/get_session_bill_use_case.dart';
 import '../../../application/validators/customization_validator.dart';
 import '../../../core/clock/clock.dart';
 import '../../../core/id/id_generator.dart';
+import '../../../core/storage/local_storage.dart';
+import '../../../data/datasources/cart/cart_local_datasource.dart';
 import '../../../data/datasources/ordering/ordering_store.dart';
 import '../../../data/datasources/session/session_engine_datasource.dart';
 import '../../../data/repositories/batch/batch_repository_impl.dart';
@@ -24,8 +30,15 @@ import '../../../domain/services/menu_domain_service.dart';
 
 abstract final class KitchenModule {
   static void register(GetIt sl) {
+    sl.registerLazySingleton<CartLocalDataSource>(
+      () => CartLocalDataSourceImpl(sl<LocalStorage>()),
+    );
+
     sl.registerLazySingleton<SessionCartRepository>(
-      () => SessionCartRepositoryImpl(store: sl<OrderingStore>()),
+      () => SessionCartRepositoryImpl(
+        store: sl<OrderingStore>(),
+        localDataSource: sl<CartLocalDataSource>(),
+      ),
     );
 
     sl.registerLazySingleton<BatchRepository>(
@@ -38,6 +51,7 @@ abstract final class KitchenModule {
     sl.registerLazySingleton(
       () => GetSessionCartUseCase(
         cartRepository: sl<SessionCartRepository>(),
+        menuRepository: sl<MenuRepository>(),
         clock: sl<Clock>(),
       ),
     );
@@ -57,6 +71,33 @@ abstract final class KitchenModule {
     );
 
     sl.registerLazySingleton(
+      () => UpdateCartItemQuantityUseCase(
+        cartRepository: sl<SessionCartRepository>(),
+        clock: sl<Clock>(),
+      ),
+    );
+
+    sl.registerLazySingleton(
+      () => RemoveCartItemUseCase(cartRepository: sl<SessionCartRepository>()),
+    );
+
+    sl.registerLazySingleton(
+      () => EditCartItemUseCase(
+        cartRepository: sl<SessionCartRepository>(),
+        menuRepository: sl<MenuRepository>(),
+        customizationValidator: sl<CustomizationValidator>(),
+        customizationRenderer: sl<CustomizationRenderer>(),
+        idGenerator: sl<IdGenerator>(),
+        clock: sl<Clock>(),
+        menuDomainService: sl<MenuDomainService>(),
+      ),
+    );
+
+    sl.registerLazySingleton(
+      () => ClearSessionCartUseCase(cartRepository: sl<SessionCartRepository>()),
+    );
+
+    sl.registerLazySingleton(
       () => ConfirmBatchUseCase(
         cartRepository: sl<SessionCartRepository>(),
         batchRepository: sl<BatchRepository>(),
@@ -68,6 +109,7 @@ abstract final class KitchenModule {
         idGenerator: sl<IdGenerator>(),
         eventPublisher: sl<DomainEventPublisher>(),
         clock: sl<Clock>(),
+        orderingStore: sl<OrderingStore>(),
         batchDomainService: sl<BatchDomainService>(),
         menuDomainService: sl<MenuDomainService>(),
       ),

@@ -30,6 +30,12 @@ final class OrderingStore {
   final Map<String, CustomizationOption> customizationOptions = {};
   DateTime? menuCachedAt;
 
+  /// Increments when menu catalog changes; drives cache invalidation.
+  int menuVersion = 0;
+
+  /// Last version written into [GetMenuCatalogUseCase] cache.
+  int? cacheVersion;
+
   // Session carts (temporary, cleared on batch confirm)
   final Map<String, SessionCart> cartsBySessionId = {};
   final Map<String, List<SessionCartItem>> cartItemsByCartId = {};
@@ -50,5 +56,11 @@ final class OrderingStore {
   List<KitchenBatch> batchesForSession(String sessionId) {
     return batches.values.where((b) => b.sessionId == sessionId).toList()
       ..sort((a, b) => a.batchNumber.compareTo(b.batchNumber));
+  }
+
+  void bumpMenuVersion() {
+    menuVersion++;
+    menuCachedAt = null;
+    cacheVersion = null;
   }
 }

@@ -6,7 +6,6 @@ import '../../../domain/entities/session_cart.dart';
 import '../../../domain/entities/session_cart_item.dart';
 import '../../../domain/entities/batch_item.dart';
 import '../../../domain/entities/kitchen_batch.dart';
-import '../../../domain/entities/session_payment_summary.dart';
 import '../../../domain/enums/domain_enums.dart';
 import '../../../domain/events/domain_events.dart';
 import '../../../domain/exceptions/domain_exception.dart';
@@ -16,10 +15,12 @@ import '../../../domain/repositories/session_engine_repository.dart';
 import '../../../domain/services/batch_domain_service.dart';
 import '../../../domain/services/menu_domain_service.dart';
 import '../../../domain/value_objects/money.dart';
+import '../../../data/datasources/ordering/ordering_store.dart';
 import '../../../data/datasources/session/session_engine_datasource.dart';
 import '../../../data/repositories/cart/session_cart_repository_impl.dart';
 import '../../menu/customization_renderer.dart';
 import '../../menu/kitchen_batch_ticket.dart';
+import '../../session/session_bill_projector.dart';
 import '../../session/session_timeline_recorder.dart';
 import '../use_case.dart';
 
@@ -37,6 +38,7 @@ final class ConfirmBatchUseCase
     required IdGenerator idGenerator,
     required DomainEventPublisher eventPublisher,
     required Clock clock,
+    required OrderingStore orderingStore,
     BatchDomainService? batchDomainService,
     MenuDomainService? menuDomainService,
   })  : _cartRepository = cartRepository,
@@ -49,6 +51,7 @@ final class ConfirmBatchUseCase
         _idGenerator = idGenerator,
         _eventPublisher = eventPublisher,
         _clock = clock,
+        _billProjector = SessionBillProjector(store: orderingStore),
         _batchService = batchDomainService ?? const BatchDomainService(),
         _menuService = menuDomainService ?? const MenuDomainService();
 
@@ -62,6 +65,7 @@ final class ConfirmBatchUseCase
   final IdGenerator _idGenerator;
   final DomainEventPublisher _eventPublisher;
   final Clock _clock;
+  final SessionBillProjector _billProjector;
   final BatchDomainService _batchService;
   final MenuDomainService _menuService;
 
@@ -138,7 +142,6 @@ final class ConfirmBatchUseCase
     await _batchRepository.create(batch);
 
     final batchItems = <BatchItem>[];
-    var batchSubtotalMinor = 0;
 
     for (final line in cartItems) {
       final menuItem = (await _menuRepository.findItemById(
@@ -171,7 +174,6 @@ final class ConfirmBatchUseCase
         amountMinor: rendered.unitPrice.amountMinor * line.quantity.value,
         currencyCode: rendered.unitPrice.currencyCode,
       );
-      batchSubtotalMinor += lineTotal.amountMinor;
 
       final batchItem = BatchItem(
         id: batchItemId,
@@ -193,16 +195,13 @@ final class ConfirmBatchUseCase
     await _cartRepository.clearCart(params.sessionId);
 
     final latestSession = _sessionDataSource.getSession(params.sessionId)!;
-    final currentSummary =
-        latestSession.paymentSummary ?? const SessionPaymentSummary();
-    final updatedSummary = currentSummary
-        .copyWith(
-          subtotalMinor: currentSummary.subtotalMinor + batchSubtotalMinor,
-        )
-        .recalculateTotal();
+    final projectedSummary = _billProjector.project(
+      existing: latestSession.paymentSummary,
+      sessionId: params.sessionId,
+    );
 
     final updatedSession = latestSession.copyWith(
-      paymentSummary: updatedSummary,
+      paymentSummary: projectedSummary,
       updatedAt: now,
     );
     await _sessionEngine.update(updatedSession);

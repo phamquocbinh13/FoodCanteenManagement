@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../../../../application/menu/menu_item_detail_view.dart';
-import '../../../../application/validators/customization_validator.dart';
 import '../../../../core/theme/app_spacing.dart';
-import '../../../../domain/entities/customization_group.dart';
 import '../../../../domain/entities/menu_item.dart';
 import '../../../../domain/enums/domain_enums.dart';
+import '../../../../shared/formatters/money_formatter.dart';
 import '../providers/customer_ordering_provider.dart';
 import '../providers/customer_session_provider.dart';
+import '../widgets/cart_bottom_sheet.dart';
+import '../widgets/cart_ordering_messages.dart';
+import '../widgets/customize_sheet.dart';
 
-/// Customer menu browse, customize, cart, and batch confirm.
+/// Customer menu browse, customize, cart editing, and batch confirm.
 class SessionMenuPage extends ConsumerStatefulWidget {
   const SessionMenuPage({super.key, required this.sessionToken});
 
@@ -46,7 +46,7 @@ class _SessionMenuPageState extends ConsumerState<SessionMenuPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Menu'),
+        title: const Text('Thực đơn'),
         actions: [
           if (sessionId != null)
             IconButton(
@@ -67,123 +67,107 @@ class _SessionMenuPageState extends ConsumerState<SessionMenuPage> {
                   padding: const EdgeInsets.all(AppSpacing.md),
                   child: TextField(
                     decoration: const InputDecoration(
-                      hintText: 'Search menu…',
+                      hintText: 'Tìm món…',
                       prefixIcon: Icon(Icons.search),
                       border: OutlineInputBorder(),
                     ),
                     onChanged: ordering.setSearchQuery,
                   ),
                 ),
-                Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    children: [
-                      for (final category in catalog.categories) ...[
-                        Text(
-                          category.name,
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        ...ordering.filteredItems(category.id).map(
-                          (item) => _MenuItemTile(
-                            item: item as MenuItem,
-                            onTap: sessionId == null
-                                ? null
-                                : () => _openCustomize(item, sessionId),
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.lg),
+                if (ordering.searchQuery.isNotEmpty &&
+                    !ordering.hasSearchResults)
+                  const Padding(
+                    padding: EdgeInsets.all(AppSpacing.lg),
+                    child: Text('Không tìm thấy món phù hợp.'),
+                  )
+                else
+                  Expanded(
+                    child: ListView(
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      children: [
+                        for (final category in catalog.categories) ...[
+                          if (ordering.filteredItems(category.id).isNotEmpty) ...[
+                            Text(
+                              category.name,
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            const SizedBox(height: AppSpacing.sm),
+                            ...ordering.filteredItems(category.id).map(
+                              (item) => _MenuItemTile(
+                                item: item as MenuItem,
+                                onTap: sessionId == null
+                                    ? null
+                                    : () => _openCustomize(
+                                          item: item,
+                                          sessionId: sessionId,
+                                        ),
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.lg),
+                          ],
+                        ],
                       ],
-                    ],
+                    ),
                   ),
-                ),
               ],
             ),
     );
   }
 
-  Future<void> _openCustomize(MenuItem item, String sessionId) async {
+  Future<void> _openCustomize({
+    required MenuItem item,
+    required String sessionId,
+  }) async {
     final ordering = ref.read(customerOrderingControllerProvider);
     final detail = await ordering.loadItemDetail(item.id);
-    if (!mounted || detail == null) return;
+    if (!mounted || detail == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text(CartOrderingMessages.loadItemFailed)),
+        );
+      }
+      return;
+    }
 
+    if (!mounted) return;
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      builder: (context) => _CustomizeSheet(
+      builder: (context) => CustomizeSheet(
         detail: detail,
-        onAdd: (selections) async {
-          final ok = await ordering.addToCart(
-            sessionId: sessionId,
-            menuItemId: item.id,
-            quantity: 1,
-            selectionsJson: selections,
-          );
+        submitLabel: 'Thêm vào giỏ',
+        isSubmitting: ordering.isLoading,
+        onSubmit: (selections) async {
+          final ok = await ref.read(customerOrderingControllerProvider).addToCart(
+                sessionId: sessionId,
+                menuItemId: item.id,
+                quantity: 1,
+                selectionsJson: selections,
+              );
           if (context.mounted && ok) Navigator.pop(context);
+          if (context.mounted && !ok) {
+            final message = ref
+                    .read(customerOrderingControllerProvider)
+                    .errorMessage ??
+                CartOrderingMessages.editItemFailed;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(message)),
+            );
+          }
         },
       ),
     );
-    await ordering.refreshCart(sessionId);
+    await ref.read(customerOrderingControllerProvider).refreshCart(sessionId);
   }
 
   Future<void> _showCart(String sessionId) async {
-    final ordering = ref.read(customerOrderingControllerProvider);
-    await ordering.refreshCart(sessionId);
+    await ref.read(customerOrderingControllerProvider).refreshCart(sessionId);
     if (!mounted) return;
 
     await showModalBottomSheet<void>(
       context: context,
-      builder: (context) {
-        final cart = ordering.cart;
-        return Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text('Your Cart', style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: AppSpacing.md),
-              if (cart == null || cart.isEmpty)
-                const Text('Cart is empty')
-              else ...[
-                for (final line in cart.items)
-                  ListTile(
-                    title: Text('Item ${line.menuItemId}'),
-                    subtitle: Text('Qty ${line.quantity.value}'),
-                    trailing: Text(
-                      '\$${(line.unitPriceSnapshot.amountMinor * line.quantity.value / 100).toStringAsFixed(2)}',
-                    ),
-                  ),
-                Text(
-                  'Subtotal: \$${cart.subtotal.amountDecimal.toStringAsFixed(2)}',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: AppSpacing.md),
-                FilledButton(
-                  onPressed: ordering.isLoading
-                      ? null
-                      : () async {
-                          final ok = await ordering.confirmBatch(sessionId);
-                          if (context.mounted) {
-                            Navigator.pop(context);
-                            if (ok) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    'Batch #${ordering.lastBatch?.batch.batchNumber} sent to kitchen!',
-                                  ),
-                                ),
-                              );
-                            }
-                          }
-                        },
-                  child: const Text('Confirm Batch'),
-                ),
-              ],
-            ],
-          ),
-        );
-      },
+      isScrollControlled: true,
+      builder: (context) => CartBottomSheet(sessionId: sessionId),
     );
   }
 }
@@ -197,130 +181,30 @@ class _MenuItemTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final unavailable = item.availability != MenuAvailability.available;
+    final price = formatMoneyDisplay(
+      amountMinor: item.basePrice.amountMinor,
+      currencyCode: item.basePrice.currencyCode,
+    );
     return Card(
       child: ListTile(
         enabled: !unavailable && onTap != null,
+        leading: item.imageUrl != null
+            ? Image.network(
+                item.imageUrl!,
+                width: 48,
+                height: 48,
+                fit: BoxFit.cover,
+              )
+            : const Icon(Icons.rice_bowl_outlined),
         title: Text(item.name),
         subtitle: Text(
-          unavailable
-              ? 'Unavailable'
-              : item.description ?? '\$${item.basePrice.amountDecimal.toStringAsFixed(2)}',
+          unavailable ? 'Hết món' : item.description ?? price,
         ),
         trailing: unavailable
             ? const Icon(Icons.block, color: Colors.grey)
-            : Text('\$${item.basePrice.amountDecimal.toStringAsFixed(2)}'),
+            : Text(price),
         onTap: unavailable ? null : onTap,
       ),
-    );
-  }
-}
-
-class _CustomizeSheet extends StatefulWidget {
-  const _CustomizeSheet({required this.detail, required this.onAdd});
-
-  final MenuItemDetailView detail;
-  final Future<void> Function(Map<String, dynamic> selections) onAdd;
-
-  @override
-  State<_CustomizeSheet> createState() => _CustomizeSheetState();
-}
-
-class _CustomizeSheetState extends State<_CustomizeSheet> {
-  final _noteController = TextEditingController();
-  final _selections = <String, List<String>>{};
-
-  @override
-  void dispose() {
-    _noteController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final detail = widget.detail;
-    final item = detail.item;
-    final groups = detail.groups;
-
-    return Padding(
-      padding: EdgeInsets.only(
-        left: AppSpacing.lg,
-        right: AppSpacing.lg,
-        top: AppSpacing.lg,
-        bottom: MediaQuery.viewInsetsOf(context).bottom + AppSpacing.lg,
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(item.name, style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: AppSpacing.md),
-            for (final group in groups) ...[
-              Text('${group.name}${group.isRequired ? ' *' : ''}'),
-              const SizedBox(height: AppSpacing.xs),
-              ..._buildGroupOptions(group, detail.optionsByGroupId[group.id]),
-              const SizedBox(height: AppSpacing.sm),
-            ],
-            TextField(
-              controller: _noteController,
-              decoration: const InputDecoration(
-                labelText: 'Special instructions',
-                hintText: 'Extra spicy, less salt…',
-              ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            FilledButton(
-              onPressed: () => widget.onAdd(_buildSelectionsJson()),
-              child: const Text('Add to Cart'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  List<Widget> _buildGroupOptions(
-    CustomizationGroup group,
-    List<dynamic>? options,
-  ) {
-    if (options == null) return [];
-    return options.map((opt) {
-      final selected = _selections[group.key]?.contains(opt.key) ?? false;
-      if (group.selectionType == CustomizationSelectionType.singleSelect ||
-          group.selectionType == CustomizationSelectionType.boolean) {
-        return RadioListTile<String>(
-          title: Text(opt.name as String),
-          value: opt.key as String,
-          groupValue: _selections[group.key]?.isNotEmpty == true
-              ? _selections[group.key]!.first
-              : null,
-          onChanged: (value) {
-            setState(() => _selections[group.key] = [value!]);
-          },
-        );
-      }
-      return CheckboxListTile(
-        title: Text(opt.name as String),
-        value: selected,
-        onChanged: (value) {
-          setState(() {
-            final list = List<String>.from(_selections[group.key] ?? []);
-            if (value == true) {
-              list.add(opt.key as String);
-            } else {
-              list.remove(opt.key);
-            }
-            _selections[group.key] = list;
-          });
-        },
-      );
-    }).toList();
-  }
-
-  Map<String, dynamic> _buildSelectionsJson() {
-    return buildSelectionsJson(
-      groups: _selections,
-      note: _noteController.text,
     );
   }
 }

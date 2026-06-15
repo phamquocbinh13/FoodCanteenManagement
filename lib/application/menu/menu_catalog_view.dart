@@ -7,9 +7,11 @@ final class MenuCatalogView {
     required this.categories,
     required this.itemsByCategoryId,
     required this.cachedAt,
+    this.menuVersion = 0,
   });
 
   final List<MenuCategory> categories;
   final Map<String, List<MenuItem>> itemsByCategoryId;
   final DateTime cachedAt;
+  final int menuVersion;
 }

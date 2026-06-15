@@ -5,7 +5,7 @@ import '../../../data/datasources/ordering/ordering_store.dart';
 import '../../menu/menu_catalog_view.dart';
 import '../use_case.dart';
 
-/// Loads customer-visible menu catalog with in-memory caching.
+/// Loads customer-visible menu catalog with version-aware in-memory caching.
 final class GetMenuCatalogUseCase
     implements UseCase<MenuCatalogView, GetMenuCatalogParams> {
   GetMenuCatalogUseCase({
@@ -22,12 +22,13 @@ final class GetMenuCatalogUseCase
 
   MenuCatalogView? _cache;
   String? _cacheRestaurantId;
+  int? _cacheVersion;
 
   @override
   Future<Result<MenuCatalogView>> call(GetMenuCatalogParams params) async {
     if (_cache != null &&
         _cacheRestaurantId == params.restaurantId &&
-        _store.menuCachedAt != null) {
+        _cacheVersion == _store.menuVersion) {
       return Success(_cache!);
     }
 
@@ -46,10 +47,13 @@ final class GetMenuCatalogUseCase
           entry.key: entry.value.cast(),
       },
       cachedAt: _clock.now(),
+      menuVersion: _store.menuVersion,
     );
 
     _cache = view;
     _cacheRestaurantId = params.restaurantId;
+    _cacheVersion = _store.menuVersion;
+    _store.cacheVersion = _store.menuVersion;
     _store.menuCachedAt = view.cachedAt;
 
     return Success(view);
@@ -58,7 +62,9 @@ final class GetMenuCatalogUseCase
   void invalidateCache() {
     _cache = null;
     _cacheRestaurantId = null;
+    _cacheVersion = null;
     _store.menuCachedAt = null;
+    _store.cacheVersion = null;
   }
 }
 

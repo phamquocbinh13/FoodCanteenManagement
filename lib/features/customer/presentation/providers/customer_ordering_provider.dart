@@ -10,6 +10,10 @@ final customerOrderingControllerProvider =
     getMenuItemDetail: sl(),
     addToCart: sl(),
     getSessionCart: sl(),
+    updateCartItemQuantity: sl(),
+    removeCartItem: sl(),
+    editCartItem: sl(),
+    clearSessionCart: sl(),
     confirmBatch: sl(),
     getSessionBill: sl(),
   );

@@ -37,7 +37,7 @@ final class LockMenuItemUseCase
       availability: MenuAvailability.outOfStock,
     );
     final saved = await _menuRepository.updateAvailability(locked);
-    _store.menuCachedAt = null;
+    _store.bumpMenuVersion();
     return Success(saved);
   }
 }

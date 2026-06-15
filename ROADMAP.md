@@ -18,6 +18,14 @@ OK Sprint 5 Menu & Batch Engine
 
 ↓
 
+OK Sprint 5.1 Menu & Cart Hardening
+
+↓
+
+OK Sprint 5.1.1 Cart BottomSheet Reactivity
+
+↓
+
 🚧 Sprint 6 Kitchen
 
 ↓

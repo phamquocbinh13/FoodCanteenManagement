@@ -4,21 +4,22 @@ import '../../../domain/entities/session_payment_summary.dart';
 import '../../../data/datasources/ordering/ordering_store.dart';
 import '../../../data/datasources/session/session_engine_datasource.dart';
 import '../../menu/cart_view.dart';
+import '../../session/session_bill_projector.dart';
 import '../cart/get_session_cart_use_case.dart';
 import '../use_case.dart';
 
-/// Session bill = sum of confirmed batch line totals (+ optional open cart).
+/// Session bill = projection from confirmed batch snapshots (+ optional open cart).
 final class GetSessionBillUseCase
     implements UseCase<SessionPaymentSummary, GetSessionBillParams> {
   GetSessionBillUseCase({
     required OrderingStore store,
     required SessionEngineDataSource sessionDataSource,
     required GetSessionCartUseCase getSessionCart,
-  })  : _store = store,
+  })  : _projector = SessionBillProjector(store: store),
         _sessionDataSource = sessionDataSource,
         _getSessionCart = getSessionCart;
 
-  final OrderingStore _store;
+  final SessionBillProjector _projector;
   final SessionEngineDataSource _sessionDataSource;
   final GetSessionCartUseCase _getSessionCart;
 
@@ -29,33 +30,23 @@ final class GetSessionBillUseCase
       return const Err(NotFoundFailure('Session not found'));
     }
 
-    var subtotalMinor = 0;
-    for (final batch in _store.batchesForSession(params.sessionId)) {
-      final items = _store.batchItemsByBatchId[batch.id] ?? [];
-      for (final item in items) {
-        subtotalMinor += item.lineTotal.amountMinor;
-      }
-    }
-
-    var summary = (session.paymentSummary ?? const SessionPaymentSummary())
-        .copyWith(subtotalMinor: subtotalMinor)
-        .recalculateTotal();
-
+    var openCartSubtotalMinor = 0;
     if (params.includeOpenCart) {
       final cartResult = await _getSessionCart(
         GetSessionCartParams(sessionId: params.sessionId),
       );
       if (cartResult is Success<CartView>) {
-        summary = summary
-            .copyWith(
-              subtotalMinor:
-                  subtotalMinor + cartResult.value.subtotal.amountMinor,
-            )
-            .recalculateTotal();
+        openCartSubtotalMinor = cartResult.value.subtotal.amountMinor;
       }
     }
 
-    return Success(summary);
+    return Success(
+      _projector.project(
+        existing: session.paymentSummary,
+        sessionId: params.sessionId,
+        openCartSubtotalMinor: openCartSubtotalMinor,
+      ),
+    );
   }
 }
 
