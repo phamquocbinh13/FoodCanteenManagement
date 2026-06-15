@@ -8,6 +8,7 @@ import 'package:food_canteen_management/application/usecases/session/join_sessio
 import 'package:food_canteen_management/application/usecases/session/validate_session_use_case.dart';
 import 'package:food_canteen_management/core/result/result.dart';
 import 'package:food_canteen_management/data/datasources/customer/customer_session_local_datasource.dart';
+import 'package:food_canteen_management/data/datasources/ordering/ordering_store.dart';
 import 'package:food_canteen_management/data/datasources/session/in_memory_session_engine_datasource.dart';
 import 'package:food_canteen_management/data/repositories/session/session_engine_repository_impl.dart';
 import 'package:food_canteen_management/application/session/session_timeline_recorder.dart';
@@ -45,7 +46,10 @@ void main() {
   setUp(() async {
     clock = FakeClock(DateTime.utc(2025, 6, 15, 10));
     ids = FakeIdGenerator(prefix: 'id');
-    dataSource = InMemorySessionEngineDataSource(clock: clock);
+    dataSource = InMemorySessionEngineDataSource(
+      clock: clock,
+      store: OrderingStore(),
+    );
     repository = SessionEngineRepositoryImpl(
       dataSource: dataSource,
       idGenerator: ids,

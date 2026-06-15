@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../application/session/customer_session_messages.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../domain/enums/domain_enums.dart';
+import '../providers/customer_ordering_provider.dart';
 import '../providers/customer_session_provider.dart';
 
 /// Customer dashboard after a successful join.
@@ -35,7 +36,11 @@ class _SessionPageState extends ConsumerState<SessionPage> {
     if (!mounted) return;
     if (!ok) {
       context.go('/customer');
+      return;
     }
+    await ref.read(customerOrderingControllerProvider).refreshBill(
+          ref.read(customerSessionControllerProvider).snapshot!.session.id,
+        );
   }
 
   Future<void> _requestPayment() async {
@@ -50,6 +55,7 @@ class _SessionPageState extends ConsumerState<SessionPage> {
   @override
   Widget build(BuildContext context) {
     final controller = ref.watch(customerSessionControllerProvider);
+    final ordering = ref.watch(customerOrderingControllerProvider);
     final theme = Theme.of(context);
     final snapshot = controller.snapshot;
 
@@ -125,7 +131,9 @@ class _SessionPageState extends ConsumerState<SessionPage> {
                 child: Padding(
                   padding: const EdgeInsets.all(AppSpacing.lg),
                   child: Text(
-                    'No items ordered yet.',
+                    ordering.bill != null && ordering.bill!.totalMinor > 0
+                        ? 'Total: \$${(ordering.bill!.totalMinor / 100).toStringAsFixed(2)}'
+                        : 'No items ordered yet.',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -139,7 +147,9 @@ class _SessionPageState extends ConsumerState<SessionPage> {
               ),
               const SizedBox(height: AppSpacing.sm),
               OutlinedButton(
-                onPressed: () {},
+                onPressed: () => context.push(
+                  '/s/${widget.sessionToken}/menu',
+                ),
                 child: const Text('Add More'),
               ),
               const SizedBox(height: AppSpacing.sm),

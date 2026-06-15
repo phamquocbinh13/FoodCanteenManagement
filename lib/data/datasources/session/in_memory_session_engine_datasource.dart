@@ -1,3 +1,4 @@
+import '../../../application/session/session_constants.dart';
 import '../../../core/clock/clock.dart';
 import '../../../core/result/result.dart';
 import '../../../domain/entities/dine_in_session.dart';
@@ -5,23 +6,35 @@ import '../../../domain/entities/restaurant_table.dart';
 import '../../../domain/entities/session_auth_token.dart';
 import '../../../domain/entities/session_timeline_event.dart';
 import '../../../domain/enums/domain_enums.dart';
-import 'in_memory_session_engine_store.dart';
+import '../ordering/demo_menu_seed.dart';
+import '../ordering/ordering_store.dart';
 import 'session_engine_datasource.dart';
 
-/// In-memory Session Engine datasource with seeded demo table.
+/// In-memory Session Engine datasource backed by shared [OrderingStore].
 final class InMemorySessionEngineDataSource implements SessionEngineDataSource {
   InMemorySessionEngineDataSource({
     required Clock clock,
-    InMemorySessionEngineStore? store,
+    required OrderingStore store,
   })  : _clock = clock,
-        _store = store ?? InMemorySessionEngineStore() {
-    _store.seedDemoTables(_clock.now());
+        _store = store {
+    _store.tables.putIfAbsent(
+      SessionEngineConstants.demoTable1Id,
+      () => RestaurantTable(
+        id: SessionEngineConstants.demoTable1Id,
+        restaurantId: SessionEngineConstants.demoRestaurantId,
+        label: 'Table 1',
+        status: TableStatus.available,
+        createdAt: _clock.now(),
+        updatedAt: _clock.now(),
+      ),
+    );
+    DemoMenuSeed.seed(_store, _clock);
   }
 
   final Clock _clock;
-  final InMemorySessionEngineStore _store;
+  final OrderingStore _store;
 
-  InMemorySessionEngineStore get store => _store;
+  OrderingStore get store => _store;
 
   @override
   Future<Result<void>> reset() async {
@@ -32,7 +45,25 @@ final class InMemorySessionEngineDataSource implements SessionEngineDataSource {
     _store.timeline.clear();
     _store.dailySessionSequence = 0;
     _store.lastDateKey = null;
-    _store.seedDemoTables(_clock.now());
+    _store.categories.clear();
+    _store.menuItems.clear();
+    _store.customizationGroups.clear();
+    _store.customizationOptions.clear();
+    _store.menuCachedAt = null;
+    _store.cartsBySessionId.clear();
+    _store.cartItemsByCartId.clear();
+    _store.batches.clear();
+    _store.batchItemsByBatchId.clear();
+    _store.customizationsByBatchItemId.clear();
+    _store.tables[SessionEngineConstants.demoTable1Id] = RestaurantTable(
+      id: SessionEngineConstants.demoTable1Id,
+      restaurantId: SessionEngineConstants.demoRestaurantId,
+      label: 'Table 1',
+      status: TableStatus.available,
+      createdAt: _clock.now(),
+      updatedAt: _clock.now(),
+    );
+    DemoMenuSeed.seed(_store, _clock);
     return const Success(null);
   }
 
@@ -120,5 +151,10 @@ final class InMemorySessionEngineDataSource implements SessionEngineDataSource {
     }
     _store.dailySessionSequence += 1;
     return _store.dailySessionSequence;
+  }
+
+  @override
+  List<String> batchIdsForSession(String sessionId) {
+    return _store.batchIdsForSession(sessionId);
   }
 }

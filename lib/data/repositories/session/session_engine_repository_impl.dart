@@ -454,6 +454,7 @@ final class SessionEngineRepositoryImpl implements SessionEngineRepository {
       session: session,
       activeToken: token,
       tableLabel: tableLabel,
+      batchIds: _dataSource.batchIdsForSession(session.id),
     );
   }
 }

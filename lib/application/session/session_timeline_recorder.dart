@@ -85,6 +85,21 @@ final class SessionTimelineRecorder {
     );
   }
 
+  SessionTimelineEvent cartItemAdded({
+    required String sessionId,
+    required String menuItemId,
+    required int quantity,
+    String? actorId,
+  }) {
+    return _event(
+      sessionId: sessionId,
+      eventType: SessionTimelineEventType.cartItemAdded,
+      actorType: ActorType.customerSession,
+      actorId: actorId,
+      payload: {'menuItemId': menuItemId, 'quantity': quantity},
+    );
+  }
+
   SessionTimelineEvent _event({
     required String sessionId,
     required SessionTimelineEventType eventType,

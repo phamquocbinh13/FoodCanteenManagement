@@ -14,6 +14,7 @@ import '../../../application/mappers/session_mapper.dart';
 import '../../../application/validators/session_validator.dart';
 import '../../../core/clock/clock.dart';
 import '../../../core/id/id_generator.dart';
+import '../../../data/datasources/ordering/ordering_store.dart';
 import '../../../data/datasources/session/in_memory_session_engine_datasource.dart';
 import '../../../data/datasources/session/session_datasource.dart';
 import '../../../data/datasources/session/session_engine_datasource.dart';
@@ -34,7 +35,10 @@ abstract final class SessionModule {
     );
 
     sl.registerLazySingleton<SessionEngineDataSource>(
-      () => InMemorySessionEngineDataSource(clock: sl<Clock>()),
+      () => InMemorySessionEngineDataSource(
+        clock: sl<Clock>(),
+        store: sl<OrderingStore>(),
+      ),
     );
 
     sl.registerLazySingleton(

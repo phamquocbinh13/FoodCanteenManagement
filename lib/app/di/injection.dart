@@ -3,6 +3,7 @@ import 'package:get_it/get_it.dart';
 import '../config/app_config.dart';
 import 'modules/admin_module.dart';
 import 'modules/auth_module.dart';
+import 'modules/ordering_module.dart';
 import 'modules/customer_module.dart';
 import 'modules/core_module.dart';
 import 'modules/delivery_module.dart';
@@ -28,6 +29,7 @@ abstract final class Injection {
     _config = config ?? AppConfig.current();
 
     await CoreModule.register(sl, _config!);
+    OrderingModule.register(sl);
     PaymentModule.register(sl);
     AuthModule.register(sl);
     MenuModule.register(sl);
