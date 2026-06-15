@@ -36,6 +36,23 @@ class CashierPage extends ConsumerWidget {
                 ),
                 const SizedBox(height: AppSpacing.md),
                 _StatusCard(session: session),
+                if (session.hasActiveSession && session.batchSummaries.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.lg),
+                  Text('Kitchen Batches (read-only)', style: theme.textTheme.titleMedium),
+                  const SizedBox(height: AppSpacing.sm),
+                  ...session.batchSummaries.map(
+                    (batch) => Card(
+                      child: ListTile(
+                        title: Text('Batch #${batch.batchNumber}'),
+                        subtitle: Text(
+                          'Created ${_formatTime(batch.createdAt)}'
+                          '${batch.completedAt != null ? ' • Done ${_formatTime(batch.completedAt!)}' : ''}',
+                        ),
+                        trailing: Text(batch.statusLabel),
+                      ),
+                    ),
+                  ),
+                ],
                 if (session.hasActiveSession &&
                     session.sessionToken != null) ...[
                   const SizedBox(height: AppSpacing.lg),
@@ -93,6 +110,11 @@ class CashierPage extends ConsumerWidget {
       ),
     );
   }
+}
+
+String _formatTime(DateTime dt) {
+  final local = dt.toLocal();
+  return '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
 }
 
 class _StatusCard extends StatelessWidget {

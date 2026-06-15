@@ -7,6 +7,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../domain/enums/domain_enums.dart';
 import '../providers/customer_ordering_provider.dart';
 import '../providers/customer_session_provider.dart';
+import '../widgets/customer_demo_exit_button.dart';
 
 /// Customer dashboard after a successful join.
 class SessionPage extends ConsumerStatefulWidget {
@@ -38,7 +39,7 @@ class _SessionPageState extends ConsumerState<SessionPage> {
       context.go('/customer');
       return;
     }
-    await ref.read(customerOrderingControllerProvider).refreshBill(
+    await ref.read(customerOrderingControllerProvider).refreshSessionOrdering(
           ref.read(customerSessionControllerProvider).snapshot!.session.id,
         );
   }
@@ -83,9 +84,16 @@ class _SessionPageState extends ConsumerState<SessionPage> {
             tooltip: 'Refresh',
             onPressed: controller.isLoading
                 ? null
-                : () => controller.refreshCurrentSession(),
+                : () async {
+                    await controller.refreshCurrentSession();
+                    if (!context.mounted) return;
+                    await ordering.refreshSessionOrdering(
+                      snapshot.session.id,
+                    );
+                  },
             icon: const Icon(Icons.refresh),
           ),
+          const CustomerDemoExitButton(),
         ],
       ),
       body: SafeArea(
@@ -125,6 +133,37 @@ class _SessionPageState extends ConsumerState<SessionPage> {
                 ),
               ),
               const SizedBox(height: AppSpacing.lg),
+              Text('Your Batches', style: theme.textTheme.titleMedium),
+              const SizedBox(height: AppSpacing.sm),
+              if (ordering.batchProgress.isEmpty)
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    child: Text(
+                      'Chưa có batch nào được gửi bếp.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                )
+              else
+                ...ordering.batchProgress.map(
+                  (batch) => Card(
+                    child: ListTile(
+                      title: Text('Batch #${batch.batchNumber}'),
+                      trailing: Text(
+                        batch.statusLabel,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: batch.isCompleted
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              const SizedBox(height: AppSpacing.lg),
               Text('Order Summary', style: theme.textTheme.titleMedium),
               const SizedBox(height: AppSpacing.sm),
               Card(
@@ -142,14 +181,11 @@ class _SessionPageState extends ConsumerState<SessionPage> {
               ),
               const SizedBox(height: AppSpacing.xl),
               OutlinedButton(
-                onPressed: () {},
-                child: const Text('View Ordered Items'),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              OutlinedButton(
-                onPressed: () => context.push(
-                  '/s/${widget.sessionToken}/menu',
-                ),
+                onPressed: () async {
+                  await context.push('/s/${widget.sessionToken}/menu');
+                  if (!context.mounted) return;
+                  await ordering.refreshSessionOrdering(snapshot.session.id);
+                },
                 child: const Text('Add More'),
               ),
               const SizedBox(height: AppSpacing.sm),

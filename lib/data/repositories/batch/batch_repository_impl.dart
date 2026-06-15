@@ -64,6 +64,35 @@ final class BatchRepositoryImpl implements BatchRepository {
   }
 
   @override
+  Future<BatchItem?> findItemById({
+    required String restaurantId,
+    required String batchItemId,
+  }) async {
+    for (final items in _store.batchItemsByBatchId.values) {
+      for (final item in items) {
+        if (item.id != batchItemId) continue;
+        final batch = _store.batches[item.batchId];
+        if (batch == null || batch.restaurantId != restaurantId) return null;
+        return item;
+      }
+    }
+    return null;
+  }
+
+  @override
+  Future<DateTime?> getBatchCompletedAt(String batchId) async {
+    return _store.batchCompletedAtById[batchId];
+  }
+
+  @override
+  Future<void> markBatchCompleted({
+    required String batchId,
+    required DateTime completedAt,
+  }) async {
+    _store.batchCompletedAtById[batchId] = completedAt;
+  }
+
+  @override
   Future<List<BatchItemCustomization>> getCustomizationsByItemId(
     String batchItemId,
   ) async {
@@ -87,6 +116,7 @@ final class BatchRepositoryImpl implements BatchRepository {
   Future<BatchItemStatusHistory> recordStatusHistory(
     BatchItemStatusHistory history,
   ) async {
+    _store.batchItemStatusHistory.add(history);
     return history;
   }
 

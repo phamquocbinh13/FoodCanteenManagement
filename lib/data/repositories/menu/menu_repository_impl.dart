@@ -39,6 +39,14 @@ final class MenuRepositoryImpl implements MenuRepository {
   }
 
   @override
+  Future<List<MenuItem>> listKitchenItems(String restaurantId) async {
+    return _store.menuItems.values
+        .where((item) => item.restaurantId == restaurantId && item.isActive)
+        .toList()
+      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+  }
+
+  @override
   Future<MenuItem?> findItemById({
     required String restaurantId,
     required String menuItemId,

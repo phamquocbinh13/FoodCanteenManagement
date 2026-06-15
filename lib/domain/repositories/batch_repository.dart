@@ -23,6 +23,18 @@ abstract interface class BatchRepository {
 
   Future<BatchItem> updateItemStatus(BatchItem item);
 
+  Future<BatchItem?> findItemById({
+    required String restaurantId,
+    required String batchItemId,
+  });
+
+  Future<DateTime?> getBatchCompletedAt(String batchId);
+
+  Future<void> markBatchCompleted({
+    required String batchId,
+    required DateTime completedAt,
+  });
+
   Future<List<BatchItemCustomization>> getCustomizationsByItemId(
     String batchItemId,
   );

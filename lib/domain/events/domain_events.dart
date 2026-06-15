@@ -105,6 +105,20 @@ final class BatchCreated extends DomainEventBase {
   final String? orderId;
 }
 
+/// Emitted when kitchen marks a batch item as completed.
+final class BatchItemCompleted extends DomainEventBase {
+  const BatchItemCompleted({
+    required super.eventId,
+    required super.occurredAt,
+    required super.aggregateId,
+    required this.batchId,
+    required this.batchItemId,
+  }) : super(aggregateType: 'batch_item');
+
+  final String batchId;
+  final String batchItemId;
+}
+
 /// Emitted when kitchen marks a batch as fully completed.
 final class BatchCompleted extends DomainEventBase {
   const BatchCompleted({
@@ -134,6 +148,20 @@ final class PaymentCompleted extends DomainEventBase {
 /// Emitted when kitchen toggles a menu item out of stock.
 final class MenuDisabled extends DomainEventBase {
   const MenuDisabled({
+    required super.eventId,
+    required super.occurredAt,
+    required super.aggregateId,
+    required this.menuItemId,
+    required this.restaurantId,
+  }) : super(aggregateType: 'menu_item');
+
+  final String menuItemId;
+  final String restaurantId;
+}
+
+/// Emitted when kitchen restores a menu item to available.
+final class MenuUnlocked extends DomainEventBase {
+  const MenuUnlocked({
     required super.eventId,
     required super.occurredAt,
     required super.aggregateId,

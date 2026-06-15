@@ -202,5 +202,16 @@ void main() {
       expect(controller.paymentRequested, isTrue);
       expect(controller.snapshot?.session.status, SessionStatus.open);
     });
+
+    test('leaveSession clears persisted token for demo role switch', () async {
+      await controller.join(sessionToken);
+      expect((await customerLocal.readSessionToken()).valueOrNull, sessionToken);
+
+      await controller.leaveSession();
+
+      expect(controller.isJoined, isFalse);
+      expect(controller.sessionToken, isNull);
+      expect((await customerLocal.readSessionToken()).valueOrNull, isNull);
+    });
   });
 }

@@ -11,6 +11,11 @@ import '../../../application/usecases/cart/edit_cart_item_use_case.dart';
 import '../../../application/usecases/cart/get_session_cart_use_case.dart';
 import '../../../application/usecases/cart/remove_cart_item_use_case.dart';
 import '../../../application/usecases/cart/update_cart_item_quantity_use_case.dart';
+import '../../../application/usecases/kitchen/complete_batch_item_use_case.dart';
+import '../../../application/usecases/kitchen/get_kitchen_menu_panel_use_case.dart';
+import '../../../application/usecases/kitchen/get_kitchen_queue_use_case.dart';
+import '../../../application/usecases/kitchen/get_session_batch_progress_use_case.dart';
+import '../../../application/usecases/kitchen/toggle_menu_availability_use_case.dart';
 import '../../../application/usecases/session/get_session_bill_use_case.dart';
 import '../../../application/validators/customization_validator.dart';
 import '../../../core/clock/clock.dart';
@@ -26,6 +31,7 @@ import '../../../domain/repositories/batch_repository.dart';
 import '../../../domain/repositories/menu_repository.dart';
 import '../../../domain/repositories/session_engine_repository.dart';
 import '../../../domain/services/batch_domain_service.dart';
+import '../../../domain/services/kitchen_domain_service.dart';
 import '../../../domain/services/menu_domain_service.dart';
 
 abstract final class KitchenModule {
@@ -46,6 +52,7 @@ abstract final class KitchenModule {
     );
 
     sl.registerLazySingleton(() => const BatchDomainService());
+    sl.registerLazySingleton(() => const KitchenDomainService());
     sl.registerLazySingleton(() => const KitchenPolicy());
 
     sl.registerLazySingleton(
@@ -124,6 +131,60 @@ abstract final class KitchenModule {
         store: sl<OrderingStore>(),
         sessionDataSource: sl<SessionEngineDataSource>(),
         getSessionCart: sl<GetSessionCartUseCase>(),
+      ),
+    );
+
+    sl.registerLazySingleton(
+      () => GetKitchenQueueUseCase(
+        batchRepository: sl<BatchRepository>(),
+        sessionDataSource: sl<SessionEngineDataSource>(),
+        kitchenDomainService: sl<KitchenDomainService>(),
+        clock: sl<Clock>(),
+      ),
+    );
+
+    sl.registerLazySingleton(
+      () => CompleteBatchItemUseCase(
+        batchRepository: sl<BatchRepository>(),
+        sessionDataSource: sl<SessionEngineDataSource>(),
+        timelineRecorder: sl<SessionTimelineRecorder>(),
+        eventPublisher: sl<DomainEventPublisher>(),
+        idGenerator: sl<IdGenerator>(),
+        clock: sl<Clock>(),
+        kitchenDomainService: sl<KitchenDomainService>(),
+      ),
+    );
+
+    sl.registerLazySingleton(
+      () => ToggleMenuAvailabilityUseCase(
+        menuRepository: sl<MenuRepository>(),
+        store: sl<OrderingStore>(),
+        eventPublisher: sl<DomainEventPublisher>(),
+        idGenerator: sl<IdGenerator>(),
+        clock: sl<Clock>(),
+        menuDomainService: sl<MenuDomainService>(),
+      ),
+    );
+
+    sl.registerLazySingleton(
+      () => GetKitchenMenuPanelUseCase(
+        menuRepository: sl<MenuRepository>(),
+      ),
+    );
+
+    sl.registerLazySingleton(
+      () => GetSessionBatchProgressUseCase(
+        store: sl<OrderingStore>(),
+        batchRepository: sl<BatchRepository>(),
+        kitchenDomainService: sl<KitchenDomainService>(),
+      ),
+    );
+
+    sl.registerLazySingleton(
+      () => GetCashierBatchSummariesUseCase(
+        store: sl<OrderingStore>(),
+        batchRepository: sl<BatchRepository>(),
+        kitchenDomainService: sl<KitchenDomainService>(),
       ),
     );
 

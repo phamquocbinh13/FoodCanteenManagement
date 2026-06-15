@@ -12,6 +12,8 @@ import '../../../../application/usecases/cart/edit_cart_item_use_case.dart';
 import '../../../../application/usecases/cart/get_session_cart_use_case.dart';
 import '../../../../application/usecases/cart/remove_cart_item_use_case.dart';
 import '../../../../application/usecases/cart/update_cart_item_quantity_use_case.dart';
+import '../../../../application/kitchen/kitchen_view_models.dart';
+import '../../../../application/usecases/kitchen/get_session_batch_progress_use_case.dart';
 import '../../../../application/usecases/menu/get_menu_catalog_use_case.dart';
 import '../../../../application/usecases/menu/get_menu_item_detail_use_case.dart';
 import '../../../../application/usecases/session/get_session_bill_use_case.dart';
@@ -32,6 +34,7 @@ final class CustomerOrderingController extends ChangeNotifier {
     required ClearSessionCartUseCase clearSessionCart,
     required ConfirmBatchUseCase confirmBatch,
     required GetSessionBillUseCase getSessionBill,
+    required GetSessionBatchProgressUseCase getSessionBatchProgress,
   })  : _getMenuCatalog = getMenuCatalog,
         _getMenuItemDetail = getMenuItemDetail,
         _addToCart = addToCart,
@@ -41,7 +44,8 @@ final class CustomerOrderingController extends ChangeNotifier {
         _editCartItem = editCartItem,
         _clearSessionCart = clearSessionCart,
         _confirmBatch = confirmBatch,
-        _getSessionBill = getSessionBill;
+        _getSessionBill = getSessionBill,
+        _getSessionBatchProgress = getSessionBatchProgress;
 
   final GetMenuCatalogUseCase _getMenuCatalog;
   final GetMenuItemDetailUseCase _getMenuItemDetail;
@@ -53,10 +57,12 @@ final class CustomerOrderingController extends ChangeNotifier {
   final ClearSessionCartUseCase _clearSessionCart;
   final ConfirmBatchUseCase _confirmBatch;
   final GetSessionBillUseCase _getSessionBill;
+  final GetSessionBatchProgressUseCase _getSessionBatchProgress;
 
   MenuCatalogView? _catalog;
   CartView? _cart;
   SessionPaymentSummary? _bill;
+  List<CustomerBatchProgressView> _batchProgress = [];
   String? _errorMessage;
   bool _isLoading = false;
   String _searchQuery = '';
@@ -66,6 +72,7 @@ final class CustomerOrderingController extends ChangeNotifier {
   MenuCatalogView? get catalog => _catalog;
   CartView? get cart => _cart;
   SessionPaymentSummary? get bill => _bill;
+  List<CustomerBatchProgressView> get batchProgress => _batchProgress;
   String? get errorMessage => _errorMessage;
   bool get isLoading => _isLoading;
   String get searchQuery => _searchQuery;
@@ -274,6 +281,7 @@ final class CustomerOrderingController extends ChangeNotifier {
         _cart = null;
         _errorMessage = null;
         await refreshBill(sessionId);
+        await refreshBatchProgress(sessionId);
         notifyListeners();
         return true;
       case Err(:final failure):
@@ -291,6 +299,38 @@ final class CustomerOrderingController extends ChangeNotifier {
       _bill = result.value;
       notifyListeners();
     }
+  }
+
+  Future<void> refreshBatchProgress(String sessionId) async {
+    final result = await _getSessionBatchProgress(
+      GetSessionBatchProgressParams(sessionId: sessionId),
+    );
+    if (result is Success<List<CustomerBatchProgressView>>) {
+      _batchProgress = result.value;
+      notifyListeners();
+    }
+  }
+
+  Future<void> refreshSessionOrdering(String sessionId) async {
+    await Future.wait([
+      refreshCart(sessionId),
+      refreshBill(sessionId),
+      refreshBatchProgress(sessionId),
+    ]);
+  }
+
+  /// Clears in-memory ordering state when leaving the customer demo session.
+  void resetSessionState() {
+    _catalog = null;
+    _cart = null;
+    _bill = null;
+    _batchProgress = [];
+    _errorMessage = null;
+    _isLoading = false;
+    _searchQuery = '';
+    _lastBatch = null;
+    _pendingCartItemIds.clear();
+    notifyListeners();
   }
 
   void setSearchQuery(String query) {

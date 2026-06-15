@@ -16,5 +16,6 @@ final customerOrderingControllerProvider =
     clearSessionCart: sl(),
     confirmBatch: sl(),
     getSessionBill: sl(),
+    getSessionBatchProgress: sl(),
   );
 });

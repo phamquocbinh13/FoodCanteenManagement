@@ -55,6 +55,8 @@ final class InMemorySessionEngineDataSource implements SessionEngineDataSource {
     _store.batches.clear();
     _store.batchItemsByBatchId.clear();
     _store.customizationsByBatchItemId.clear();
+    _store.batchCompletedAtById.clear();
+    _store.batchItemStatusHistory.clear();
     _store.tables[SessionEngineConstants.demoTable1Id] = RestaurantTable(
       id: SessionEngineConstants.demoTable1Id,
       restaurantId: SessionEngineConstants.demoRestaurantId,

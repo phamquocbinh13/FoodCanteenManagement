@@ -69,6 +69,10 @@ enum SessionTimelineEventType {
   cartItemRemoved,
   @JsonValue('batch_confirmed')
   batchConfirmed,
+  @JsonValue('batch_item_completed')
+  batchItemCompleted,
+  @JsonValue('batch_completed')
+  batchCompleted,
   @JsonValue('staff_request_created')
   staffRequestCreated,
   @JsonValue('staff_request_handled')

@@ -8,6 +8,7 @@ import '../providers/customer_ordering_provider.dart';
 import '../providers/customer_session_provider.dart';
 import '../widgets/cart_bottom_sheet.dart';
 import '../widgets/cart_ordering_messages.dart';
+import '../widgets/customer_demo_exit_button.dart';
 import '../widgets/customize_sheet.dart';
 
 /// Customer menu browse, customize, cart editing, and batch confirm.
@@ -57,6 +58,7 @@ class _SessionMenuPageState extends ConsumerState<SessionMenuPage> {
               ),
               onPressed: () => _showCart(sessionId),
             ),
+          const CustomerDemoExitButton(),
         ],
       ),
       body: catalog == null

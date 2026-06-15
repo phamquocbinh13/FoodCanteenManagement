@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:food_canteen_management/application/menu/customization_renderer.dart';
 import 'package:food_canteen_management/application/policies/session_policy.dart';
+import 'package:food_canteen_management/application/session/customer_session_messages.dart';
 import 'package:food_canteen_management/application/session/session_constants.dart';
 import 'package:food_canteen_management/application/session/session_timeline_recorder.dart';
 import 'package:food_canteen_management/application/usecases/batch/confirm_batch_use_case.dart';
@@ -19,9 +21,12 @@ import 'package:food_canteen_management/application/usecases/menu/get_menu_item_
 import 'package:food_canteen_management/application/usecases/session/create_session_use_case.dart'
     show CreateSessionParams, CreateSessionUseCase, SessionEngineDataSourceDailySequence;
 import 'package:food_canteen_management/application/usecases/session/get_session_bill_use_case.dart';
+import 'package:food_canteen_management/application/usecases/session/join_session_use_case.dart';
+import 'package:food_canteen_management/application/usecases/session/validate_session_use_case.dart';
 import 'package:food_canteen_management/application/validators/customization_validator.dart';
 import 'package:food_canteen_management/core/result/result.dart';
 import 'package:food_canteen_management/data/datasources/cart/cart_local_datasource.dart';
+import 'package:food_canteen_management/data/datasources/customer/customer_session_local_datasource.dart';
 import 'package:food_canteen_management/data/datasources/ordering/ordering_store.dart';
 import 'package:food_canteen_management/data/datasources/session/in_memory_session_engine_datasource.dart';
 import 'package:food_canteen_management/data/repositories/batch/batch_repository_impl.dart';
@@ -32,7 +37,8 @@ import 'package:food_canteen_management/domain/enums/domain_enums.dart';
 import 'package:food_canteen_management/domain/events/domain_events.dart';
 import 'package:food_canteen_management/features/customer/presentation/controllers/customer_ordering_controller.dart';
 import 'package:food_canteen_management/features/customer/presentation/providers/customer_ordering_provider.dart';
-import 'package:food_canteen_management/features/customer/presentation/widgets/cart_bottom_sheet.dart';
+import 'package:food_canteen_management/features/customer/presentation/providers/customer_session_provider.dart';
+import 'package:food_canteen_management/features/customer/presentation/widgets/customer_demo_exit_button.dart';
 
 import '../helpers/test_helpers.dart';
 
@@ -48,18 +54,17 @@ final class _Sequence implements SessionEngineDataSourceDailySequence {
   int nextDailySequence(String dateKey) => _ds.nextDailySequence(dateKey);
 }
 
-Map<String, dynamic> defaultSelections() => {
-      'groups': {
-        'rice_size': {'optionKeys': ['normal']},
-        'soup': {'optionKeys': ['no']},
-      },
-    };
-
-Future<({CustomerOrderingController controller, String sessionId})>
-    createOrderingHarness() async {
+Future<
+    ({
+      CustomerSessionController session,
+      CustomerOrderingController ordering,
+      InMemoryCustomerSessionLocalDataSource local,
+      String sessionId,
+    })> buildCustomerDemoContext() async {
   final clock = FakeClock(DateTime.utc(2025, 6, 15, 12));
-  final ids = FakeIdGenerator(prefix: 'widget');
+  final ids = FakeIdGenerator(prefix: 'exit');
   final store = OrderingStore();
+  final local = InMemoryCustomerSessionLocalDataSource();
   final sessionDs = InMemorySessionEngineDataSource(clock: clock, store: store);
   final sessionRepo = SessionEngineRepositoryImpl(
     dataSource: sessionDs,
@@ -75,7 +80,7 @@ Future<({CustomerOrderingController controller, String sessionId})>
   final batchRepo = BatchRepositoryImpl(store: store);
   final timeline = SessionTimelineRecorder(idGenerator: ids, clock: clock);
 
-  final createSession = CreateSessionUseCase(
+  final create = CreateSessionUseCase(
     repository: sessionRepo,
     policy: const SessionPolicy(),
     clock: clock,
@@ -83,7 +88,7 @@ Future<({CustomerOrderingController controller, String sessionId})>
     eventPublisher: _NoOpEvents(),
     sequenceProvider: _Sequence(sessionDs),
   );
-  final created = await createSession(
+  final created = await create(
     const CreateSessionParams(
       restaurantId: SessionEngineConstants.demoRestaurantId,
       tableId: SessionEngineConstants.demoTable1Id,
@@ -91,16 +96,34 @@ Future<({CustomerOrderingController controller, String sessionId})>
       openedVia: SessionOpenedVia.cashierManual,
     ),
   );
-  final sessionId =
-      (created as Success<dynamic>).value.snapshot.session.id as String;
+  final sessionToken = (created as Success).value.sessionTokenValue;
+
+  final session = CustomerSessionController(
+    joinSession: JoinSessionUseCase(
+      repository: sessionRepo,
+      policy: const SessionPolicy(),
+      clock: clock,
+      idGenerator: ids,
+      eventPublisher: _NoOpEvents(),
+    ),
+    validateSession: ValidateSessionUseCase(
+      repository: sessionRepo,
+      policy: const SessionPolicy(),
+      clock: clock,
+    ),
+    local: local,
+    idGenerator: ids,
+    eventPublisher: _NoOpEvents(),
+    now: clock.now,
+  );
+  await session.join(sessionToken);
 
   final getCart = GetSessionCartUseCase(
     cartRepository: cartRepo,
     menuRepository: menuRepo,
     clock: clock,
   );
-
-  final controller = CustomerOrderingController(
+  final ordering = CustomerOrderingController(
     getMenuCatalog: GetMenuCatalogUseCase(
       menuRepository: menuRepo,
       store: store,
@@ -156,157 +179,118 @@ Future<({CustomerOrderingController controller, String sessionId})>
     ),
   );
 
-  await controller.loadMenu();
-  await controller.addToCart(
-    sessionId: sessionId,
+  await ordering.addToCart(
+    sessionId: session.snapshot!.session.id,
     menuItemId: 'item-curry-rice',
     quantity: 1,
-    selectionsJson: defaultSelections(),
+    selectionsJson: const {
+      'groups': {
+        'rice_size': {'optionKeys': ['normal']},
+        'soup': {'optionKeys': ['no']},
+      },
+    },
   );
 
-  return (controller: controller, sessionId: sessionId);
-}
-
-Widget buildCartSheet({
-  required CustomerOrderingController controller,
-  required String sessionId,
-}) {
-  return ProviderScope(
-    overrides: [
-      customerOrderingControllerProvider.overrideWith((ref) => controller),
-    ],
-    child: MaterialApp(
-      home: Scaffold(
-        body: CartBottomSheet(sessionId: sessionId),
-      ),
-    ),
+  return (
+    session: session,
+    ordering: ordering,
+    local: local,
+    sessionId: session.snapshot!.session.id,
   );
 }
 
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
+  group('Customer demo exit', () {
+    test('leaveSession clears persisted token and in-memory snapshot', () async {
+      final ctx = await buildCustomerDemoContext();
+      expect(ctx.session.isJoined, isTrue);
+      expect((await ctx.local.readSessionToken()).valueOrNull, isNotNull);
 
-  group('CartBottomSheet reactivity', () {
-    late CustomerOrderingController controller;
-    late String sessionId;
+      await ctx.session.leaveSession();
 
-    setUp(() async {
-      final harness = await createOrderingHarness();
-      controller = harness.controller;
-      sessionId = harness.sessionId;
+      expect(ctx.session.isJoined, isFalse);
+      expect(ctx.session.sessionToken, isNull);
+      expect((await ctx.local.readSessionToken()).valueOrNull, isNull);
     });
 
-    testWidgets('+ updates quantity without reopening sheet', (tester) async {
-      await tester.pumpWidget(buildCartSheet(
-        controller: controller,
-        sessionId: sessionId,
-      ));
-      await tester.pumpAndSettle();
+    test('resetSessionState clears ordering memory', () async {
+      final ctx = await buildCustomerDemoContext();
+      expect(ctx.ordering.cartItemCount, greaterThan(0));
 
-      expect(find.text('1'), findsOneWidget);
-      expect(find.text('Giỏ hàng'), findsOneWidget);
+      ctx.ordering.resetSessionState();
 
-      await tester.tap(find.byIcon(Icons.add_circle_outline));
-      await tester.pumpAndSettle();
-
-      expect(find.text('2'), findsOneWidget);
-      expect(find.text('Giỏ hàng'), findsOneWidget);
-      expect(controller.cart!.items.first.quantity.value, 2);
+      expect(ctx.ordering.cart, isNull);
+      expect(ctx.ordering.cartItemCount, 0);
+      expect(ctx.ordering.batchProgress, isEmpty);
     });
 
-    testWidgets('- decreases quantity without reopening sheet', (tester) async {
-      await controller.updateQuantity(
-        sessionId: sessionId,
-        cartItemId: controller.cart!.items.first.id,
-        delta: 1,
-      );
-
-      await tester.pumpWidget(buildCartSheet(
-        controller: controller,
-        sessionId: sessionId,
-      ));
-      await tester.pumpAndSettle();
-
-      expect(find.text('2'), findsOneWidget);
-
-      await tester.tap(find.byIcon(Icons.remove_circle_outline));
-      await tester.pumpAndSettle();
-
-      expect(find.text('1'), findsOneWidget);
-      expect(find.text('Giỏ hàng'), findsOneWidget);
-    });
-
-    testWidgets('remove updates list without reopening sheet', (tester) async {
-      await tester.pumpWidget(buildCartSheet(
-        controller: controller,
-        sessionId: sessionId,
-      ));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Cơm cà ri gà'), findsOneWidget);
-
-      await tester.tap(find.text('Xóa'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Cơm cà ri gà'), findsNothing);
-      expect(find.text('Bạn chưa chọn món nào.'), findsOneWidget);
-      expect(find.text('Giỏ hàng'), findsOneWidget);
-    });
-
-    testWidgets('totals update automatically after quantity change',
+    testWidgets('exit button shows confirmation then clears customer scope',
         (tester) async {
-      await tester.pumpWidget(buildCartSheet(
-        controller: controller,
-        sessionId: sessionId,
-      ));
+      final ctx = await buildCustomerDemoContext();
+      final router = GoRouter(
+        initialLocation: '/session',
+        routes: [
+          GoRoute(
+            path: '/session',
+            builder: (context, state) => Scaffold(
+              appBar: AppBar(actions: const [CustomerDemoExitButton()]),
+            ),
+          ),
+          GoRoute(
+            path: '/login',
+            builder: (context, state) => const Scaffold(body: Text('Staff Login')),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            customerSessionControllerProvider.overrideWith((ref) => ctx.session),
+            customerOrderingControllerProvider.overrideWith((ref) => ctx.ordering),
+          ],
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
       await tester.pumpAndSettle();
 
-      final subtotalBefore = controller.cart!.subtotal.amountMinor;
+      await tester.tap(find.byTooltip('Thoát Demo'));
+      await tester.pumpAndSettle();
+      expect(find.text(CustomerSessionMessages.demoExitPrompt), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.add_circle_outline));
+      await tester.tap(find.text(CustomerSessionMessages.demoExitConfirm));
       await tester.pumpAndSettle();
 
-      expect(controller.cart!.subtotal.amountMinor, greaterThan(subtotalBefore));
-      expect(find.textContaining('Tạm tính:'), findsOneWidget);
-      expect(find.textContaining('Tổng món: 2'), findsOneWidget);
+      expect(ctx.session.isJoined, isFalse);
+      expect((await ctx.local.readSessionToken()).valueOrNull, isNull);
+      expect(ctx.ordering.cart, isNull);
+      expect(find.text('Staff Login'), findsOneWidget);
     });
 
-    testWidgets('edit opens nested sheet and updates cart on save',
-        (tester) async {
-      await tester.pumpWidget(buildCartSheet(
-        controller: controller,
-        sessionId: sessionId,
-      ));
-      await tester.pumpAndSettle();
+    testWidgets('cancel keeps active customer session', (tester) async {
+      final ctx = await buildCustomerDemoContext();
 
-      await tester.tap(find.text('Sửa'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Cập nhật'), findsOneWidget);
-      expect(find.text('Giỏ hàng'), findsOneWidget);
-
-      await tester.scrollUntilVisible(
-        find.text('Nhiều cơm'),
-        120,
-        scrollable: find.byType(Scrollable).last,
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            customerSessionControllerProvider.overrideWith((ref) => ctx.session),
+            customerOrderingControllerProvider.overrideWith((ref) => ctx.ordering),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              appBar: AppBar(actions: const [CustomerDemoExitButton()]),
+            ),
+          ),
+        ),
       );
-      await tester.tap(find.text('Nhiều cơm'));
+
+      await tester.tap(find.byTooltip('Thoát Demo'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(CustomerSessionMessages.demoExitCancel));
       await tester.pumpAndSettle();
 
-      await tester.scrollUntilVisible(
-        find.widgetWithText(FilledButton, 'Cập nhật'),
-        120,
-        scrollable: find.byType(Scrollable).last,
-      );
-      await tester.tap(find.widgetWithText(FilledButton, 'Cập nhật'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Giỏ hàng'), findsOneWidget);
-      expect(find.widgetWithText(FilledButton, 'Cập nhật'), findsNothing);
-      expect(
-        controller.cart!.items.first.unitPriceSnapshot.amountMinor,
-        greaterThan(4500000),
-      );
+      expect(ctx.session.isJoined, isTrue);
+      expect((await ctx.local.readSessionToken()).valueOrNull, isNotNull);
     });
   });
 }

@@ -10,6 +10,11 @@ abstract final class CustomerSessionMessages {
   static const paymentRequested =
       'Payment request sent. Staff will assist you shortly.';
   static const staffNotified = 'Staff has been notified.';
+  static const demoExitTitle = 'Thoát Demo';
+  static const demoExitPrompt =
+      'Bạn muốn thoát màn hình gọi món để chuyển vai trò demo?';
+  static const demoExitCancel = 'Huỷ';
+  static const demoExitConfirm = 'Thoát';
 }
 
 String customerSessionFailureMessage(String? code) {

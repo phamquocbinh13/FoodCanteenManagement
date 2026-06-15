@@ -12,6 +12,7 @@ final cashierSessionControllerProvider =
     closeSession: sl(),
     markWaitingPayment: sl(),
     restoreSession: sl(),
+    getCashierBatchSummaries: sl(),
   );
   controller.restore();
   return controller;

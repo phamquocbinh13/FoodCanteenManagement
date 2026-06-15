@@ -1,5 +1,6 @@
 import '../../../domain/entities/batch_item.dart';
 import '../../../domain/entities/batch_item_customization.dart';
+import '../../../domain/entities/batch_item_status_history.dart';
 import '../../../domain/entities/customization_group.dart';
 import '../../../domain/entities/customization_option.dart';
 import '../../../domain/entities/dine_in_session.dart';
@@ -45,6 +46,11 @@ final class OrderingStore {
   final Map<String, List<BatchItem>> batchItemsByBatchId = {};
   final Map<String, List<BatchItemCustomization>> customizationsByBatchItemId =
       {};
+
+  /// When all items in a batch reach completed — set once, never cleared.
+  final Map<String, DateTime> batchCompletedAtById = {};
+
+  final List<BatchItemStatusHistory> batchItemStatusHistory = [];
 
   List<String> batchIdsForSession(String sessionId) {
     return batches.values

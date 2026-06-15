@@ -85,6 +85,38 @@ final class SessionTimelineRecorder {
     );
   }
 
+  SessionTimelineEvent batchItemCompleted({
+    required String sessionId,
+    required int batchNumber,
+    required String menuItemName,
+    String? actorId,
+  }) {
+    return _event(
+      sessionId: sessionId,
+      eventType: SessionTimelineEventType.batchItemCompleted,
+      actorType: ActorType.user,
+      actorId: actorId,
+      payload: {
+        'batchNumber': batchNumber,
+        'menuItemName': menuItemName,
+      },
+    );
+  }
+
+  SessionTimelineEvent batchCompleted({
+    required String sessionId,
+    required int batchNumber,
+    String? actorId,
+  }) {
+    return _event(
+      sessionId: sessionId,
+      eventType: SessionTimelineEventType.batchCompleted,
+      actorType: ActorType.user,
+      actorId: actorId,
+      payload: {'batchNumber': batchNumber},
+    );
+  }
+
   SessionTimelineEvent cartItemAdded({
     required String sessionId,
     required String menuItemId,

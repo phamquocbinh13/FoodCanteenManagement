@@ -10,6 +10,9 @@ abstract interface class MenuRepository {
 
   Future<List<MenuItem>> listAvailableItems(String restaurantId);
 
+  /// All active catalog items for kitchen availability panel.
+  Future<List<MenuItem>> listKitchenItems(String restaurantId);
+
   Future<MenuItem?> findItemById({
     required String restaurantId,
     required String menuItemId,
