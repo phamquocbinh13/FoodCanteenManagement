@@ -15,7 +15,8 @@ enum TableStatus {
 
 /// Lifecycle of a dine-in [DineInSession].
 ///
-/// [paymentPending] may soft-lock new batch confirmations.
+/// Maps to sprint lifecycle phases:
+/// [open] → Occupied, [paymentPending] → WaitingPayment, [closed] → Closed.
 enum SessionStatus {
   @JsonValue('open')
   open,
@@ -23,6 +24,29 @@ enum SessionStatus {
   paymentPending,
   @JsonValue('closed')
   closed,
+}
+
+/// Payment summary status on an open session (not terminal [SessionPayment]).
+enum SessionPaymentStatus {
+  @JsonValue('unpaid')
+  unpaid,
+  @JsonValue('waiting_payment')
+  waitingPayment,
+  @JsonValue('paid')
+  paid,
+}
+
+/// Semantic lifecycle phases for session state machine (never compare in UI).
+enum SessionLifecyclePhase {
+  available,
+  occupied,
+  waitingPayment,
+  closed,
+}
+
+/// Extension point for future session merge — not implemented in MVP.
+enum SessionMergeCapability {
+  unsupported,
 }
 
 /// How a dine-in session was started.

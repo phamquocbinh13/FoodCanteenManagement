@@ -5,5 +5,6 @@ export 'menu_domain_service.dart';
 export 'order_domain_service.dart';
 export 'payment_domain_service.dart';
 export 'request_domain_service.dart';
+export 'session_state_machine.dart';
 export 'session_domain_service.dart';
 export 'table_domain_service.dart';

@@ -1,0 +1,108 @@
+import '../../../core/clock/clock.dart';
+import '../../../core/id/id_generator.dart';
+import '../../../domain/entities/session_timeline_event.dart';
+import '../../../domain/enums/domain_enums.dart';
+
+/// Records append-only timeline entries for session aggregate events.
+final class SessionTimelineRecorder {
+  SessionTimelineRecorder({
+    required IdGenerator idGenerator,
+    required Clock clock,
+  })  : _idGenerator = idGenerator,
+        _clock = clock;
+
+  final IdGenerator _idGenerator;
+  final Clock _clock;
+
+  SessionTimelineEvent sessionCreated({
+    required String sessionId,
+    required String displayNumber,
+    required String tableId,
+    String? actorId,
+  }) {
+    return _event(
+      sessionId: sessionId,
+      eventType: SessionTimelineEventType.sessionOpened,
+      actorType: ActorType.user,
+      actorId: actorId,
+      payload: {
+        'displayNumber': displayNumber,
+        'tableId': tableId,
+      },
+    );
+  }
+
+  SessionTimelineEvent customerJoined({
+    required String sessionId,
+    String? deviceId,
+  }) {
+    return _event(
+      sessionId: sessionId,
+      eventType: SessionTimelineEventType.deviceJoined,
+      actorType: ActorType.customerSession,
+      actorId: deviceId,
+      payload: deviceId == null ? {} : {'deviceId': deviceId},
+    );
+  }
+
+  SessionTimelineEvent waitingPaymentEntered({
+    required String sessionId,
+    String? actorId,
+  }) {
+    return _event(
+      sessionId: sessionId,
+      eventType: SessionTimelineEventType.paymentRequested,
+      actorType: ActorType.user,
+      actorId: actorId,
+      payload: const {'phase': 'waiting_payment'},
+    );
+  }
+
+  SessionTimelineEvent sessionClosed({
+    required String sessionId,
+    String? actorId,
+  }) {
+    return _event(
+      sessionId: sessionId,
+      eventType: SessionTimelineEventType.paymentClosed,
+      actorType: ActorType.user,
+      actorId: actorId,
+      payload: const {},
+    );
+  }
+
+  SessionTimelineEvent batchCreated({
+    required String sessionId,
+    required int batchNumber,
+    String? actorId,
+  }) {
+    return _event(
+      sessionId: sessionId,
+      eventType: SessionTimelineEventType.batchConfirmed,
+      actorType: ActorType.user,
+      actorId: actorId,
+      payload: {'batchNumber': batchNumber},
+    );
+  }
+
+  SessionTimelineEvent _event({
+    required String sessionId,
+    required SessionTimelineEventType eventType,
+    required ActorType actorType,
+    String? actorId,
+    Map<String, dynamic> payload = const {},
+  }) {
+    return SessionTimelineEvent(
+      id: _idGenerator.nextId(),
+      sessionId: sessionId,
+      eventType: eventType,
+      payloadJson: payload,
+      actorType: actorType,
+      actorId: actorId,
+      occurredAt: _clock.now(),
+    );
+  }
+}
+
+/// Mock token hash — production would use a secure one-way hash.
+String hashSessionToken(String tokenValue) => 'hash_$tokenValue';

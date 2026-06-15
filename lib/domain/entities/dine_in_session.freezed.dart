@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$DineInSession {
 
- String get id; String get restaurantId; String get tableId; int get sessionNumber; SessionStatus get status; SessionOpenedVia get openedVia; String? get openedByUserId; bool get paymentSoftLock; DateTime get openedAt; DateTime? get closedAt; DateTime get createdAt; DateTime get updatedAt;
+ String get id; String get restaurantId; String get tableId; int get sessionNumber; String get displayNumber; SessionStatus get status; SessionOpenedVia get openedVia; String? get openedByUserId; String? get closedByUserId; bool get paymentSoftLock; int get currentBatchNumber; SessionPaymentStatus get paymentStatus; SessionPaymentSummary? get paymentSummary; DateTime get openedAt; DateTime? get closedAt; DateTime get createdAt; DateTime get updatedAt;
 /// Create a copy of DineInSession
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $DineInSessionCopyWith<DineInSession> get copyWith => _$DineInSessionCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DineInSession&&(identical(other.id, id) || other.id == id)&&(identical(other.restaurantId, restaurantId) || other.restaurantId == restaurantId)&&(identical(other.tableId, tableId) || other.tableId == tableId)&&(identical(other.sessionNumber, sessionNumber) || other.sessionNumber == sessionNumber)&&(identical(other.status, status) || other.status == status)&&(identical(other.openedVia, openedVia) || other.openedVia == openedVia)&&(identical(other.openedByUserId, openedByUserId) || other.openedByUserId == openedByUserId)&&(identical(other.paymentSoftLock, paymentSoftLock) || other.paymentSoftLock == paymentSoftLock)&&(identical(other.openedAt, openedAt) || other.openedAt == openedAt)&&(identical(other.closedAt, closedAt) || other.closedAt == closedAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DineInSession&&(identical(other.id, id) || other.id == id)&&(identical(other.restaurantId, restaurantId) || other.restaurantId == restaurantId)&&(identical(other.tableId, tableId) || other.tableId == tableId)&&(identical(other.sessionNumber, sessionNumber) || other.sessionNumber == sessionNumber)&&(identical(other.displayNumber, displayNumber) || other.displayNumber == displayNumber)&&(identical(other.status, status) || other.status == status)&&(identical(other.openedVia, openedVia) || other.openedVia == openedVia)&&(identical(other.openedByUserId, openedByUserId) || other.openedByUserId == openedByUserId)&&(identical(other.closedByUserId, closedByUserId) || other.closedByUserId == closedByUserId)&&(identical(other.paymentSoftLock, paymentSoftLock) || other.paymentSoftLock == paymentSoftLock)&&(identical(other.currentBatchNumber, currentBatchNumber) || other.currentBatchNumber == currentBatchNumber)&&(identical(other.paymentStatus, paymentStatus) || other.paymentStatus == paymentStatus)&&(identical(other.paymentSummary, paymentSummary) || other.paymentSummary == paymentSummary)&&(identical(other.openedAt, openedAt) || other.openedAt == openedAt)&&(identical(other.closedAt, closedAt) || other.closedAt == closedAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,restaurantId,tableId,sessionNumber,status,openedVia,openedByUserId,paymentSoftLock,openedAt,closedAt,createdAt,updatedAt);
+int get hashCode => Object.hash(runtimeType,id,restaurantId,tableId,sessionNumber,displayNumber,status,openedVia,openedByUserId,closedByUserId,paymentSoftLock,currentBatchNumber,paymentStatus,paymentSummary,openedAt,closedAt,createdAt,updatedAt);
 
 @override
 String toString() {
-  return 'DineInSession(id: $id, restaurantId: $restaurantId, tableId: $tableId, sessionNumber: $sessionNumber, status: $status, openedVia: $openedVia, openedByUserId: $openedByUserId, paymentSoftLock: $paymentSoftLock, openedAt: $openedAt, closedAt: $closedAt, createdAt: $createdAt, updatedAt: $updatedAt)';
+  return 'DineInSession(id: $id, restaurantId: $restaurantId, tableId: $tableId, sessionNumber: $sessionNumber, displayNumber: $displayNumber, status: $status, openedVia: $openedVia, openedByUserId: $openedByUserId, closedByUserId: $closedByUserId, paymentSoftLock: $paymentSoftLock, currentBatchNumber: $currentBatchNumber, paymentStatus: $paymentStatus, paymentSummary: $paymentSummary, openedAt: $openedAt, closedAt: $closedAt, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -48,11 +48,11 @@ abstract mixin class $DineInSessionCopyWith<$Res>  {
   factory $DineInSessionCopyWith(DineInSession value, $Res Function(DineInSession) _then) = _$DineInSessionCopyWithImpl;
 @useResult
 $Res call({
- String id, String restaurantId, String tableId, int sessionNumber, SessionStatus status, SessionOpenedVia openedVia, String? openedByUserId, bool paymentSoftLock, DateTime openedAt, DateTime? closedAt, DateTime createdAt, DateTime updatedAt
+ String id, String restaurantId, String tableId, int sessionNumber, String displayNumber, SessionStatus status, SessionOpenedVia openedVia, String? openedByUserId, String? closedByUserId, bool paymentSoftLock, int currentBatchNumber, SessionPaymentStatus paymentStatus, SessionPaymentSummary? paymentSummary, DateTime openedAt, DateTime? closedAt, DateTime createdAt, DateTime updatedAt
 });
 
 
-
+$SessionPaymentSummaryCopyWith<$Res>? get paymentSummary;
 
 }
 /// @nodoc
@@ -65,24 +65,41 @@ class _$DineInSessionCopyWithImpl<$Res>
 
 /// Create a copy of DineInSession
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? restaurantId = null,Object? tableId = null,Object? sessionNumber = null,Object? status = null,Object? openedVia = null,Object? openedByUserId = freezed,Object? paymentSoftLock = null,Object? openedAt = null,Object? closedAt = freezed,Object? createdAt = null,Object? updatedAt = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? restaurantId = null,Object? tableId = null,Object? sessionNumber = null,Object? displayNumber = null,Object? status = null,Object? openedVia = null,Object? openedByUserId = freezed,Object? closedByUserId = freezed,Object? paymentSoftLock = null,Object? currentBatchNumber = null,Object? paymentStatus = null,Object? paymentSummary = freezed,Object? openedAt = null,Object? closedAt = freezed,Object? createdAt = null,Object? updatedAt = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,restaurantId: null == restaurantId ? _self.restaurantId : restaurantId // ignore: cast_nullable_to_non_nullable
 as String,tableId: null == tableId ? _self.tableId : tableId // ignore: cast_nullable_to_non_nullable
 as String,sessionNumber: null == sessionNumber ? _self.sessionNumber : sessionNumber // ignore: cast_nullable_to_non_nullable
-as int,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as int,displayNumber: null == displayNumber ? _self.displayNumber : displayNumber // ignore: cast_nullable_to_non_nullable
+as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as SessionStatus,openedVia: null == openedVia ? _self.openedVia : openedVia // ignore: cast_nullable_to_non_nullable
 as SessionOpenedVia,openedByUserId: freezed == openedByUserId ? _self.openedByUserId : openedByUserId // ignore: cast_nullable_to_non_nullable
+as String?,closedByUserId: freezed == closedByUserId ? _self.closedByUserId : closedByUserId // ignore: cast_nullable_to_non_nullable
 as String?,paymentSoftLock: null == paymentSoftLock ? _self.paymentSoftLock : paymentSoftLock // ignore: cast_nullable_to_non_nullable
-as bool,openedAt: null == openedAt ? _self.openedAt : openedAt // ignore: cast_nullable_to_non_nullable
+as bool,currentBatchNumber: null == currentBatchNumber ? _self.currentBatchNumber : currentBatchNumber // ignore: cast_nullable_to_non_nullable
+as int,paymentStatus: null == paymentStatus ? _self.paymentStatus : paymentStatus // ignore: cast_nullable_to_non_nullable
+as SessionPaymentStatus,paymentSummary: freezed == paymentSummary ? _self.paymentSummary : paymentSummary // ignore: cast_nullable_to_non_nullable
+as SessionPaymentSummary?,openedAt: null == openedAt ? _self.openedAt : openedAt // ignore: cast_nullable_to_non_nullable
 as DateTime,closedAt: freezed == closedAt ? _self.closedAt : closedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime,
   ));
 }
+/// Create a copy of DineInSession
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$SessionPaymentSummaryCopyWith<$Res>? get paymentSummary {
+    if (_self.paymentSummary == null) {
+    return null;
+  }
 
+  return $SessionPaymentSummaryCopyWith<$Res>(_self.paymentSummary!, (value) {
+    return _then(_self.copyWith(paymentSummary: value));
+  });
+}
 }
 
 
@@ -164,10 +181,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String restaurantId,  String tableId,  int sessionNumber,  SessionStatus status,  SessionOpenedVia openedVia,  String? openedByUserId,  bool paymentSoftLock,  DateTime openedAt,  DateTime? closedAt,  DateTime createdAt,  DateTime updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String restaurantId,  String tableId,  int sessionNumber,  String displayNumber,  SessionStatus status,  SessionOpenedVia openedVia,  String? openedByUserId,  String? closedByUserId,  bool paymentSoftLock,  int currentBatchNumber,  SessionPaymentStatus paymentStatus,  SessionPaymentSummary? paymentSummary,  DateTime openedAt,  DateTime? closedAt,  DateTime createdAt,  DateTime updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _DineInSession() when $default != null:
-return $default(_that.id,_that.restaurantId,_that.tableId,_that.sessionNumber,_that.status,_that.openedVia,_that.openedByUserId,_that.paymentSoftLock,_that.openedAt,_that.closedAt,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.restaurantId,_that.tableId,_that.sessionNumber,_that.displayNumber,_that.status,_that.openedVia,_that.openedByUserId,_that.closedByUserId,_that.paymentSoftLock,_that.currentBatchNumber,_that.paymentStatus,_that.paymentSummary,_that.openedAt,_that.closedAt,_that.createdAt,_that.updatedAt);case _:
   return orElse();
 
 }
@@ -185,10 +202,10 @@ return $default(_that.id,_that.restaurantId,_that.tableId,_that.sessionNumber,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String restaurantId,  String tableId,  int sessionNumber,  SessionStatus status,  SessionOpenedVia openedVia,  String? openedByUserId,  bool paymentSoftLock,  DateTime openedAt,  DateTime? closedAt,  DateTime createdAt,  DateTime updatedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String restaurantId,  String tableId,  int sessionNumber,  String displayNumber,  SessionStatus status,  SessionOpenedVia openedVia,  String? openedByUserId,  String? closedByUserId,  bool paymentSoftLock,  int currentBatchNumber,  SessionPaymentStatus paymentStatus,  SessionPaymentSummary? paymentSummary,  DateTime openedAt,  DateTime? closedAt,  DateTime createdAt,  DateTime updatedAt)  $default,) {final _that = this;
 switch (_that) {
 case _DineInSession():
-return $default(_that.id,_that.restaurantId,_that.tableId,_that.sessionNumber,_that.status,_that.openedVia,_that.openedByUserId,_that.paymentSoftLock,_that.openedAt,_that.closedAt,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.restaurantId,_that.tableId,_that.sessionNumber,_that.displayNumber,_that.status,_that.openedVia,_that.openedByUserId,_that.closedByUserId,_that.paymentSoftLock,_that.currentBatchNumber,_that.paymentStatus,_that.paymentSummary,_that.openedAt,_that.closedAt,_that.createdAt,_that.updatedAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -205,10 +222,10 @@ return $default(_that.id,_that.restaurantId,_that.tableId,_that.sessionNumber,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String restaurantId,  String tableId,  int sessionNumber,  SessionStatus status,  SessionOpenedVia openedVia,  String? openedByUserId,  bool paymentSoftLock,  DateTime openedAt,  DateTime? closedAt,  DateTime createdAt,  DateTime updatedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String restaurantId,  String tableId,  int sessionNumber,  String displayNumber,  SessionStatus status,  SessionOpenedVia openedVia,  String? openedByUserId,  String? closedByUserId,  bool paymentSoftLock,  int currentBatchNumber,  SessionPaymentStatus paymentStatus,  SessionPaymentSummary? paymentSummary,  DateTime openedAt,  DateTime? closedAt,  DateTime createdAt,  DateTime updatedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _DineInSession() when $default != null:
-return $default(_that.id,_that.restaurantId,_that.tableId,_that.sessionNumber,_that.status,_that.openedVia,_that.openedByUserId,_that.paymentSoftLock,_that.openedAt,_that.closedAt,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.restaurantId,_that.tableId,_that.sessionNumber,_that.displayNumber,_that.status,_that.openedVia,_that.openedByUserId,_that.closedByUserId,_that.paymentSoftLock,_that.currentBatchNumber,_that.paymentStatus,_that.paymentSummary,_that.openedAt,_that.closedAt,_that.createdAt,_that.updatedAt);case _:
   return null;
 
 }
@@ -220,17 +237,22 @@ return $default(_that.id,_that.restaurantId,_that.tableId,_that.sessionNumber,_t
 @JsonSerializable()
 
 class _DineInSession implements DineInSession {
-  const _DineInSession({required this.id, required this.restaurantId, required this.tableId, required this.sessionNumber, this.status = SessionStatus.open, required this.openedVia, this.openedByUserId, this.paymentSoftLock = false, required this.openedAt, this.closedAt, required this.createdAt, required this.updatedAt});
+  const _DineInSession({required this.id, required this.restaurantId, required this.tableId, required this.sessionNumber, required this.displayNumber, this.status = SessionStatus.open, required this.openedVia, this.openedByUserId, this.closedByUserId, this.paymentSoftLock = false, this.currentBatchNumber = 0, this.paymentStatus = SessionPaymentStatus.unpaid, this.paymentSummary, required this.openedAt, this.closedAt, required this.createdAt, required this.updatedAt});
   factory _DineInSession.fromJson(Map<String, dynamic> json) => _$DineInSessionFromJson(json);
 
 @override final  String id;
 @override final  String restaurantId;
 @override final  String tableId;
 @override final  int sessionNumber;
+@override final  String displayNumber;
 @override@JsonKey() final  SessionStatus status;
 @override final  SessionOpenedVia openedVia;
 @override final  String? openedByUserId;
+@override final  String? closedByUserId;
 @override@JsonKey() final  bool paymentSoftLock;
+@override@JsonKey() final  int currentBatchNumber;
+@override@JsonKey() final  SessionPaymentStatus paymentStatus;
+@override final  SessionPaymentSummary? paymentSummary;
 @override final  DateTime openedAt;
 @override final  DateTime? closedAt;
 @override final  DateTime createdAt;
@@ -249,16 +271,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DineInSession&&(identical(other.id, id) || other.id == id)&&(identical(other.restaurantId, restaurantId) || other.restaurantId == restaurantId)&&(identical(other.tableId, tableId) || other.tableId == tableId)&&(identical(other.sessionNumber, sessionNumber) || other.sessionNumber == sessionNumber)&&(identical(other.status, status) || other.status == status)&&(identical(other.openedVia, openedVia) || other.openedVia == openedVia)&&(identical(other.openedByUserId, openedByUserId) || other.openedByUserId == openedByUserId)&&(identical(other.paymentSoftLock, paymentSoftLock) || other.paymentSoftLock == paymentSoftLock)&&(identical(other.openedAt, openedAt) || other.openedAt == openedAt)&&(identical(other.closedAt, closedAt) || other.closedAt == closedAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DineInSession&&(identical(other.id, id) || other.id == id)&&(identical(other.restaurantId, restaurantId) || other.restaurantId == restaurantId)&&(identical(other.tableId, tableId) || other.tableId == tableId)&&(identical(other.sessionNumber, sessionNumber) || other.sessionNumber == sessionNumber)&&(identical(other.displayNumber, displayNumber) || other.displayNumber == displayNumber)&&(identical(other.status, status) || other.status == status)&&(identical(other.openedVia, openedVia) || other.openedVia == openedVia)&&(identical(other.openedByUserId, openedByUserId) || other.openedByUserId == openedByUserId)&&(identical(other.closedByUserId, closedByUserId) || other.closedByUserId == closedByUserId)&&(identical(other.paymentSoftLock, paymentSoftLock) || other.paymentSoftLock == paymentSoftLock)&&(identical(other.currentBatchNumber, currentBatchNumber) || other.currentBatchNumber == currentBatchNumber)&&(identical(other.paymentStatus, paymentStatus) || other.paymentStatus == paymentStatus)&&(identical(other.paymentSummary, paymentSummary) || other.paymentSummary == paymentSummary)&&(identical(other.openedAt, openedAt) || other.openedAt == openedAt)&&(identical(other.closedAt, closedAt) || other.closedAt == closedAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,restaurantId,tableId,sessionNumber,status,openedVia,openedByUserId,paymentSoftLock,openedAt,closedAt,createdAt,updatedAt);
+int get hashCode => Object.hash(runtimeType,id,restaurantId,tableId,sessionNumber,displayNumber,status,openedVia,openedByUserId,closedByUserId,paymentSoftLock,currentBatchNumber,paymentStatus,paymentSummary,openedAt,closedAt,createdAt,updatedAt);
 
 @override
 String toString() {
-  return 'DineInSession(id: $id, restaurantId: $restaurantId, tableId: $tableId, sessionNumber: $sessionNumber, status: $status, openedVia: $openedVia, openedByUserId: $openedByUserId, paymentSoftLock: $paymentSoftLock, openedAt: $openedAt, closedAt: $closedAt, createdAt: $createdAt, updatedAt: $updatedAt)';
+  return 'DineInSession(id: $id, restaurantId: $restaurantId, tableId: $tableId, sessionNumber: $sessionNumber, displayNumber: $displayNumber, status: $status, openedVia: $openedVia, openedByUserId: $openedByUserId, closedByUserId: $closedByUserId, paymentSoftLock: $paymentSoftLock, currentBatchNumber: $currentBatchNumber, paymentStatus: $paymentStatus, paymentSummary: $paymentSummary, openedAt: $openedAt, closedAt: $closedAt, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -269,11 +291,11 @@ abstract mixin class _$DineInSessionCopyWith<$Res> implements $DineInSessionCopy
   factory _$DineInSessionCopyWith(_DineInSession value, $Res Function(_DineInSession) _then) = __$DineInSessionCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String restaurantId, String tableId, int sessionNumber, SessionStatus status, SessionOpenedVia openedVia, String? openedByUserId, bool paymentSoftLock, DateTime openedAt, DateTime? closedAt, DateTime createdAt, DateTime updatedAt
+ String id, String restaurantId, String tableId, int sessionNumber, String displayNumber, SessionStatus status, SessionOpenedVia openedVia, String? openedByUserId, String? closedByUserId, bool paymentSoftLock, int currentBatchNumber, SessionPaymentStatus paymentStatus, SessionPaymentSummary? paymentSummary, DateTime openedAt, DateTime? closedAt, DateTime createdAt, DateTime updatedAt
 });
 
 
-
+@override $SessionPaymentSummaryCopyWith<$Res>? get paymentSummary;
 
 }
 /// @nodoc
@@ -286,17 +308,22 @@ class __$DineInSessionCopyWithImpl<$Res>
 
 /// Create a copy of DineInSession
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? restaurantId = null,Object? tableId = null,Object? sessionNumber = null,Object? status = null,Object? openedVia = null,Object? openedByUserId = freezed,Object? paymentSoftLock = null,Object? openedAt = null,Object? closedAt = freezed,Object? createdAt = null,Object? updatedAt = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? restaurantId = null,Object? tableId = null,Object? sessionNumber = null,Object? displayNumber = null,Object? status = null,Object? openedVia = null,Object? openedByUserId = freezed,Object? closedByUserId = freezed,Object? paymentSoftLock = null,Object? currentBatchNumber = null,Object? paymentStatus = null,Object? paymentSummary = freezed,Object? openedAt = null,Object? closedAt = freezed,Object? createdAt = null,Object? updatedAt = null,}) {
   return _then(_DineInSession(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,restaurantId: null == restaurantId ? _self.restaurantId : restaurantId // ignore: cast_nullable_to_non_nullable
 as String,tableId: null == tableId ? _self.tableId : tableId // ignore: cast_nullable_to_non_nullable
 as String,sessionNumber: null == sessionNumber ? _self.sessionNumber : sessionNumber // ignore: cast_nullable_to_non_nullable
-as int,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as int,displayNumber: null == displayNumber ? _self.displayNumber : displayNumber // ignore: cast_nullable_to_non_nullable
+as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as SessionStatus,openedVia: null == openedVia ? _self.openedVia : openedVia // ignore: cast_nullable_to_non_nullable
 as SessionOpenedVia,openedByUserId: freezed == openedByUserId ? _self.openedByUserId : openedByUserId // ignore: cast_nullable_to_non_nullable
+as String?,closedByUserId: freezed == closedByUserId ? _self.closedByUserId : closedByUserId // ignore: cast_nullable_to_non_nullable
 as String?,paymentSoftLock: null == paymentSoftLock ? _self.paymentSoftLock : paymentSoftLock // ignore: cast_nullable_to_non_nullable
-as bool,openedAt: null == openedAt ? _self.openedAt : openedAt // ignore: cast_nullable_to_non_nullable
+as bool,currentBatchNumber: null == currentBatchNumber ? _self.currentBatchNumber : currentBatchNumber // ignore: cast_nullable_to_non_nullable
+as int,paymentStatus: null == paymentStatus ? _self.paymentStatus : paymentStatus // ignore: cast_nullable_to_non_nullable
+as SessionPaymentStatus,paymentSummary: freezed == paymentSummary ? _self.paymentSummary : paymentSummary // ignore: cast_nullable_to_non_nullable
+as SessionPaymentSummary?,openedAt: null == openedAt ? _self.openedAt : openedAt // ignore: cast_nullable_to_non_nullable
 as DateTime,closedAt: freezed == closedAt ? _self.closedAt : closedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
@@ -304,7 +331,19 @@ as DateTime,
   ));
 }
 
+/// Create a copy of DineInSession
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$SessionPaymentSummaryCopyWith<$Res>? get paymentSummary {
+    if (_self.paymentSummary == null) {
+    return null;
+  }
 
+  return $SessionPaymentSummaryCopyWith<$Res>(_self.paymentSummary!, (value) {
+    return _then(_self.copyWith(paymentSummary: value));
+  });
+}
 }
 
 // dart format on

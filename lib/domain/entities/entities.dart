@@ -7,6 +7,8 @@ export 'batch_item_status_history.dart';
 export 'customization_group.dart';
 export 'customization_option.dart';
 export 'delivery_detail.dart';
+export 'session_payment_summary.dart';
+export 'session_engine_snapshot.dart';
 export 'dine_in_session.dart';
 export 'idempotency_record.dart';
 export 'kitchen_batch.dart';

@@ -8,10 +8,10 @@ import '../../policies/session_policy.dart';
 import 'session_snapshot_helpers.dart';
 import '../use_case.dart';
 
-/// Closes a session, releases the table, and invalidates the join token.
-final class CloseSessionUseCase
-    implements UseCase<SessionEngineSnapshot, CloseSessionParams> {
-  CloseSessionUseCase({
+/// Transitions session to waiting-for-payment. Extension point for payment flow.
+final class MarkWaitingPaymentUseCase
+    implements UseCase<SessionEngineSnapshot, MarkWaitingPaymentParams> {
+  MarkWaitingPaymentUseCase({
     required SessionEngineRepository repository,
     required SessionPolicy policy,
     required Clock clock,
@@ -30,12 +30,15 @@ final class CloseSessionUseCase
   final DomainEventPublisher _eventPublisher;
 
   @override
-  Future<Result<SessionEngineSnapshot>> call(CloseSessionParams params) async {
+  Future<Result<SessionEngineSnapshot>> call(
+    MarkWaitingPaymentParams params,
+  ) async {
     final active = await _repository.restoreActiveSessions(params.restaurantId);
     if (active is Success<List<SessionEngineSnapshot>>) {
       final match = findSessionById(active.value, params.sessionId);
       if (match != null) {
-        final policyResult = _policy.canClose(status: match.session.status);
+        final policyResult =
+            _policy.canRequestPayment(status: match.session.status);
         if (policyResult is Err<void>) {
           return Err(policyResult.failure);
         }
@@ -43,36 +46,39 @@ final class CloseSessionUseCase
     }
 
     final now = _clock.now();
-    final closeResult = await _repository.close(
+    final result = await _repository.markWaitingPayment(
       sessionId: params.sessionId,
       restaurantId: params.restaurantId,
-      closedByUserId: params.closedByUserId,
       now: now,
     );
 
-    if (closeResult is Success<SessionEngineSnapshot>) {
+    if (result is Success<SessionEngineSnapshot>) {
       await _eventPublisher.publish(
-        SessionClosedEvent(
+        WaitingPaymentEntered(
           eventId: _idGenerator.nextId(),
           occurredAt: now,
-          aggregateId: closeResult.value.session.id,
-          tableId: closeResult.value.session.tableId,
+          aggregateId: params.sessionId,
+        ),
+      );
+      await _eventPublisher.publish(
+        PaymentRequested(
+          eventId: _idGenerator.nextId(),
+          occurredAt: now,
+          aggregateId: params.sessionId,
         ),
       );
     }
 
-    return closeResult;
+    return result;
   }
 }
 
-final class CloseSessionParams {
-  const CloseSessionParams({
+final class MarkWaitingPaymentParams {
+  const MarkWaitingPaymentParams({
     required this.sessionId,
     required this.restaurantId,
-    this.closedByUserId,
   });
 
   final String sessionId;
   final String restaurantId;
-  final String? closedByUserId;
 }

@@ -39,10 +39,54 @@ final class SessionCreated extends DomainEventBase {
     required super.aggregateId,
     required this.tableId,
     required this.restaurantId,
+    required this.displayNumber,
   }) : super(aggregateType: 'session');
 
   final String tableId;
   final String restaurantId;
+  final String displayNumber;
+}
+
+/// Emitted when a session is closed and table released.
+final class SessionClosedEvent extends DomainEventBase {
+  const SessionClosedEvent({
+    required super.eventId,
+    required super.occurredAt,
+    required super.aggregateId,
+    required this.tableId,
+  }) : super(aggregateType: 'session');
+
+  final String tableId;
+}
+
+/// Emitted when a customer device joins via session token.
+final class CustomerJoined extends DomainEventBase {
+  const CustomerJoined({
+    required super.eventId,
+    required super.occurredAt,
+    required super.aggregateId,
+    this.deviceId,
+  }) : super(aggregateType: 'session');
+
+  final String? deviceId;
+}
+
+/// Emitted when session enters waiting-for-payment state.
+final class WaitingPaymentEntered extends DomainEventBase {
+  const WaitingPaymentEntered({
+    required super.eventId,
+    required super.occurredAt,
+    required super.aggregateId,
+  }) : super(aggregateType: 'session');
+}
+
+/// Emitted when customer or staff requests payment.
+final class PaymentRequested extends DomainEventBase {
+  const PaymentRequested({
+    required super.eventId,
+    required super.occurredAt,
+    required super.aggregateId,
+  }) : super(aggregateType: 'session');
 }
 
 /// Emitted when a customer or cashier confirms an order batch.
