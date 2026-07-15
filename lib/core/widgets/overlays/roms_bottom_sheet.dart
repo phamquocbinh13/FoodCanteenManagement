@@ -43,6 +43,7 @@ class RomsBottomSheetScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final bottom = MediaQuery.viewInsetsOf(context).bottom;
+    final maxHeight = MediaQuery.sizeOf(context).height * 0.85;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -51,24 +52,27 @@ class RomsBottomSheetScaffold extends StatelessWidget {
         top: AppSpacing.md,
         bottom: AppSpacing.lg + bottom,
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (title != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.lg),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(title!, style: theme.textTheme.headlineSmall),
-                  ),
-                  ?trailing,
-                ],
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: maxHeight),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (title != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(title!, style: theme.textTheme.headlineSmall),
+                    ),
+                    ?trailing,
+                  ],
+                ),
               ),
-            ),
-          Flexible(child: child),
-        ],
+            Flexible(child: child),
+          ],
+        ),
       ),
     );
   }

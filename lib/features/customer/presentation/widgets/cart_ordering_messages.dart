@@ -1,9 +1,9 @@
-/// User-facing cart action error messages (Vietnamese).
+/// User-facing cart action error messages.
 abstract final class CartOrderingMessages {
-  static const updateQuantityFailed = 'Không thể cập nhật số lượng.';
-  static const removeItemFailed = 'Không thể xóa món.';
-  static const editItemFailed = 'Không thể chỉnh sửa món.';
-  static const clearCartFailed = 'Không thể xóa giỏ hàng.';
-  static const confirmBatchFailed = 'Không thể xác nhận batch.';
-  static const loadItemFailed = 'Không thể tải thông tin món.';
+  static const updateQuantityFailed = 'Could not update quantity.';
+  static const removeItemFailed = 'Could not remove item.';
+  static const editItemFailed = 'Could not update item.';
+  static const clearCartFailed = 'Could not clear cart.';
+  static const confirmBatchFailed = 'Could not send order to kitchen.';
+  static const loadItemFailed = 'Could not load item details.';
 }

@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../application/kitchen/kitchen_view_models.dart';
+import '../../../../core/theme/app_breakpoints.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/widgets.dart';
 import '../controllers/kitchen_controller.dart';
 import '../providers/kitchen_provider.dart';
 import 'kitchen_batch_card.dart';
 
-/// Tab 1 — FIFO kitchen queue only (no inventory).
+/// Tab 1 — FIFO kitchen queue.
+///
+/// UX gain: empty state without emoji; KDS multi-column reduces scroll under rush.
 class KitchenOrdersTab extends ConsumerStatefulWidget {
   const KitchenOrdersTab({
     super.key,
@@ -59,10 +63,13 @@ class _KitchenOrdersTabState extends ConsumerState<KitchenOrdersTab>
     _maybeReportBatches(kitchen.queue);
 
     if (kitchen.isLoading && kitchen.queue == null) {
-      return const Center(child: CircularProgressIndicator());
+      return const LoadingIndicator(message: 'Loading kitchen queue…');
     }
 
     final batches = kitchen.queue?.batches ?? [];
+    final columns = AppBreakpoints.useKitchenRail(context)
+        ? 3
+        : (AppBreakpoints.useSplitView(context) ? 2 : 1);
 
     return RefreshIndicator(
       onRefresh: kitchen.refresh,
@@ -72,23 +79,21 @@ class _KitchenOrdersTabState extends ConsumerState<KitchenOrdersTab>
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
                 AppSpacing.md,
-                AppSpacing.md,
-                AppSpacing.md,
+                AppSpacing.lg,
                 AppSpacing.sm,
               ),
               child: Row(
                 children: [
                   Expanded(
                     child: Text(
-                      'Đơn theo thứ tự FIFO',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
+                      'FIFO · oldest tickets first',
+                      style: theme.textTheme.bodyMedium,
                     ),
                   ),
                   FilterChip(
-                    label: const Text('Hiện đã xong'),
+                    label: const Text('Show completed'),
                     selected: kitchen.showCompleted,
                     onSelected: kitchen.setShowCompleted,
                   ),
@@ -99,7 +104,7 @@ class _KitchenOrdersTabState extends ConsumerState<KitchenOrdersTab>
           if (kitchen.errorMessage != null)
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                 child: Text(
                   kitchen.errorMessage!,
                   style: theme.textTheme.bodyMedium?.copyWith(
@@ -109,50 +114,49 @@ class _KitchenOrdersTabState extends ConsumerState<KitchenOrdersTab>
               ),
             ),
           if (batches.isEmpty)
-            SliverFillRemaining(
+            const SliverFillRemaining(
               hasScrollBody: false,
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text('🍳', style: theme.textTheme.displayMedium),
-                    const SizedBox(height: AppSpacing.md),
-                    Text(
-                      'Hiện chưa có đơn cần làm.',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
+              child: EmptyState(
+                title: 'Queue clear',
+                message: 'No active tickets. New batches appear here automatically.',
+                icon: Icons.soup_kitchen_outlined,
               ),
             )
           else
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(
-                AppSpacing.md,
+                AppSpacing.lg,
                 AppSpacing.sm,
-                AppSpacing.md,
+                AppSpacing.lg,
                 AppSpacing.xl,
               ),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final batch = batches[index];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
-                      child: KitchenBatchCard(
-                        batch: batch,
-                        isHighlighted:
-                            widget.highlightedBatchIds.contains(batch.batchId),
-                        isItemPending: kitchen.isItemPending,
-                        onCompleteItem: (itemId) =>
-                            _completeItem(context, kitchen, itemId),
-                      ),
+              sliver: SliverToBoxAdapter(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final gap = AppSpacing.lg;
+                    final width = columns == 1
+                        ? constraints.maxWidth
+                        : (constraints.maxWidth - gap * (columns - 1)) /
+                            columns;
+                    return Wrap(
+                      spacing: gap,
+                      runSpacing: gap,
+                      children: [
+                        for (final batch in batches)
+                          SizedBox(
+                            width: width,
+                            child: KitchenBatchCard(
+                              batch: batch,
+                              isHighlighted: widget.highlightedBatchIds
+                                  .contains(batch.batchId),
+                              isItemPending: kitchen.isItemPending,
+                              onCompleteItem: (itemId) =>
+                                  _completeItem(context, kitchen, itemId),
+                            ),
+                          ),
+                      ],
                     );
                   },
-                  childCount: batches.length,
                 ),
               ),
             ),

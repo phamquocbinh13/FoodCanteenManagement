@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/widgets.dart';
 import '../providers/kitchen_provider.dart';
 import 'kitchen_inventory_tile.dart';
 
@@ -23,7 +24,6 @@ class _KitchenInventoryTabState extends ConsumerState<KitchenInventoryTab>
   Widget build(BuildContext context) {
     super.build(context);
     final kitchen = ref.watch(kitchenControllerProvider);
-    final theme = Theme.of(context);
     final items = kitchen.menuItems;
 
     return RefreshIndicator(
@@ -31,23 +31,14 @@ class _KitchenInventoryTabState extends ConsumerState<KitchenInventoryTab>
       child: items.isEmpty
           ? ListView(
               physics: const AlwaysScrollableScrollPhysics(),
-              children: [
-                SizedBox(
-                  height: MediaQuery.sizeOf(context).height * 0.35,
-                  child: Center(
-                    child: Text(
-                      'Đang tải tồn kho…',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-                ),
+              children: const [
+                SizedBox(height: 120),
+                LoadingIndicator(message: 'Loading inventory…'),
               ],
             )
           : ListView.separated(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(AppSpacing.md),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               itemCount: items.length,
               separatorBuilder: (context, index) =>
                   const SizedBox(height: AppSpacing.sm),

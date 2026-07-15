@@ -193,13 +193,13 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('1'), findsOneWidget);
-      expect(find.text('Giỏ hàng'), findsOneWidget);
+      expect(find.text('Your cart'), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.add_circle_outline));
+      await tester.tap(find.byIcon(Icons.add));
       await tester.pumpAndSettle();
 
       expect(find.text('2'), findsOneWidget);
-      expect(find.text('Giỏ hàng'), findsOneWidget);
+      expect(find.text('Your cart'), findsOneWidget);
       expect(controller.cart!.items.first.quantity.value, 2);
     });
 
@@ -218,11 +218,11 @@ void main() {
 
       expect(find.text('2'), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.remove_circle_outline));
+      await tester.tap(find.byIcon(Icons.remove));
       await tester.pumpAndSettle();
 
       expect(find.text('1'), findsOneWidget);
-      expect(find.text('Giỏ hàng'), findsOneWidget);
+      expect(find.text('Your cart'), findsOneWidget);
     });
 
     testWidgets('remove updates list without reopening sheet', (tester) async {
@@ -234,12 +234,12 @@ void main() {
 
       expect(find.text('Cơm cà ri gà'), findsOneWidget);
 
-      await tester.tap(find.text('Xóa'));
+      await tester.tap(find.text('Remove'));
       await tester.pumpAndSettle();
 
       expect(find.text('Cơm cà ri gà'), findsNothing);
-      expect(find.text('Bạn chưa chọn món nào.'), findsOneWidget);
-      expect(find.text('Giỏ hàng'), findsOneWidget);
+      expect(find.text('Cart is empty'), findsOneWidget);
+      expect(find.text('Your cart'), findsOneWidget);
     });
 
     testWidgets('totals update automatically after quantity change',
@@ -252,12 +252,12 @@ void main() {
 
       final subtotalBefore = controller.cart!.subtotal.amountMinor;
 
-      await tester.tap(find.byIcon(Icons.add_circle_outline));
+      await tester.tap(find.byIcon(Icons.add));
       await tester.pumpAndSettle();
 
       expect(controller.cart!.subtotal.amountMinor, greaterThan(subtotalBefore));
-      expect(find.textContaining('Tạm tính:'), findsOneWidget);
-      expect(find.textContaining('Tổng món: 2'), findsOneWidget);
+      expect(find.text('Subtotal'), findsOneWidget);
+      expect(find.textContaining('2 items'), findsOneWidget);
     });
 
     testWidgets('edit opens nested sheet and updates cart on save',
@@ -268,11 +268,11 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Sửa'));
+      await tester.tap(find.text('Edit'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Cập nhật'), findsOneWidget);
-      expect(find.text('Giỏ hàng'), findsOneWidget);
+      expect(find.text('Update item'), findsOneWidget);
+      expect(find.text('Your cart'), findsOneWidget);
 
       await tester.scrollUntilVisible(
         find.text('Nhiều cơm'),
@@ -283,15 +283,15 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.scrollUntilVisible(
-        find.widgetWithText(FilledButton, 'Cập nhật'),
+        find.widgetWithText(ElevatedButton, 'Update item'),
         120,
         scrollable: find.byType(Scrollable).last,
       );
-      await tester.tap(find.widgetWithText(FilledButton, 'Cập nhật'));
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Update item'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Giỏ hàng'), findsOneWidget);
-      expect(find.widgetWithText(FilledButton, 'Cập nhật'), findsNothing);
+      expect(find.text('Your cart'), findsOneWidget);
+      expect(find.widgetWithText(ElevatedButton, 'Update item'), findsNothing);
       expect(
         controller.cart!.items.first.unitPriceSnapshot.amountMinor,
         greaterThan(4500000),

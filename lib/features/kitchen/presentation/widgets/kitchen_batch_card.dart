@@ -101,16 +101,21 @@ class KitchenBatchCard extends StatelessWidget {
                       color: aging ? AppColors.accent : AppColors.inkMuted,
                     ),
                     const SizedBox(width: AppSpacing.xs),
-                    Text(
-                      formatKitchenClockTime(batch.createdAt),
-                      style: theme.textTheme.bodyMedium,
+                    Flexible(
+                      child: Text(
+                        formatKitchenClockTime(batch.createdAt),
+                        style: theme.textTheme.bodyMedium,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                    const SizedBox(width: AppSpacing.md),
-                    ElapsedTimeText(
-                      createdAt: batch.createdAt,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: aging ? AppColors.accent : AppColors.inkMuted,
-                        fontWeight: FontWeight.w600,
+                    const SizedBox(width: AppSpacing.sm),
+                    Flexible(
+                      child: ElapsedTimeText(
+                        createdAt: batch.createdAt,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: aging ? AppColors.accent : AppColors.inkMuted,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ],

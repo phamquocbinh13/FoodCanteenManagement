@@ -14,6 +14,9 @@ import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../request_queue/presentation/providers/request_queue_provider.dart';
 import '../../../request_queue/presentation/widgets/staff_request_tile.dart';
 import '../providers/cashier_session_provider.dart';
+import '../widgets/cashier_floor_grid.dart';
+import '../widgets/force_close_sheet.dart';
+import '../widgets/payment_close_sheet.dart';
 import '../widgets/session_qr_display.dart';
 
 class CashierPage extends ConsumerWidget {
@@ -23,17 +26,48 @@ class CashierPage extends ConsumerWidget {
     BuildContext context,
     CashierSessionController session,
   ) async {
+    final choice = await showPaymentCloseSheet(context);
+    if (choice == null || !context.mounted) return;
+
     final confirmed = await showRomsConfirmDialog(
       context: context,
       title: 'Close session with payment?',
       message:
-          'This records payment, closes the session, frees the table, and '
-          'revokes customer access. This cannot be undone.',
+          'Records ${_tenderLabel(choice.paymentMethod)} payment, closes the '
+          'session, frees the table, and revokes guest access. '
+          'This cannot be undone.',
       confirmLabel: 'Take payment & close',
       cancelLabel: 'Not yet',
     );
     if (confirmed == true) {
-      await session.closeSession(paymentMethod: PaymentMethod.cash);
+      await session.closeSession(paymentMethod: choice.paymentMethod);
+    }
+  }
+
+  Future<void> _forceClose(
+    BuildContext context,
+    CashierSessionController session,
+  ) async {
+    final choice = await showForceCloseSheet(context);
+    if (choice == null || !context.mounted) return;
+
+    final confirmed = await showRomsConfirmDialog(
+      context: context,
+      title: 'Force close this session?',
+      message:
+          'The table will be freed without a normal payment. '
+          'Reason: ${_forceReasonLabel(choice.reason)}.',
+      confirmLabel: 'Force close',
+      cancelLabel: 'Keep open',
+      isDestructive: true,
+    );
+    if (confirmed == true) {
+      await session.closeSession(
+        closeType: SessionCloseType.forceClosed,
+        forceCloseReason: choice.reason,
+        forceCloseNote: choice.note,
+        paymentMethod: PaymentMethod.other,
+      );
     }
   }
 
@@ -60,7 +94,7 @@ class CashierPage extends ConsumerWidget {
           padding: const EdgeInsets.all(AppSpacing.lg),
           child: Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 560),
+              constraints: const BoxConstraints(maxWidth: 640),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -70,8 +104,16 @@ class CashierPage extends ConsumerWidget {
                   Text('Floor session', style: theme.textTheme.headlineSmall),
                   const SizedBox(height: AppSpacing.xs),
                   Text(
-                    'Open tables, share QR, take payment, free the floor.',
+                    'Open any table, share QR, take payment, free the floor.',
                     style: theme.textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  CashierFloorGrid(
+                    session: session,
+                    onTableTap: (table) => session.onTableTapped(
+                      table.id,
+                      openedByUserId: user?.id,
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   _StatusCard(session: session),
@@ -153,18 +195,6 @@ class CashierPage extends ConsumerWidget {
                         ),
                       ),
                     ),
-                  if (!session.hasActiveSession)
-                    PrimaryButton(
-                      label: 'Open session — Table 1',
-                      icon: Icons.table_restaurant_outlined,
-                      isExpanded: true,
-                      isLoading: session.isLoading,
-                      onPressed: session.isLoading
-                          ? null
-                          : () => session.createOnTable1(
-                                openedByUserId: user?.id,
-                              ),
-                    ),
                   if (session.hasActiveSession) ...[
                     SecondaryButton(
                       label: 'Mark waiting payment',
@@ -185,6 +215,15 @@ class CashierPage extends ConsumerWidget {
                           ? null
                           : () => _closeWithPayment(context, session),
                     ),
+                    const SizedBox(height: AppSpacing.sm),
+                    DangerButton(
+                      label: 'Force close',
+                      icon: Icons.lock_reset_outlined,
+                      isExpanded: true,
+                      onPressed: session.isLoading
+                          ? null
+                          : () => _forceClose(context, session),
+                    ),
                   ],
                 ],
               ),
@@ -195,6 +234,20 @@ class CashierPage extends ConsumerWidget {
     );
   }
 }
+
+String _tenderLabel(PaymentMethod method) => switch (method) {
+      PaymentMethod.cash => 'cash',
+      PaymentMethod.card => 'card',
+      PaymentMethod.bankTransfer => 'bank transfer',
+      PaymentMethod.other => 'other',
+    };
+
+String _forceReasonLabel(ForceCloseReason reason) => switch (reason) {
+      ForceCloseReason.customerLeft => 'customer left',
+      ForceCloseReason.dispute => 'dispute',
+      ForceCloseReason.systemError => 'system error',
+      ForceCloseReason.other => 'other',
+    };
 
 String _formatTime(DateTime dt) {
   final local = dt.toLocal();
@@ -306,10 +359,12 @@ class _StatusCard extends StatelessWidget {
               tone: tone,
             ),
           ] else ...[
-            Text('No active session', style: theme.textTheme.titleMedium),
+            Text('No table selected', style: theme.textTheme.titleMedium),
             const SizedBox(height: AppSpacing.xs),
             Text(
-              'Table 1 is available to open.',
+              session.activeSessions.isEmpty
+                  ? 'Tap an available table on the floor to open a session.'
+                  : 'Tap an occupied table to manage that session.',
               style: theme.textTheme.bodyMedium,
             ),
           ],

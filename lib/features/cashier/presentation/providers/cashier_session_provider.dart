@@ -15,6 +15,7 @@ final cashierSessionControllerProvider =
     markWaitingPayment: sl(),
     restoreSession: sl(),
     getCashierBatchSummaries: sl(),
+    listTables: sl(),
     closeWithPayment: GetIt.I.isRegistered<CloseSessionWithPaymentUseCase>()
         ? sl<CloseSessionWithPaymentUseCase>()
         : null,

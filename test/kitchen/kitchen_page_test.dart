@@ -170,9 +170,12 @@ void main() {
     await sl<AuthController>().login(username: 'kitchen', password: 'kitchen123');
   });
 
-  testWidgets('KitchenPage shows FIFO batch with large-touch item tiles',
-      (tester) async {
-    final controller = await buildKitchenController();
+  Future<void> pumpKitchen(WidgetTester tester, KitchenController controller) async {
+    // Phone width → single-column tickets (operational KDS phone/tablet portrait).
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(
       ProviderScope(
@@ -183,11 +186,18 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+  }
+
+  testWidgets('KitchenPage shows FIFO batch with large-touch item tiles',
+      (tester) async {
+    final controller = await buildKitchenController();
+    await pumpKitchen(tester, controller);
 
     expect(find.textContaining('Batch #1'), findsOneWidget);
     expect(find.textContaining('Cơm cà ri gà'), findsOneWidget);
     expect(find.textContaining('Trà đá'), findsOneWidget);
 
+    await tester.ensureVisible(find.textContaining('Cơm cà ri gà'));
     await tester.tap(find.textContaining('Cơm cà ri gà'));
     await tester.pumpAndSettle();
 
@@ -198,19 +208,11 @@ void main() {
   testWidgets('KitchenPage one tap completes item without confirmation dialog',
       (tester) async {
     final controller = await buildKitchenController();
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          kitchenControllerProvider.overrideWith((ref) => controller),
-        ],
-        child: const MaterialApp(home: KitchenPage()),
-      ),
-    );
-    await tester.pumpAndSettle();
+    await pumpKitchen(tester, controller);
 
     expect(find.byType(AlertDialog), findsNothing);
 
+    await tester.ensureVisible(find.textContaining('Trà đá'));
     await tester.tap(find.textContaining('Trà đá'));
     await tester.pumpAndSettle();
 

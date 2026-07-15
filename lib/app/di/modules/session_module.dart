@@ -5,6 +5,7 @@ import '../../../application/session/session_timeline_recorder.dart';
 import '../../../application/usecases/session/close_session_use_case.dart';
 import '../../../application/usecases/session/create_session_use_case.dart';
 import '../../../application/usecases/session/join_session_use_case.dart';
+import '../../../application/usecases/session/list_restaurant_tables_use_case.dart';
 import '../../../application/usecases/session/mark_waiting_payment_use_case.dart';
 import '../../../application/usecases/session/restore_session_use_case.dart';
 import '../../../application/usecases/session/transfer_session_use_case.dart';
@@ -21,9 +22,12 @@ import '../../../core/network/api_client.dart';
 import '../../../data/repositories/session/remote_session_engine_repository.dart';
 import '../../../data/repositories/session/session_engine_repository_impl.dart';
 import '../../../data/repositories/session/session_repository_impl.dart';
+import '../../../data/repositories/table/remote_table_repository.dart';
+import '../../../data/repositories/table/table_repository_impl.dart';
 import '../../../domain/events/domain_events.dart';
 import '../../../domain/repositories/session_engine_repository.dart';
 import '../../../domain/repositories/session_repository.dart';
+import '../../../domain/repositories/table_repository.dart';
 import '../../config/app_config.dart';
 
 abstract final class SessionModule {
@@ -62,6 +66,16 @@ abstract final class SessionModule {
               timelineRecorder: sl<SessionTimelineRecorder>(),
               clock: sl<Clock>(),
             ),
+    );
+
+    sl.registerLazySingleton<TableRepository>(
+      () => useRemote
+          ? RemoteTableRepository(apiClient: sl<ApiClient>())
+          : TableRepositoryImpl(store: sl<OrderingStore>()),
+    );
+
+    sl.registerLazySingleton(
+      () => ListRestaurantTablesUseCase(repository: sl<TableRepository>()),
     );
 
     sl.registerLazySingleton(() => const SessionMapper());

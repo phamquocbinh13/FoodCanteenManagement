@@ -2,11 +2,16 @@ import 'package:flutter/material.dart';
 
 import '../../../../application/menu/menu_item_detail_view.dart';
 import '../../../../application/validators/customization_validator.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/widgets.dart';
 import '../../../../domain/entities/customization_group.dart';
 import '../../../../domain/enums/domain_enums.dart';
 
-/// Menu item customization bottom sheet (add or edit cart line).
+/// Menu item customization sheet (add or edit cart line).
+///
+/// UX gain: required options obvious, large option rows, single sticky submit.
 class CustomizeSheet extends StatefulWidget {
   const CustomizeSheet({
     super.key,
@@ -64,46 +69,38 @@ class _CustomizeSheetState extends State<CustomizeSheet> {
     final detail = widget.detail;
     final item = detail.item;
     final groups = detail.groups;
+    final theme = Theme.of(context);
 
-    return Padding(
-      padding: EdgeInsets.only(
-        left: AppSpacing.lg,
-        right: AppSpacing.lg,
-        top: AppSpacing.lg,
-        bottom: MediaQuery.viewInsetsOf(context).bottom + AppSpacing.lg,
-      ),
+    return RomsBottomSheetScaffold(
+      title: item.name,
       child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
           children: [
-            Text(item.name, style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: AppSpacing.md),
             for (final group in groups) ...[
-              Text('${group.name}${group.isRequired ? ' *' : ''}'),
+              Text(
+                '${group.name}${group.isRequired ? ' *' : ''}',
+                style: theme.textTheme.titleSmall,
+              ),
               const SizedBox(height: AppSpacing.xs),
               ..._buildGroupOptions(group, detail.optionsByGroupId[group.id]),
-              const SizedBox(height: AppSpacing.sm),
+              const SizedBox(height: AppSpacing.md),
             ],
-            TextField(
+            RomsTextField(
               controller: _noteController,
-              decoration: const InputDecoration(
-                labelText: 'Ghi chú',
-                hintText: 'Ít muối, không hành…',
-              ),
+              label: 'Kitchen note',
+              hint: 'Less salt, no onion…',
+              maxLines: 2,
+              enabled: !widget.isSubmitting,
             ),
-            const SizedBox(height: AppSpacing.lg),
-            FilledButton(
+            const SizedBox(height: AppSpacing.xl),
+            PrimaryButton(
+              label: widget.submitLabel,
+              isExpanded: true,
+              isLoading: widget.isSubmitting,
               onPressed: widget.isSubmitting
                   ? null
                   : () => widget.onSubmit(_buildSelectionsJson()),
-              child: widget.isSubmitting
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Text(widget.submitLabel),
             ),
           ],
         ),
@@ -116,39 +113,72 @@ class _CustomizeSheetState extends State<CustomizeSheet> {
     List<dynamic>? options,
   ) {
     if (options == null) return [];
+    final single = group.selectionType == CustomizationSelectionType.singleSelect ||
+        group.selectionType == CustomizationSelectionType.boolean;
+
     return options.map((opt) {
-      final selected = _selections[group.key]?.contains(opt.key) ?? false;
-      if (group.selectionType == CustomizationSelectionType.singleSelect ||
-          group.selectionType == CustomizationSelectionType.boolean) {
-        return RadioListTile<String>(
-          title: Text(opt.name as String),
-          value: opt.key as String,
-          groupValue: _selections[group.key]?.isNotEmpty == true
-              ? _selections[group.key]!.first
-              : null,
-          onChanged: widget.isSubmitting
-              ? null
-              : (value) {
-                  setState(() => _selections[group.key] = [value!]);
-                },
-        );
-      }
-      return CheckboxListTile(
-        title: Text(opt.name as String),
-        value: selected,
-        onChanged: widget.isSubmitting
-            ? null
-            : (value) {
-                setState(() {
-                  final list = List<String>.from(_selections[group.key] ?? []);
-                  if (value == true) {
-                    list.add(opt.key as String);
-                  } else {
-                    list.remove(opt.key);
-                  }
-                  _selections[group.key] = list;
-                });
-              },
+      final key = opt.key as String;
+      final name = opt.name as String;
+      final selected = _selections[group.key]?.contains(key) ?? false;
+
+      return Padding(
+        padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+        child: Material(
+          color: selected ? AppColors.brandSoft : AppColors.surfaceRaised,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+            onTap: widget.isSubmitting
+                ? null
+                : () {
+                    setState(() {
+                      if (single) {
+                        _selections[group.key] = [key];
+                      } else {
+                        final list =
+                            List<String>.from(_selections[group.key] ?? []);
+                        if (selected) {
+                          list.remove(key);
+                        } else {
+                          list.add(key);
+                        }
+                        _selections[group.key] = list;
+                      }
+                    });
+                  },
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 48),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.sm,
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      single
+                          ? (selected
+                              ? Icons.radio_button_checked
+                              : Icons.radio_button_off)
+                          : (selected
+                              ? Icons.check_box
+                              : Icons.check_box_outline_blank),
+                      color: selected ? AppColors.brand : AppColors.inkMuted,
+                      size: 22,
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Text(
+                        name,
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
       );
     }).toList();
   }

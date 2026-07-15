@@ -3,14 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../application/menu/cart_line_view.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/widgets.dart';
 import '../../../../domain/entities/menu_item.dart';
-import '../../../../shared/formatters/money_formatter.dart';
 import '../controllers/customer_ordering_controller.dart';
 import '../providers/customer_ordering_provider.dart';
 import 'cart_ordering_messages.dart';
 import 'customize_sheet.dart';
 
-/// Reactive cart bottom sheet — always renders latest [CustomerOrderingController] state.
+/// Reactive cart sheet — confirm is the single primary action.
+///
+/// UX gain: one confirm CTA, large qty steppers, Atelier money, no language
+/// switch vs menu hub, clear empty state.
 class CartBottomSheet extends ConsumerWidget {
   const CartBottomSheet({super.key, required this.sessionId});
 
@@ -22,117 +25,129 @@ class CartBottomSheet extends ConsumerWidget {
     final cart = ordering.cart;
     final bill = ordering.bill;
     final currency = cart?.subtotal.currencyCode ?? 'VND';
+    final theme = Theme.of(context);
 
-    return Padding(
-      padding: EdgeInsets.only(
-        left: AppSpacing.lg,
-        right: AppSpacing.lg,
-        top: AppSpacing.lg,
-        bottom: MediaQuery.viewInsetsOf(context).bottom + AppSpacing.lg,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text('Giỏ hàng', style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: AppSpacing.md),
-          if (cart == null || cart.isEmpty) ...[
-            const Text('Bạn chưa chọn món nào.'),
-            const SizedBox(height: AppSpacing.md),
-            OutlinedButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Chọn món'),
-            ),
-          ] else ...[
-            Flexible(
-              child: ListView(
-                shrinkWrap: true,
-                children: [
-                  for (final line in cart.lines)
-                    _CartLineTile(
-                      line: line,
-                      isPending: ordering.isCartItemPending(line.item.id),
-                      onIncrease: () => _updateQuantity(
-                        context,
-                        ref,
-                        line: line,
-                        delta: 1,
-                      ),
-                      onDecrease: () => _updateQuantity(
-                        context,
-                        ref,
-                        line: line,
-                        delta: -1,
-                      ),
-                      onRemove: () => _removeItem(context, ref, line),
-                      onEdit: () => _editItem(context, ref, line),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              'Tổng món: ${cart.totalItemCount}',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            Text(
-              'Tạm tính: ${formatMoneyDisplay(amountMinor: cart.subtotal.amountMinor, currencyCode: currency)}',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            if (bill != null)
-              Text(
-                'Ước tính hóa đơn: ${formatMoneyDisplay(amountMinor: bill.totalMinor, currencyCode: currency)}',
-                style: Theme.of(context).textTheme.titleSmall,
-              ),
-            const SizedBox(height: AppSpacing.md),
-            Row(
+    return RomsBottomSheetScaffold(
+      title: 'Your cart',
+      child: cart == null || cart.isEmpty
+          ? Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: ordering.isCartBusy
-                        ? null
-                        : () => Navigator.pop(context),
-                    child: const Text('Tiếp tục gọi món'),
+                const EmptyState(
+                  title: 'Cart is empty',
+                  message: 'Add dishes from the menu, then confirm to send to the kitchen.',
+                  icon: Icons.shopping_bag_outlined,
+                ),
+                SecondaryButton(
+                  label: 'Browse menu',
+                  isExpanded: true,
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            )
+          : Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Flexible(
+                  child: ListView(
+                    shrinkWrap: true,
+                    children: [
+                      for (final line in cart.lines)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                          child: _CartLineTile(
+                            line: line,
+                            isPending: ordering.isCartItemPending(line.item.id),
+                            onChanged: (qty) => _setQuantity(
+                              context,
+                              ref,
+                              line: line,
+                              quantity: qty,
+                            ),
+                            onRemove: () => _removeItem(context, ref, line),
+                            onEdit: () => _editItem(context, ref, line),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: ordering.isCartBusy
-                        ? null
-                        : () => _clearCart(context, ref),
-                    child: const Text('Xóa giỏ'),
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  '${cart.totalItemCount} items',
+                  style: theme.textTheme.bodyMedium,
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Subtotal', style: theme.textTheme.titleMedium),
+                    RomsMoneyText(
+                      amountMinor: cart.subtotal.amountMinor,
+                      currencyCode: currency,
+                    ),
+                  ],
+                ),
+                if (bill != null) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Est. bill', style: theme.textTheme.bodyMedium),
+                      RomsMoneyText(
+                        amountMinor: bill.totalMinor,
+                        currencyCode: currency,
+                      ),
+                    ],
                   ),
+                ],
+                const SizedBox(height: AppSpacing.lg),
+                Row(
+                  children: [
+                    Expanded(
+                      child: SecondaryButton(
+                        label: 'Keep browsing',
+                        onPressed: ordering.isCartBusy
+                            ? null
+                            : () => Navigator.pop(context),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: SecondaryButton(
+                        label: 'Clear',
+                        onPressed: ordering.isCartBusy
+                            ? null
+                            : () => _clearCart(context, ref),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                PrimaryButton(
+                  label: 'Send to kitchen',
+                  icon: Icons.soup_kitchen_outlined,
+                  isExpanded: true,
+                  isLoading: ordering.isLoading,
+                  onPressed: ordering.isCartBusy
+                      ? null
+                      : () => _confirmBatch(context, ref),
                 ),
               ],
             ),
-            const SizedBox(height: AppSpacing.sm),
-            FilledButton(
-              onPressed: ordering.isCartBusy
-                  ? null
-                  : () => _confirmBatch(context, ref),
-              child: ordering.isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Xác nhận Batch'),
-            ),
-          ],
-        ],
-      ),
     );
   }
 
-  Future<void> _updateQuantity(
+  Future<void> _setQuantity(
     BuildContext context,
     WidgetRef ref, {
     required CartLineView line,
-    required int delta,
+    required int quantity,
   }) async {
     final ordering = ref.read(customerOrderingControllerProvider);
     if (ordering.isCartItemPending(line.item.id)) return;
+
+    final delta = quantity - line.item.quantity.value;
+    if (delta == 0) return;
 
     final ok = await ordering.updateQuantity(
       sessionId: sessionId,
@@ -192,9 +207,8 @@ class CartBottomSheet extends ConsumerWidget {
       return;
     }
 
-    await showModalBottomSheet<void>(
+    await showRomsBottomSheet<void>(
       context: context,
-      isScrollControlled: true,
       builder: (sheetContext) {
         return Consumer(
           builder: (context, ref, _) {
@@ -202,7 +216,7 @@ class CartBottomSheet extends ConsumerWidget {
             return CustomizeSheet(
               detail: detail,
               initialSelections: line.item.selectionsJson,
-              submitLabel: 'Cập nhật',
+              submitLabel: 'Update item',
               isSubmitting: current.isCartItemPending(line.item.id),
               onSubmit: (selections) async {
                 final ok = await ref
@@ -231,22 +245,13 @@ class CartBottomSheet extends ConsumerWidget {
   }
 
   Future<void> _clearCart(BuildContext context, WidgetRef ref) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showRomsConfirmDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Xóa giỏ hàng?'),
-        content: const Text('Tất cả món trong giỏ sẽ bị xóa.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Hủy'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Xóa'),
-          ),
-        ],
-      ),
+      title: 'Clear cart?',
+      message: 'All items in this cart will be removed.',
+      confirmLabel: 'Clear',
+      cancelLabel: 'Keep',
+      isDestructive: true,
     );
     if (confirmed != true || !context.mounted) return;
 
@@ -270,7 +275,7 @@ class CartBottomSheet extends ConsumerWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Batch #${ordering.lastBatch?.batch.batchNumber} đã gửi bếp!',
+            'Batch #${ordering.lastBatch?.batch.batchNumber} sent to kitchen',
           ),
         ),
       );
@@ -304,75 +309,70 @@ class _CartLineTile extends StatelessWidget {
   const _CartLineTile({
     required this.line,
     required this.isPending,
-    required this.onIncrease,
-    required this.onDecrease,
+    required this.onChanged,
     required this.onRemove,
     required this.onEdit,
   });
 
   final CartLineView line;
   final bool isPending;
-  final VoidCallback onIncrease;
-  final VoidCallback onDecrease;
+  final ValueChanged<int> onChanged;
   final VoidCallback onRemove;
   final VoidCallback onEdit;
 
   @override
   Widget build(BuildContext context) {
-    final price = formatMoneyDisplay(
-      amountMinor: line.lineTotal.amountMinor,
-      currencyCode: line.lineTotal.currencyCode,
-    );
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.sm),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              line.menuItemName,
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.remove_circle_outline),
-                  onPressed: isPending ? null : onDecrease,
-                ),
-                Text('${line.item.quantity.value}'),
-                IconButton(
-                  icon: const Icon(Icons.add_circle_outline),
-                  onPressed: isPending ? null : onIncrease,
-                ),
-                if (isPending) ...[
-                  const SizedBox(width: AppSpacing.sm),
-                  const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+    final theme = Theme.of(context);
+    return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(line.menuItemName, style: theme.textTheme.titleSmall),
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            children: [
+              IgnorePointer(
+                ignoring: isPending,
+                child: Opacity(
+                  opacity: isPending ? 0.5 : 1,
+                  child: RomsQtyStepper(
+                    value: line.item.quantity.value,
+                    onChanged: onChanged,
+                    min: 1,
                   ),
-                ],
-                const Spacer(),
-                Text(price),
-              ],
-            ),
-            Row(
-              children: [
-                TextButton.icon(
-                  onPressed: isPending ? null : onRemove,
-                  icon: const Icon(Icons.delete_outline, size: 18),
-                  label: const Text('Xóa'),
                 ),
-                TextButton.icon(
-                  onPressed: isPending ? null : onEdit,
-                  icon: const Icon(Icons.edit_outlined, size: 18),
-                  label: const Text('Sửa'),
+              ),
+              if (isPending) ...[
+                const SizedBox(width: AppSpacing.sm),
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
                 ),
               ],
-            ),
-          ],
-        ),
+              const Spacer(),
+              RomsMoneyText(
+                amountMinor: line.lineTotal.amountMinor,
+                currencyCode: line.lineTotal.currencyCode,
+              ),
+            ],
+          ),
+          Row(
+            children: [
+              RomsTextButton(
+                label: 'Remove',
+                icon: Icons.delete_outline,
+                onPressed: isPending ? null : onRemove,
+              ),
+              RomsTextButton(
+                label: 'Edit',
+                icon: Icons.edit_outlined,
+                onPressed: isPending ? null : onEdit,
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

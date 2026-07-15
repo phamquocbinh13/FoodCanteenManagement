@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../../../application/kitchen/kitchen_view_models.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/widgets.dart';
 
 /// Menu availability row — one tap toggles instantly.
 class KitchenInventoryTile extends StatelessWidget {
@@ -21,15 +23,13 @@ class KitchenInventoryTile extends StatelessWidget {
     final available = item.isAvailable;
 
     return Material(
-      color: available
-          ? theme.colorScheme.secondaryContainer
-          : theme.colorScheme.errorContainer,
+      color: available ? AppColors.brandSoft : AppColors.dangerSoft,
       borderRadius: BorderRadius.circular(AppRadius.md),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.md),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 72),
+          constraints: const BoxConstraints(minHeight: 64),
           child: Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.lg,
@@ -38,19 +38,11 @@ class KitchenInventoryTile extends StatelessWidget {
             child: Row(
               children: [
                 Expanded(
-                  child: Text(
-                    '🍛 ${item.name}',
-                    style: theme.textTheme.titleMedium,
-                  ),
+                  child: Text(item.name, style: theme.textTheme.titleMedium),
                 ),
-                Text(
-                  available ? 'Đang bán' : 'Hết món',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: available
-                        ? theme.colorScheme.onSecondaryContainer
-                        : theme.colorScheme.onErrorContainer,
-                  ),
+                StatusChip(
+                  label: available ? 'Available' : 'Out of stock',
+                  tone: available ? StatusTone.success : StatusTone.danger,
                 ),
               ],
             ),

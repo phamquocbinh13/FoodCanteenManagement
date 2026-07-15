@@ -17,18 +17,29 @@ final class InMemorySessionEngineDataSource implements SessionEngineDataSource {
     required OrderingStore store,
   })  : _clock = clock,
         _store = store {
-    _store.tables.putIfAbsent(
-      SessionEngineConstants.demoTable1Id,
-      () => RestaurantTable(
-        id: SessionEngineConstants.demoTable1Id,
-        restaurantId: SessionEngineConstants.demoRestaurantId,
-        label: 'Table 1',
-        status: TableStatus.available,
-        createdAt: _clock.now(),
-        updatedAt: _clock.now(),
-      ),
-    );
+    _seedFloorTables();
     DemoMenuSeed.seed(_store, _clock);
+  }
+
+  void _seedFloorTables() {
+    const capacities = <int>[4, 4, 4, 2, 2, 6, 4, 4, 8, 4];
+    final now = _clock.now();
+    for (var i = 1; i <= capacities.length; i++) {
+      final id = 'table-$i';
+      _store.tables.putIfAbsent(
+        id,
+        () => RestaurantTable(
+          id: id,
+          restaurantId: SessionEngineConstants.demoRestaurantId,
+          label: 'Table $i',
+          capacity: capacities[i - 1],
+          status: TableStatus.available,
+          sortOrder: i,
+          createdAt: now,
+          updatedAt: now,
+        ),
+      );
+    }
   }
 
   final Clock _clock;
@@ -58,14 +69,7 @@ final class InMemorySessionEngineDataSource implements SessionEngineDataSource {
     _store.batchCompletedAtById.clear();
     _store.batchItemStatusHistory.clear();
     _store.staffRequests.clear();
-    _store.tables[SessionEngineConstants.demoTable1Id] = RestaurantTable(
-      id: SessionEngineConstants.demoTable1Id,
-      restaurantId: SessionEngineConstants.demoRestaurantId,
-      label: 'Table 1',
-      status: TableStatus.available,
-      createdAt: _clock.now(),
-      updatedAt: _clock.now(),
-    );
+    _seedFloorTables();
     DemoMenuSeed.seed(_store, _clock);
     return const Success(null);
   }

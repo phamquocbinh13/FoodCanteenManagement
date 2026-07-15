@@ -6,14 +6,16 @@ import '../../../../application/usecases/kitchen/get_session_batch_progress_use_
 import '../../../../application/usecases/payment/close_session_with_payment_use_case.dart';
 import '../../../../application/usecases/session/close_session_use_case.dart';
 import '../../../../application/usecases/session/create_session_use_case.dart';
+import '../../../../application/usecases/session/list_restaurant_tables_use_case.dart';
 import '../../../../application/usecases/session/mark_waiting_payment_use_case.dart';
 import '../../../../application/usecases/session/restore_session_use_case.dart';
 import '../../../../core/result/result.dart';
+import '../../../../domain/entities/restaurant_table.dart';
 import '../../../../domain/entities/session_engine_snapshot.dart';
 import '../../../../domain/enums/domain_enums.dart';
 import '../../../../domain/services/session_state_machine.dart';
 
-/// Cashier-side session demo controller for Sprint 3 end-to-end flow.
+/// Cashier-side session controller for floor open / pay / force-close.
 final class CashierSessionController extends ChangeNotifier {
   CashierSessionController({
     required CreateSessionUseCase createSession,
@@ -21,12 +23,14 @@ final class CashierSessionController extends ChangeNotifier {
     required MarkWaitingPaymentUseCase markWaitingPayment,
     required RestoreSessionUseCase restoreSession,
     required GetCashierBatchSummariesUseCase getCashierBatchSummaries,
+    required ListRestaurantTablesUseCase listTables,
     CloseSessionWithPaymentUseCase? closeWithPayment,
   })  : _createSession = createSession,
         _closeSession = closeSession,
         _markWaitingPayment = markWaitingPayment,
         _restoreSession = restoreSession,
         _getCashierBatchSummaries = getCashierBatchSummaries,
+        _listTables = listTables,
         _closeWithPayment = closeWithPayment;
 
   final CreateSessionUseCase _createSession;
@@ -34,15 +38,21 @@ final class CashierSessionController extends ChangeNotifier {
   final MarkWaitingPaymentUseCase _markWaitingPayment;
   final RestoreSessionUseCase _restoreSession;
   final GetCashierBatchSummariesUseCase _getCashierBatchSummaries;
+  final ListRestaurantTablesUseCase _listTables;
   final CloseSessionWithPaymentUseCase? _closeWithPayment;
 
   SessionEngineSnapshot? _activeSnapshot;
+  List<SessionEngineSnapshot> _activeSessions = [];
+  List<RestaurantTable> _tables = [];
   String? _sessionToken;
   String? _errorMessage;
   bool _isLoading = false;
   List<CashierBatchSummaryView> _batchSummaries = [];
 
   SessionEngineSnapshot? get activeSnapshot => _activeSnapshot;
+  List<SessionEngineSnapshot> get activeSessions =>
+      List.unmodifiable(_activeSessions);
+  List<RestaurantTable> get tables => List.unmodifiable(_tables);
   String? get sessionToken => _sessionToken;
   String? get errorMessage => _errorMessage;
   bool get isLoading => _isLoading;
@@ -55,30 +65,111 @@ final class CashierSessionController extends ChangeNotifier {
     return status.lifecyclePhase;
   }
 
+  SessionEngineSnapshot? sessionForTable(String tableId) {
+    for (final snapshot in _activeSessions) {
+      if (snapshot.session.tableId == tableId) return snapshot;
+    }
+    return null;
+  }
+
+  bool isTableOccupied(String tableId) {
+    if (sessionForTable(tableId) != null) return true;
+    for (final table in _tables) {
+      if (table.id == tableId && table.status == TableStatus.occupied) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   Future<void> restore() async {
     _setLoading(true);
+    await Future.wait([
+      _loadTables(),
+      _loadActiveSessions(),
+    ]);
+    _setLoading(false);
+    notifyListeners();
+  }
+
+  Future<void> _loadTables() async {
+    final result = await _listTables(
+      const ListRestaurantTablesParams(
+        restaurantId: SessionEngineConstants.demoRestaurantId,
+      ),
+    );
+    if (result is Success<List<RestaurantTable>>) {
+      _tables = result.value;
+    }
+  }
+
+  Future<void> _loadActiveSessions() async {
     final result = await _restoreSession(
       const RestoreSessionParams(
         restaurantId: SessionEngineConstants.demoRestaurantId,
       ),
     );
-    _setLoading(false);
-
-    if (result is Success<List<SessionEngineSnapshot>> &&
-        result.value.isNotEmpty) {
-      _activeSnapshot = result.value.first;
+    if (result is Success<List<SessionEngineSnapshot>>) {
+      _activeSessions = result.value;
+      final selectedId = _activeSnapshot?.session.id;
+      if (selectedId != null) {
+        SessionEngineSnapshot? match;
+        for (final s in _activeSessions) {
+          if (s.session.id == selectedId) {
+            match = s;
+            break;
+          }
+        }
+        _activeSnapshot = match;
+      } else if (_activeSessions.length == 1) {
+        _activeSnapshot = _activeSessions.first;
+      }
+      if (_activeSnapshot != null) {
+        await refreshBatchSummaries();
+      } else {
+        _batchSummaries = [];
+      }
       _errorMessage = null;
-      await refreshBatchSummaries();
-      notifyListeners();
     }
   }
 
-  Future<void> createOnTable1({String? openedByUserId}) async {
+  void selectSession(SessionEngineSnapshot snapshot) {
+    _activeSnapshot = snapshot;
+    _sessionToken = null;
+    _errorMessage = null;
+    refreshBatchSummaries();
+    notifyListeners();
+  }
+
+  void clearSelection() {
+    _activeSnapshot = null;
+    _sessionToken = null;
+    _batchSummaries = [];
+    notifyListeners();
+  }
+
+  Future<void> createOnTable1({String? openedByUserId}) {
+    return createOnTable(
+      SessionEngineConstants.demoTable1Id,
+      openedByUserId: openedByUserId,
+    );
+  }
+
+  Future<void> createOnTable(
+    String tableId, {
+    String? openedByUserId,
+  }) async {
+    final existing = sessionForTable(tableId);
+    if (existing != null) {
+      selectSession(existing);
+      return;
+    }
+
     _setLoading(true);
     final result = await _createSession(
       CreateSessionParams(
         restaurantId: SessionEngineConstants.demoRestaurantId,
-        tableId: SessionEngineConstants.demoTable1Id,
+        tableId: tableId,
         tableStatus: TableStatus.available,
         openedVia: SessionOpenedVia.cashierManual,
         openedByUserId: openedByUserId,
@@ -91,11 +182,37 @@ final class CashierSessionController extends ChangeNotifier {
         _activeSnapshot = value.snapshot;
         _sessionToken = value.sessionTokenValue;
         _errorMessage = null;
+        await Future.wait([_loadTables(), _loadActiveSessions()]);
         await refreshBatchSummaries();
       case Err(:final failure):
         _errorMessage = failure.message;
+        await Future.wait([_loadTables(), _loadActiveSessions()]);
+        final afterConflict = sessionForTable(tableId);
+        if (afterConflict != null) {
+          _activeSnapshot = afterConflict;
+          _sessionToken = null;
+          _errorMessage = null;
+          await refreshBatchSummaries();
+        }
     }
     notifyListeners();
+  }
+
+  Future<void> onTableTapped(
+    String tableId, {
+    String? openedByUserId,
+  }) async {
+    final existing = sessionForTable(tableId);
+    if (existing != null) {
+      selectSession(existing);
+      return;
+    }
+    if (isTableOccupied(tableId)) {
+      _errorMessage = 'Table already has an active session. Pull to refresh.';
+      notifyListeners();
+      return;
+    }
+    await createOnTable(tableId, openedByUserId: openedByUserId);
   }
 
   Future<void> markWaitingPayment() async {
@@ -115,6 +232,7 @@ final class CashierSessionController extends ChangeNotifier {
       case Success(:final value):
         _activeSnapshot = value;
         _errorMessage = null;
+        await _loadActiveSessions();
       case Err(:final failure):
         _errorMessage = failure.message;
     }
@@ -160,7 +278,9 @@ final class CashierSessionController extends ChangeNotifier {
       case Success():
         _activeSnapshot = null;
         _sessionToken = null;
+        _batchSummaries = [];
         _errorMessage = null;
+        await Future.wait([_loadTables(), _loadActiveSessions()]);
       case Err(:final failure):
         _errorMessage = failure.message;
     }

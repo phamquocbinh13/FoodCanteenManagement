@@ -1,26 +1,24 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'app_colors.dart';
 
 /// ROMS Atelier typography — Plus Jakarta Sans (UI) + Fraunces (display).
+///
+/// Fonts are bundled under `assets/fonts/` for offline POS reliability.
 abstract final class AppTypography {
-  static String get fontFamily => GoogleFonts.plusJakartaSans().fontFamily!;
+  static const String fontFamily = 'PlusJakartaSans';
 
-  static String get displayFontFamily => GoogleFonts.fraunces().fontFamily!;
+  static const String displayFontFamily = 'Fraunces';
 
   static TextTheme textThemeFor(Color ink, Color inkMuted) {
-    final base = GoogleFonts.plusJakartaSansTextTheme();
-    final display = GoogleFonts.frauncesTextTheme();
-
-    TextStyle ui(
-      TextStyle? s, {
+    TextStyle ui({
       required double size,
       required FontWeight weight,
       required double height,
       Color? color,
     }) {
-      return (s ?? const TextStyle()).copyWith(
+      return TextStyle(
+        fontFamily: fontFamily,
         fontSize: size,
         fontWeight: weight,
         height: height,
@@ -29,13 +27,13 @@ abstract final class AppTypography {
       );
     }
 
-    TextStyle hero(
-      TextStyle? s, {
+    TextStyle hero({
       required double size,
       required FontWeight weight,
       required double height,
     }) {
-      return (s ?? const TextStyle()).copyWith(
+      return TextStyle(
+        fontFamily: displayFontFamily,
         fontSize: size,
         fontWeight: weight,
         height: height,
@@ -45,94 +43,31 @@ abstract final class AppTypography {
     }
 
     return TextTheme(
-      displayLarge: hero(
-        display.displayLarge,
-        size: 32,
-        weight: FontWeight.w600,
-        height: 1.2,
-      ),
-      displayMedium: hero(
-        display.displayMedium,
-        size: 28,
-        weight: FontWeight.w600,
-        height: 1.2,
-      ),
-      displaySmall: ui(
-        base.displaySmall,
-        size: 24,
-        weight: FontWeight.w600,
-        height: 1.25,
-      ),
-      headlineLarge: ui(
-        base.headlineLarge,
-        size: 22,
-        weight: FontWeight.w600,
-        height: 1.25,
-      ),
-      headlineMedium: ui(
-        base.headlineMedium,
-        size: 20,
-        weight: FontWeight.w600,
-        height: 1.3,
-      ),
-      headlineSmall: ui(
-        base.headlineSmall,
-        size: 18,
-        weight: FontWeight.w600,
-        height: 1.3,
-      ),
-      titleLarge: ui(
-        base.titleLarge,
-        size: 16,
-        weight: FontWeight.w600,
-        height: 1.3,
-      ),
-      titleMedium: ui(
-        base.titleMedium,
-        size: 14,
-        weight: FontWeight.w600,
-        height: 1.3,
-      ),
-      titleSmall: ui(
-        base.titleSmall,
-        size: 12,
-        weight: FontWeight.w600,
-        height: 1.3,
-      ),
-      bodyLarge: ui(
-        base.bodyLarge,
-        size: 16,
-        weight: FontWeight.w400,
-        height: 1.5,
-      ),
-      bodyMedium: ui(
-        base.bodyMedium,
-        size: 14,
-        weight: FontWeight.w400,
-        height: 1.45,
-      ),
+      displayLarge: hero(size: 32, weight: FontWeight.w600, height: 1.2),
+      displayMedium: hero(size: 28, weight: FontWeight.w600, height: 1.2),
+      displaySmall: ui(size: 24, weight: FontWeight.w600, height: 1.25),
+      headlineLarge: ui(size: 22, weight: FontWeight.w600, height: 1.25),
+      headlineMedium: ui(size: 20, weight: FontWeight.w600, height: 1.3),
+      headlineSmall: ui(size: 18, weight: FontWeight.w600, height: 1.3),
+      titleLarge: ui(size: 16, weight: FontWeight.w600, height: 1.3),
+      titleMedium: ui(size: 14, weight: FontWeight.w600, height: 1.3),
+      titleSmall: ui(size: 12, weight: FontWeight.w600, height: 1.3),
+      bodyLarge: ui(size: 16, weight: FontWeight.w400, height: 1.5),
+      bodyMedium: ui(size: 14, weight: FontWeight.w400, height: 1.45),
       bodySmall: ui(
-        base.bodySmall,
         size: 13,
         weight: FontWeight.w400,
         height: 1.4,
         color: inkMuted,
       ),
-      labelLarge: ui(
-        base.labelLarge,
-        size: 14,
-        weight: FontWeight.w600,
-        height: 1.2,
-      ),
+      labelLarge: ui(size: 14, weight: FontWeight.w600, height: 1.2),
       labelMedium: ui(
-        base.labelMedium,
         size: 12,
         weight: FontWeight.w600,
         height: 1.2,
         color: inkMuted,
       ),
       labelSmall: ui(
-        base.labelSmall,
         size: 11,
         weight: FontWeight.w500,
         height: 1.2,
@@ -148,7 +83,8 @@ abstract final class AppTypography {
       textThemeFor(AppDarkColors.ink, AppDarkColors.inkMuted);
 
   /// Tabular money / batch numbers.
-  static TextStyle numberLarge(Color color) => GoogleFonts.plusJakartaSans(
+  static TextStyle numberLarge(Color color) => TextStyle(
+        fontFamily: fontFamily,
         fontSize: 28,
         fontWeight: FontWeight.w600,
         height: 1.1,
@@ -156,7 +92,8 @@ abstract final class AppTypography {
         fontFeatures: const [FontFeature.tabularFigures()],
       );
 
-  static TextStyle numberMedium(Color color) => GoogleFonts.plusJakartaSans(
+  static TextStyle numberMedium(Color color) => TextStyle(
+        fontFamily: fontFamily,
         fontSize: 18,
         fontWeight: FontWeight.w600,
         height: 1.15,

@@ -1,5 +1,27 @@
 # ROMS Iteration Memory
 
+## Iteration: 2026-07-15 — Cashier ops completion (remaining UX debt)
+
+### What changed
+
+- **Payment tender picker** — sheet for cash / card / bank transfer / other before confirm close
+- **Force-close sheet** — required `ForceCloseReason` + optional note → `SessionCloseType.forceClosed`
+- **Floor table grid** — cashier opens/selects any of 10 demo tables (not Table 1 only)
+- **Tables API wired** — `RemoteTableRepository` + `ListRestaurantTablesUseCase`; local store seeds tables 1–10
+- **Multi-session restore** — active sessions listed; tap occupied table to manage; single session auto-selected
+- **Offline fonts** — Plus Jakarta Sans + Fraunces bundled in `assets/fonts/`; removed runtime `google_fonts`
+- Updated `PRODUCT_READINESS_REPORT.md` → overall **8.6**
+
+### Why
+
+Last operational gaps on the cashier critical path: tender choice, exception close, and multi-table floor awareness.
+
+### Verify
+
+- Cashier: open Table 3 → QR → pay with Card → table free
+- Cashier: force-close with reason on an open session
+- Pull-to-refresh reloads floor occupancy
+
 ## Production Hardening Report — 2026-07-15
 
 ### Backend Architecture Score — **9 / 10**
@@ -387,3 +409,34 @@ Cashier can open Table 1, share join code/QR, triage requests, close with cash p
 ### Next highest-impact iteration
 
 **Iteration 4 — Staff request queue** polish, then Iter 5 auth chrome, Iter 6 consistency.
+
+---
+
+## Iterations 4–8 — Operational polish closeout — 2026-07-15
+
+### Screens / surfaces improved
+
+Cart sheet, customize sheet, staff request tile, kitchen orders (KDS multi-column wrap), kitchen inventory tiles/tab, sheet scaffold max-height.
+
+### UX gains (justified → verified)
+
+| Change | Expected gain | Verified |
+|--------|---------------|----------|
+| Cart “Send to kitchen” primary + English ops copy | Align with menu hub; clear confirm | Widget tests + copy audit |
+| RomsQtyStepper on cart lines | Larger, consistent qty control | Cart tests (+/−) |
+| Customize large option rows (no Radio deprecation) | Faster required picks | Edit-cart test |
+| Request tile StatusChip + aging + Primary handle | Faster triage under interrupt | Visual/a11y review |
+| KDS Wrap multi-column ≥ tablet/KDS | Less scroll in rush | Layout + phone test surface |
+| Inventory StatusChip, no emoji | Glanceable stock state | Code review |
+
+### Components added / removed
+
+None net-new platform primitives; feature widgets remapped onto Atelier.
+
+### Product quality (closeout)
+
+See **`PRODUCT_READINESS_REPORT.md`** — overall dine-in **8.3**. Loop stopped: further changes would be cosmetic.
+
+### Next
+
+Pilot deployment + measured live feedback. Do not continue open-ended aesthetic redesign without operational evidence.
