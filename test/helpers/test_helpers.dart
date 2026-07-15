@@ -1,12 +1,12 @@
-import 'package:food_canteen_management/core/clock/fake_clock.dart';
-import 'package:food_canteen_management/core/id/id_generator.dart';
 import 'package:food_canteen_management/core/logger/app_logger.dart';
 import 'package:food_canteen_management/core/network/api_client.dart';
 import 'package:food_canteen_management/core/storage/local_storage.dart';
 
-export 'package:food_canteen_management/core/clock/fake_clock.dart';
-export 'package:food_canteen_management/core/id/id_generator.dart'
-    show FakeIdGenerator;
+import '../fakes/fake_clock.dart';
+import '../fakes/fake_id_generator.dart';
+
+export '../fakes/fake_clock.dart';
+export '../fakes/fake_id_generator.dart';
 
 /// Captures log output for assertions in tests.
 final class FakeLogger implements AppLogger {

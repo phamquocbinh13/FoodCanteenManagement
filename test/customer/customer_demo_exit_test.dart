@@ -28,15 +28,15 @@ import 'package:food_canteen_management/application/usecases/session/mark_waitin
 import 'package:food_canteen_management/application/usecases/session/validate_session_use_case.dart';
 import 'package:food_canteen_management/application/validators/customization_validator.dart';
 import 'package:food_canteen_management/core/result/result.dart';
-import 'package:food_canteen_management/data/datasources/cart/cart_local_datasource.dart';
+import '../fakes/cart_local_datasource.dart';
 import 'package:food_canteen_management/data/datasources/customer/customer_session_local_datasource.dart';
-import 'package:food_canteen_management/data/datasources/ordering/ordering_store.dart';
-import 'package:food_canteen_management/data/datasources/session/in_memory_session_engine_datasource.dart';
-import 'package:food_canteen_management/data/repositories/batch/batch_repository_impl.dart';
-import 'package:food_canteen_management/data/repositories/cart/session_cart_repository_impl.dart';
-import 'package:food_canteen_management/data/repositories/menu/menu_repository_impl.dart';
-import 'package:food_canteen_management/data/repositories/request/request_repository_impl.dart';
-import 'package:food_canteen_management/data/repositories/session/session_engine_repository_impl.dart';
+import '../fakes/ordering_store.dart';
+import '../fakes/in_memory_session_engine_datasource.dart';
+import '../fakes/batch_repository_impl.dart';
+import '../fakes/session_cart_repository_impl.dart';
+import '../fakes/menu_repository_impl.dart';
+import '../fakes/request_repository_impl.dart';
+import '../fakes/session_engine_repository_impl.dart';
 import 'package:food_canteen_management/domain/enums/domain_enums.dart';
 import 'package:food_canteen_management/domain/events/domain_events.dart';
 import 'package:food_canteen_management/domain/services/request_domain_service.dart';
@@ -140,6 +140,7 @@ Future<
     clock: clock,
   );
   final ordering = CustomerOrderingController(
+    restaurantId: SessionEngineConstants.demoRestaurantId,
     getMenuCatalog: GetMenuCatalogUseCase(
       menuRepository: menuRepo,
       clock: clock,
@@ -266,7 +267,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byTooltip('Thoát Demo'));
+      await tester.tap(find.byTooltip('Leave session'));
       await tester.pumpAndSettle();
       expect(find.text(CustomerSessionMessages.demoExitPrompt), findsOneWidget);
 
@@ -296,7 +297,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byTooltip('Thoát Demo'));
+      await tester.tap(find.byTooltip('Leave session'));
       await tester.pumpAndSettle();
       await tester.tap(find.text(CustomerSessionMessages.demoExitCancel));
       await tester.pumpAndSettle();

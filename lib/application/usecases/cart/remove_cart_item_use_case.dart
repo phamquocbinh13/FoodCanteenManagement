@@ -1,5 +1,5 @@
 import '../../../core/result/result.dart';
-import '../../../data/repositories/cart/session_cart_repository_impl.dart';
+import '../../../domain/repositories/session_cart_repository.dart';
 import '../use_case.dart';
 
 /// Removes a line from the session cart.

@@ -99,13 +99,37 @@ model StaffUser {
 }
 
 model Role {
-  id        String      @id @db.Char(36)
-  roleKey   String      @unique(map: "uq_role_key") @map("role_key") @db.VarChar(32)
-  name      String      @db.VarChar(50)
-  createdAt DateTime    @default(now()) @map("created_at")
-  user_role user_role[]
+  id              String            @id @db.Char(36)
+  roleKey         String            @unique(map: "uq_role_key") @map("role_key") @db.VarChar(32)
+  name            String            @db.VarChar(50)
+  createdAt       DateTime          @default(now()) @map("created_at")
+  user_role       user_role[]
+  role_permission role_permission[]
 
   @@map("role")
+}
+
+/// Fine-grained capability keys (Flutter AppPermission.name).
+model Permission {
+  id              String            @id @db.Char(36)
+  permissionKey   String            @unique(map: "uq_permission_key") @map("permission_key") @db.VarChar(64)
+  name            String            @db.VarChar(100)
+  createdAt       DateTime          @default(now()) @map("created_at")
+  role_permission role_permission[]
+
+  @@map("permission")
+}
+
+model role_permission {
+  id            String     @id @db.Char(36)
+  role_id       String     @db.Char(36)
+  permission_id String     @db.Char(36)
+  role          Role       @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_role_permission_role")
+  permission    Permission @relation(fields: [permission_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_role_permission_permission")
+
+  @@unique([role_id, permission_id], map: "uq_role_permission")
+  @@index([permission_id], map: "idx_role_permission_permission")
+  @@map("role_permission")
 }
 
 model MenuCategory {

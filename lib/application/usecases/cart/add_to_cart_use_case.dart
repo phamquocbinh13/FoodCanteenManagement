@@ -9,7 +9,7 @@ import '../../../domain/repositories/menu_repository.dart';
 import '../../../domain/repositories/session_engine_repository.dart';
 import '../../../domain/services/menu_domain_service.dart';
 import '../../../domain/value_objects/quantity.dart';
-import '../../../data/repositories/cart/session_cart_repository_impl.dart';
+import '../../../domain/repositories/session_cart_repository.dart';
 import '../../menu/customization_renderer.dart';
 import '../../session/session_timeline_recorder.dart';
 import '../../validators/customization_validator.dart';

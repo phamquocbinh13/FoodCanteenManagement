@@ -10,9 +10,9 @@ import 'package:food_canteen_management/application/usecases/session/join_sessio
 import 'package:food_canteen_management/application/usecases/session/mark_waiting_payment_use_case.dart';
 import 'package:food_canteen_management/application/usecases/session/validate_session_use_case.dart';
 import 'package:food_canteen_management/core/result/result.dart';
-import 'package:food_canteen_management/data/datasources/ordering/ordering_store.dart';
-import 'package:food_canteen_management/data/datasources/session/in_memory_session_engine_datasource.dart';
-import 'package:food_canteen_management/data/repositories/session/session_engine_repository_impl.dart';
+import '../fakes/ordering_store.dart';
+import '../fakes/in_memory_session_engine_datasource.dart';
+import '../fakes/session_engine_repository_impl.dart';
 import 'package:food_canteen_management/domain/entities/session_auth_token.dart';
 import 'package:food_canteen_management/domain/enums/domain_enums.dart';
 import 'package:food_canteen_management/domain/events/domain_events.dart';

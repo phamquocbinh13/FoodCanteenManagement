@@ -3,7 +3,7 @@ import '../../../core/errors/failures.dart';
 import '../../../core/result/result.dart';
 import '../../../domain/entities/session_cart_item.dart';
 import '../../../domain/value_objects/quantity.dart';
-import '../../../data/repositories/cart/session_cart_repository_impl.dart';
+import '../../../domain/repositories/session_cart_repository.dart';
 import '../use_case.dart';
 
 /// Increases or decreases cart line quantity. Removes item when quantity reaches zero.

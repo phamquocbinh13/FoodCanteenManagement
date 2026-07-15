@@ -1,7 +1,9 @@
 import '../../../application/session/session_constants.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/http_api_client.dart';
-import '../../../core/network/json_key_codec.dart';
+import '../../../core/network/session_token_headers.dart';
+import '../../../data/datasources/customer/customer_session_local_datasource.dart';
+import '../../../data/mappers/remote_json.dart';
 import '../../../domain/entities/batch_item.dart';
 import '../../../domain/entities/batch_item_customization.dart';
 import '../../../domain/entities/batch_item_status_history.dart';
@@ -16,11 +18,14 @@ import '../../../domain/repositories/batch_repository.dart';
 final class RemoteBatchRepository implements BatchRepository {
   RemoteBatchRepository({
     required ApiClient apiClient,
+    required CustomerSessionLocalDataSource localSession,
     String defaultRestaurantId = SessionEngineConstants.demoRestaurantId,
   })  : _api = apiClient,
+        _localSession = localSession,
         _defaultRestaurantId = defaultRestaurantId;
 
   final ApiClient _api;
+  final CustomerSessionLocalDataSource _localSession;
   final String _defaultRestaurantId;
 
   final Map<String, String> _clientToServerBatchId = {};
@@ -39,8 +44,20 @@ final class RemoteBatchRepository implements BatchRepository {
 
   String _serverItemId(String id) => _clientToServerItemId[id] ?? id;
 
+  /// Seeds cache after customer `POST /sessions/me/batches` so bill refresh
+  /// does not need staff-only batch GETs.
+  void cacheConfirmedBatch({
+    required KitchenBatch batch,
+    required List<BatchItem> items,
+  }) {
+    _batches[batch.id] = batch;
+    _restaurantIdByBatchId[batch.id] = batch.restaurantId;
+    _itemsByBatchId[batch.id] = List<BatchItem>.from(items);
+    _completedAtByBatchId.putIfAbsent(batch.id, () => null);
+  }
+
   KitchenBatch _parseBatch(Map<String, dynamic> json) {
-    final snake = camelCaseKeysToSnake(json);
+    final snake = RemoteJson.normalize(json);
     final completedRaw = snake.remove('completed_at');
     final batch = KitchenBatch.fromJson(snake);
     if (completedRaw is String) {
@@ -54,7 +71,7 @@ final class RemoteBatchRepository implements BatchRepository {
   }
 
   BatchItem _parseItem(Map<String, dynamic> json) {
-    final item = BatchItem.fromJson(camelCaseKeysToSnake(json));
+    final item = RemoteJson.parse(json, BatchItem.fromJson);
     final list = _itemsByBatchId.putIfAbsent(item.batchId, () => []);
     final index = list.indexWhere((i) => i.id == item.id);
     if (index >= 0) {
@@ -189,7 +206,7 @@ final class RemoteBatchRepository implements BatchRepository {
           itemsJson: view['items'] as List<dynamic>? ?? const [],
         );
         final batchId = batchJson['id'] as String? ??
-            camelCaseKeysToSnake(batchJson)['id'] as String;
+            RemoteJson.normalize(batchJson)['id'] as String;
         final batch = _batches[batchId];
         if (batch == null) continue;
         if (since != null && batch.confirmedAt.isBefore(since)) continue;
@@ -232,7 +249,7 @@ final class RemoteBatchRepository implements BatchRepository {
         );
         final batchJson = ticket['batch'] as Map<String, dynamic>;
         final id = batchJson['id'] as String? ??
-            camelCaseKeysToSnake(batchJson)['id'] as String;
+            RemoteJson.normalize(batchJson)['id'] as String;
         final batch = _batches[id];
         if (batch != null) batches.add(batch);
       }
@@ -248,6 +265,12 @@ final class RemoteBatchRepository implements BatchRepository {
     final cached = _itemsByBatchId[batchId] ??
         _itemsByBatchId[_serverBatchId(batchId)];
     if (cached != null) return List.unmodifiable(cached);
+
+    // Customer session tokens cannot call staff batch detail endpoints.
+    final customerHeaders = await customerSessionHeaders(_localSession);
+    if (customerHeaders.isNotEmpty) {
+      return const [];
+    }
 
     final restaurantId =
         _restaurantIdByBatchId[batchId] ?? _defaultRestaurantId;

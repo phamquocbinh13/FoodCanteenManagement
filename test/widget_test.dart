@@ -20,7 +20,12 @@ void main() {
     );
     await tester.pump();
     expect(find.text('Starting…'), findsOneWidget);
-    await tester.pump(const Duration(seconds: 2));
-    expect(find.text('Staff Login'), findsOneWidget);
+
+    // Auth restore may hit HttpClient (400 in widget tests) → unauthenticated.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pumpAndSettle(const Duration(seconds: 2));
+
+    expect(find.text('Staff sign-in'), findsOneWidget);
   });
 }

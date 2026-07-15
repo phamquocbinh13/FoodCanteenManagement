@@ -15,13 +15,16 @@ import '../../../domain/repositories/menu_repository.dart';
 import '../../../domain/repositories/session_engine_repository.dart';
 import '../../../domain/services/batch_domain_service.dart';
 import '../../../domain/services/menu_domain_service.dart';
+import '../../../domain/repositories/session_cart_repository.dart';
 import '../../../domain/value_objects/money.dart';
-import '../../../data/repositories/cart/session_cart_repository_impl.dart';
 import '../../menu/customization_renderer.dart';
 import '../../menu/kitchen_batch_ticket.dart';
 import '../../session/session_bill_projector.dart';
 import '../../session/session_timeline_recorder.dart';
 import '../use_case.dart';
+import 'confirm_batch_params.dart';
+
+export 'confirm_batch_params.dart';
 
 /// Confirms cart → creates immutable batch → clears cart → updates session bill.
 final class ConfirmBatchUseCase
@@ -253,18 +256,4 @@ final class ConfirmBatchUseCase
       ),
     );
   }
-}
-
-final class ConfirmBatchParams {
-  const ConfirmBatchParams({
-    required this.sessionId,
-    required this.restaurantId,
-    this.actorType = ActorType.customerSession,
-    this.actorId,
-  });
-
-  final String sessionId;
-  final String restaurantId;
-  final ActorType actorType;
-  final String? actorId;
 }

@@ -3,10 +3,11 @@ import '../../../core/result/result.dart';
 import '../../../domain/entities/session_cart.dart';
 import '../../../domain/entities/session_cart_item.dart';
 import '../../../domain/repositories/menu_repository.dart';
+import '../../../domain/repositories/session_cart_repository.dart';
 import '../../../domain/value_objects/money.dart';
-import '../../../data/repositories/cart/session_cart_repository_impl.dart';
 import '../../menu/cart_line_view.dart';
 import '../../menu/cart_view.dart';
+import '../../session/session_constants.dart';
 import '../use_case.dart';
 
 /// Returns the current session cart with subtotal and resolved item names.
@@ -93,7 +94,7 @@ final class GetSessionCartUseCase
 final class GetSessionCartParams {
   const GetSessionCartParams({
     required this.sessionId,
-    this.restaurantId = 'demo-restaurant',
+    this.restaurantId = SessionEngineConstants.demoRestaurantId,
   });
 
   final String sessionId;

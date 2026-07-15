@@ -15,6 +15,7 @@ export declare class AuthService {
     me(userId: string): Promise<AuthenticatedUserDto>;
     private issueTokens;
     private toUserDto;
+    private permissionsForRoles;
     private findStaffByEmail;
     private findStaffById;
     private verifyPassword;

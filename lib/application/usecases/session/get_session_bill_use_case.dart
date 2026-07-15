@@ -11,6 +11,9 @@ import '../cart/get_session_cart_use_case.dart';
 import '../use_case.dart';
 
 /// Session bill = projection from confirmed batch snapshots (+ optional open cart).
+///
+/// When batch line detail is unavailable (customer remote session without staff
+/// JWT), trusts [DineInSession.paymentSummary] already maintained by the server.
 final class GetSessionBillUseCase
     implements UseCase<SessionPaymentSummary, GetSessionBillParams> {
   GetSessionBillUseCase({
@@ -43,8 +46,15 @@ final class GetSessionBillUseCase
 
     final snapshot = sessionResult.value;
     final items = <BatchItem>[];
-    for (final batchId in snapshot.batchIds) {
-      items.addAll(await _batchRepository.getItemsByBatchId(batchId));
+    var batchLinesLoaded = false;
+    try {
+      for (final batchId in snapshot.batchIds) {
+        items.addAll(await _batchRepository.getItemsByBatchId(batchId));
+      }
+      batchLinesLoaded = true;
+    } catch (_) {
+      // Staff batch GETs are unauthorized for customer session tokens.
+      batchLinesLoaded = false;
     }
 
     var openCartSubtotalMinor = 0;
@@ -57,9 +67,22 @@ final class GetSessionBillUseCase
       }
     }
 
+    final existing = snapshot.session.paymentSummary;
+    if (!batchLinesLoaded ||
+        (items.isEmpty && existing != null && snapshot.batchIds.isNotEmpty)) {
+      final base = existing ?? const SessionPaymentSummary();
+      return Success(
+        base
+            .copyWith(
+              subtotalMinor: base.subtotalMinor + openCartSubtotalMinor,
+            )
+            .recalculateTotal(),
+      );
+    }
+
     return Success(
       _projector.project(
-        existing: snapshot.session.paymentSummary,
+        existing: existing,
         batchSubtotalMinor: _projector.batchSubtotalMinor(items),
         openCartSubtotalMinor: openCartSubtotalMinor,
       ),

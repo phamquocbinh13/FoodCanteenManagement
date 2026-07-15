@@ -1,7 +1,7 @@
 import '../../../core/network/api_client.dart';
 import '../../../core/network/http_api_client.dart';
-import '../../../core/network/json_key_codec.dart';
 import '../../../core/result/result.dart';
+import '../../../data/mappers/remote_json.dart';
 import '../../../domain/entities/auth_session.dart';
 import 'auth_datasource.dart';
 
@@ -13,7 +13,7 @@ final class RemoteAuthRemoteDataSource implements AuthRemoteDataSource {
   final ApiClient _api;
 
   AuthSession _parse(Map<String, dynamic> json) {
-    return AuthSession.fromJson(camelCaseKeysToSnake(json));
+    return RemoteJson.parse(json, AuthSession.fromJson);
   }
 
   @override

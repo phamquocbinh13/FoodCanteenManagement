@@ -1,5 +1,5 @@
 import '../../../core/network/api_client.dart';
-import '../../../core/network/json_key_codec.dart';
+import '../../../data/mappers/remote_json.dart';
 import '../../../domain/entities/restaurant_table.dart';
 import '../../../domain/repositories/table_repository.dart';
 
@@ -10,7 +10,7 @@ final class RemoteTableRepository implements TableRepository {
   final ApiClient _api;
 
   RestaurantTable _parse(Map<String, dynamic> json) =>
-      RestaurantTable.fromJson(camelCaseKeysToSnake(json));
+      RemoteJson.parse(json, RestaurantTable.fromJson);
 
   @override
   Future<RestaurantTable?> findById({

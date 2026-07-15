@@ -1,3 +1,5 @@
+import 'restaurant_context.dart';
+
 /// Application environment identifiers.
 enum AppEnvironment {
   development,
@@ -6,6 +8,8 @@ enum AppEnvironment {
 }
 
 /// Centralized runtime configuration per environment.
+///
+/// Production architecture is remote-only (NestJS + MySQL).
 class AppConfig {
   const AppConfig({
     required this.environment,
@@ -13,7 +17,7 @@ class AppConfig {
     required this.apiBaseUrl,
     required this.enableLogging,
     required this.enableAnalytics,
-    this.useRemoteBackend = false,
+    required this.restaurant,
   });
 
   final AppEnvironment environment;
@@ -22,44 +26,49 @@ class AppConfig {
   final bool enableLogging;
   final bool enableAnalytics;
 
-  /// When true, SessionEngine + Auth remotes talk to NestJS instead of in-memory.
-  final bool useRemoteBackend;
+  /// Active tenant for API paths and guest brand.
+  final RestaurantContext restaurant;
+
+  String get restaurantId => restaurant.restaurantId;
 
   bool get isDevelopment => environment == AppEnvironment.development;
   bool get isStaging => environment == AppEnvironment.staging;
   bool get isProduction => environment == AppEnvironment.production;
 
-  static AppConfig fromEnvironment(AppEnvironment env, {bool? useRemoteBackend}) {
-    final remote = useRemoteBackend ?? false;
-    final localApi = const String.fromEnvironment(
+  static AppConfig fromEnvironment(
+    AppEnvironment env, {
+    RestaurantContext? restaurant,
+  }) {
+    final apiBaseUrl = const String.fromEnvironment(
       'API_BASE_URL',
       defaultValue: 'http://localhost:3000/api/v1',
     );
+    final tenant = restaurant ?? RestaurantContext.fromEnvironment();
 
     return switch (env) {
       AppEnvironment.development => AppConfig(
           environment: AppEnvironment.development,
           appName: 'ROMS Dev',
-          apiBaseUrl: remote ? localApi : 'https://dev-api.example.com',
+          apiBaseUrl: apiBaseUrl,
           enableLogging: true,
           enableAnalytics: false,
-          useRemoteBackend: remote,
+          restaurant: tenant,
         ),
       AppEnvironment.staging => AppConfig(
           environment: AppEnvironment.staging,
           appName: 'ROMS Staging',
-          apiBaseUrl: remote ? localApi : 'https://staging-api.example.com',
+          apiBaseUrl: apiBaseUrl,
           enableLogging: true,
           enableAnalytics: true,
-          useRemoteBackend: remote,
+          restaurant: tenant,
         ),
       AppEnvironment.production => AppConfig(
           environment: AppEnvironment.production,
           appName: 'Food Canteen Management',
-          apiBaseUrl: remote ? localApi : 'https://api.example.com',
+          apiBaseUrl: apiBaseUrl,
           enableLogging: false,
           enableAnalytics: true,
-          useRemoteBackend: remote,
+          restaurant: tenant,
         ),
     };
   }
@@ -70,16 +79,12 @@ class AppConfig {
       'APP_ENV',
       defaultValue: 'development',
     );
-    const useRemote = bool.fromEnvironment(
-      'USE_REMOTE_BACKEND',
-      defaultValue: false,
-    );
 
     final env = AppEnvironment.values.firstWhere(
       (e) => e.name == envName,
       orElse: () => AppEnvironment.development,
     );
 
-    return fromEnvironment(env, useRemoteBackend: useRemote);
+    return fromEnvironment(env);
   }
 }

@@ -2,19 +2,16 @@ import 'package:get_it/get_it.dart';
 
 import '../../../application/usecases/auth/auth_usecases.dart';
 import '../../../application/validators/user_validator.dart';
+import '../../../core/clock/clock.dart';
+import '../../../core/network/api_client.dart';
 import '../../../core/permissions/permission_service.dart';
+import '../../../core/storage/local_storage.dart';
 import '../../../data/datasources/auth/auth_datasource.dart';
 import '../../../data/datasources/auth/auth_local_datasource.dart';
-import '../../../data/datasources/auth/mock_auth_remote_datasource.dart';
 import '../../../data/datasources/auth/remote_auth_remote_datasource.dart';
 import '../../../data/repositories/auth/auth_repository_impl.dart';
 import '../../../domain/repositories/auth_repository.dart';
 import '../../../features/auth/presentation/controllers/auth_controller.dart';
-import '../../../core/clock/clock.dart';
-import '../../../core/id/id_generator.dart';
-import '../../../core/network/api_client.dart';
-import '../../../core/storage/local_storage.dart';
-import '../../config/app_config.dart';
 
 abstract final class AuthModule {
   static void register(GetIt sl) {
@@ -27,12 +24,7 @@ abstract final class AuthModule {
     );
 
     sl.registerLazySingleton<AuthRemoteDataSource>(
-      () => sl<AppConfig>().useRemoteBackend
-          ? RemoteAuthRemoteDataSource(apiClient: sl<ApiClient>())
-          : MockAuthRemoteDataSource(
-              clock: sl<Clock>(),
-              idGenerator: sl<IdGenerator>(),
-            ),
+      () => RemoteAuthRemoteDataSource(apiClient: sl<ApiClient>()),
     );
 
     sl.registerLazySingleton<AuthLocalDataSource>(

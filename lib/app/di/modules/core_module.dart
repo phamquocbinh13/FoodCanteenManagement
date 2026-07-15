@@ -1,25 +1,26 @@
 import 'package:get_it/get_it.dart';
 
 import '../../../core/clock/clock.dart';
-import '../../../core/connectivity/connectivity_service.dart';
 import '../../../core/id/id_generator.dart';
-import '../../../core/lifecycle/app_lifecycle_service.dart';
 import '../../../core/logger/app_logger.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/get_it_auth_token_provider.dart';
 import '../../../core/network/http_api_client.dart';
-import '../../../core/network/stub_api_client.dart';
 import '../../../core/storage/local_storage.dart';
 import '../../../core/storage/shared_preferences_local_storage.dart';
 import '../../../core/time/time_provider.dart';
 import '../../../data/datasources/customer/customer_session_local_datasource.dart';
 import '../../../domain/events/domain_events.dart';
 import '../../config/app_config.dart';
+import '../../config/restaurant_context.dart';
+import '../../../core/theme/restaurant_brand.dart';
 
-/// Registers cross-cutting infrastructure services.
+/// Registers cross-cutting infrastructure (remote production path).
 abstract final class CoreModule {
   static Future<void> register(GetIt sl, AppConfig config) async {
     sl.registerLazySingleton<AppConfig>(() => config);
+    sl.registerLazySingleton<RestaurantContext>(() => config.restaurant);
+    RestaurantBrand.current = config.restaurant.brand;
 
     sl.registerLazySingleton<AppLogger>(
       () => ConsoleAppLogger(
@@ -43,21 +44,11 @@ abstract final class CoreModule {
     );
 
     sl.registerLazySingleton<ApiClient>(
-      () => config.useRemoteBackend
-          ? HttpApiClient(
-              baseUrl: config.apiBaseUrl,
-              logger: sl<AppLogger>(),
-              tokenProvider: GetItAuthTokenProvider(sl),
-            )
-          : StubApiClient(logger: sl<AppLogger>()),
-    );
-
-    sl.registerLazySingleton<AppLifecycleService>(
-      () => StubAppLifecycleService(),
-    );
-
-    sl.registerLazySingleton<ConnectivityService>(
-      () => StubConnectivityService(),
+      () => HttpApiClient(
+        baseUrl: config.apiBaseUrl,
+        logger: sl<AppLogger>(),
+        tokenProvider: GetItAuthTokenProvider(sl),
+      ),
     );
 
     sl.registerLazySingleton<DomainEventPublisher>(

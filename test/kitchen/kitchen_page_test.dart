@@ -18,17 +18,19 @@ import 'package:food_canteen_management/application/usecases/session/create_sess
     show CreateSessionParams, CreateSessionUseCase;
 import 'package:food_canteen_management/application/validators/customization_validator.dart';
 import 'package:food_canteen_management/core/result/result.dart';
-import 'package:food_canteen_management/data/datasources/cart/cart_local_datasource.dart';
-import 'package:food_canteen_management/data/datasources/ordering/ordering_store.dart';
-import 'package:food_canteen_management/data/datasources/session/in_memory_session_engine_datasource.dart';
-import 'package:food_canteen_management/data/repositories/batch/batch_repository_impl.dart';
-import 'package:food_canteen_management/data/repositories/cart/session_cart_repository_impl.dart';
-import 'package:food_canteen_management/data/repositories/menu/menu_repository_impl.dart';
-import 'package:food_canteen_management/data/repositories/session/session_engine_repository_impl.dart';
+import '../fakes/cart_local_datasource.dart';
+import '../fakes/ordering_store.dart';
+import '../fakes/in_memory_session_engine_datasource.dart';
+import '../fakes/batch_repository_impl.dart';
+import '../fakes/session_cart_repository_impl.dart';
+import '../fakes/menu_repository_impl.dart';
+import '../fakes/session_engine_repository_impl.dart';
+import 'package:food_canteen_management/core/permissions/permission_service.dart';
+import 'package:food_canteen_management/domain/entities/authenticated_user.dart';
 import 'package:food_canteen_management/domain/enums/domain_enums.dart';
 import 'package:food_canteen_management/domain/events/domain_events.dart';
 import 'package:food_canteen_management/domain/services/kitchen_domain_service.dart';
-import 'package:food_canteen_management/features/auth/presentation/providers/auth_provider.dart';
+import 'package:food_canteen_management/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:food_canteen_management/features/kitchen/presentation/controllers/kitchen_controller.dart';
 import 'package:food_canteen_management/features/kitchen/presentation/pages/kitchen_page.dart';
 import 'package:food_canteen_management/features/kitchen/presentation/providers/kitchen_provider.dart';
@@ -135,6 +137,7 @@ Future<KitchenController> buildKitchenController() async {
   );
 
   final controller = KitchenController(
+    restaurantId: SessionEngineConstants.demoRestaurantId,
     getKitchenQueue: GetKitchenQueueUseCase(
       batchRepository: batchRepo,
       sessionEngineRepository: sessionRepo,
@@ -167,7 +170,19 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     await Injection.reset();
     await Injection.init();
-    await sl<AuthController>().login(username: 'kitchen', password: 'kitchen123');
+    // Remote-only DI: seed kitchen permissions without Nest login.
+    sl<RoleBasedPermissionService>().updateFromRole(RoleKey.kitchen);
+    final auth = sl<AuthController>();
+    auth.status = AuthenticationStatus.authenticated;
+    auth.currentRole = RoleKey.kitchen;
+    auth.currentUser = AuthenticatedUser(
+      id: 'test-kitchen',
+      username: 'kitchen',
+      fullName: 'Demo Kitchen',
+      role: RoleKey.kitchen,
+      permissions: const ['viewKitchenQueue', 'manageMenu'],
+      createdAt: DateTime.utc(2025, 1, 1),
+    );
   });
 
   Future<void> pumpKitchen(WidgetTester tester, KitchenController controller) async {

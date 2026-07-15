@@ -4,8 +4,7 @@ import '../../../../application/menu/cart_view.dart';
 import '../../../../application/menu/kitchen_batch_ticket.dart';
 import '../../../../application/menu/menu_catalog_view.dart';
 import '../../../../application/menu/menu_item_detail_view.dart';
-import '../../../../application/session/session_constants.dart';
-import '../../../../application/usecases/batch/confirm_batch_use_case.dart';
+import '../../../../application/usecases/batch/confirm_batch_params.dart';
 import '../../../../application/usecases/cart/add_to_cart_use_case.dart';
 import '../../../../application/usecases/use_case.dart';
 import '../../../../application/usecases/cart/clear_session_cart_use_case.dart';
@@ -25,6 +24,7 @@ import '../../../../domain/entities/session_payment_summary.dart';
 /// Customer ordering controller: menu browse, cart editing, batch confirm.
 final class CustomerOrderingController extends ChangeNotifier {
   CustomerOrderingController({
+    required String restaurantId,
     required GetMenuCatalogUseCase getMenuCatalog,
     required GetMenuItemDetailUseCase getMenuItemDetail,
     required AddToCartUseCase addToCart,
@@ -36,7 +36,8 @@ final class CustomerOrderingController extends ChangeNotifier {
     required UseCase<KitchenBatchTicket, ConfirmBatchParams> confirmBatch,
     required GetSessionBillUseCase getSessionBill,
     required GetSessionBatchProgressUseCase getSessionBatchProgress,
-  })  : _getMenuCatalog = getMenuCatalog,
+  })  : _restaurantId = restaurantId,
+        _getMenuCatalog = getMenuCatalog,
         _getMenuItemDetail = getMenuItemDetail,
         _addToCart = addToCart,
         _getSessionCart = getSessionCart,
@@ -48,6 +49,7 @@ final class CustomerOrderingController extends ChangeNotifier {
         _getSessionBill = getSessionBill,
         _getSessionBatchProgress = getSessionBatchProgress;
 
+  final String _restaurantId;
   final GetMenuCatalogUseCase _getMenuCatalog;
   final GetMenuItemDetailUseCase _getMenuItemDetail;
   final AddToCartUseCase _addToCart;
@@ -89,8 +91,8 @@ final class CustomerOrderingController extends ChangeNotifier {
   Future<void> loadMenu() async {
     _setLoading(true);
     final result = await _getMenuCatalog(
-      const GetMenuCatalogParams(
-        restaurantId: SessionEngineConstants.demoRestaurantId,
+      GetMenuCatalogParams(
+        restaurantId: _restaurantId,
       ),
     );
     _setLoading(false);
@@ -107,7 +109,7 @@ final class CustomerOrderingController extends ChangeNotifier {
   Future<MenuItemDetailView?> loadItemDetail(String menuItemId) async {
     final result = await _getMenuItemDetail(
       GetMenuItemDetailParams(
-        restaurantId: SessionEngineConstants.demoRestaurantId,
+        restaurantId: _restaurantId,
         menuItemId: menuItemId,
       ),
     );
@@ -127,7 +129,7 @@ final class CustomerOrderingController extends ChangeNotifier {
     final result = await _addToCart(
       AddToCartParams(
         sessionId: sessionId,
-        restaurantId: SessionEngineConstants.demoRestaurantId,
+        restaurantId: _restaurantId,
         menuItemId: menuItemId,
         quantity: quantity,
         selectionsJson: selectionsJson,
@@ -147,7 +149,7 @@ final class CustomerOrderingController extends ChangeNotifier {
     final result = await _getSessionCart(
       GetSessionCartParams(
         sessionId: sessionId,
-        restaurantId: SessionEngineConstants.demoRestaurantId,
+        restaurantId: _restaurantId,
       ),
     );
     if (result is Success<CartView>) {
@@ -236,7 +238,7 @@ final class CustomerOrderingController extends ChangeNotifier {
         EditCartItemParams(
           sessionCartId: cartId,
           cartItemId: cartItemId,
-          restaurantId: SessionEngineConstants.demoRestaurantId,
+          restaurantId: _restaurantId,
           selectionsJson: selectionsJson,
         ),
       );
@@ -269,53 +271,71 @@ final class CustomerOrderingController extends ChangeNotifier {
 
   Future<bool> confirmBatch(String sessionId) async {
     _setLoading(true);
-    final result = await _confirmBatch(
-      ConfirmBatchParams(
-        sessionId: sessionId,
-        restaurantId: SessionEngineConstants.demoRestaurantId,
-      ),
-    );
-    _setLoading(false);
-    switch (result) {
-      case Success(:final value):
-        _lastBatch = value;
-        _cart = null;
-        _errorMessage = null;
-        await refreshBill(sessionId);
-        await refreshBatchProgress(sessionId);
-        notifyListeners();
-        return true;
-      case Err(:final failure):
-        _errorMessage = failure.message;
-        notifyListeners();
-        return false;
+    try {
+      final result = await _confirmBatch(
+        ConfirmBatchParams(
+          sessionId: sessionId,
+          restaurantId: _restaurantId,
+        ),
+      );
+      switch (result) {
+        case Success(:final value):
+          _lastBatch = value;
+          _cart = null;
+          _errorMessage = null;
+          notifyListeners();
+          // Confirm already succeeded — refresh must not block the UI.
+          try {
+            await refreshBill(sessionId);
+            await refreshBatchProgress(sessionId);
+          } catch (_) {
+            // Best-effort; cart sheet can still close.
+          }
+          notifyListeners();
+          return true;
+        case Err(:final failure):
+          _errorMessage = failure.message;
+          notifyListeners();
+          return false;
+      }
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
   Future<void> refreshBill(String sessionId) async {
-    final result = await _getSessionBill(
-      GetSessionBillParams(
-        sessionId: sessionId,
-        restaurantId: SessionEngineConstants.demoRestaurantId,
-        includeOpenCart: true,
-      ),
-    );
-    if (result is Success<SessionPaymentSummary>) {
-      _bill = result.value;
-      notifyListeners();
+    try {
+      final result = await _getSessionBill(
+        GetSessionBillParams(
+          sessionId: sessionId,
+          restaurantId: _restaurantId,
+          includeOpenCart: true,
+        ),
+      );
+      if (result is Success<SessionPaymentSummary>) {
+        _bill = result.value;
+        notifyListeners();
+      }
+    } catch (_) {
+      // Customer remote may lack staff batch detail; keep prior bill.
     }
   }
 
   Future<void> refreshBatchProgress(String sessionId) async {
-    final result = await _getSessionBatchProgress(
-      GetSessionBatchProgressParams(
-        sessionId: sessionId,
-        restaurantId: SessionEngineConstants.demoRestaurantId,
-      ),
-    );
-    if (result is Success<List<CustomerBatchProgressView>>) {
-      _batchProgress = result.value;
-      notifyListeners();
+    try {
+      final result = await _getSessionBatchProgress(
+        GetSessionBatchProgressParams(
+          sessionId: sessionId,
+          restaurantId: _restaurantId,
+        ),
+      );
+      if (result is Success<List<CustomerBatchProgressView>>) {
+        _batchProgress = result.value;
+        notifyListeners();
+      }
+    } catch (_) {
+      // Progress is non-critical for continuing to order.
     }
   }
 

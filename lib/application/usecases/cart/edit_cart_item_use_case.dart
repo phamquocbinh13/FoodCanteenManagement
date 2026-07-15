@@ -6,7 +6,7 @@ import '../../../domain/entities/session_cart_item.dart';
 import '../../../domain/exceptions/domain_exception.dart';
 import '../../../domain/repositories/menu_repository.dart';
 import '../../../domain/services/menu_domain_service.dart';
-import '../../../data/repositories/cart/session_cart_repository_impl.dart';
+import '../../../domain/repositories/session_cart_repository.dart';
 import '../../menu/customization_renderer.dart';
 import '../../validators/customization_validator.dart';
 import '../use_case.dart';

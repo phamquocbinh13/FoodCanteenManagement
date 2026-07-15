@@ -1,5 +1,62 @@
 # ROMS Iteration Memory
 
+## Iteration: 2026-07-16 — Structural debt cleanup
+
+### What changed
+1. **Test doubles → `test/fakes/`** — OrderingStore, InMemory*, local `*RepositoryImpl`, MockAuth, FakeClock, FakeIdGenerator, cart local DS (deleted from `lib/`)
+2. **Removed `USE_REMOTE_BACKEND`** — remote-only; launch uses `API_BASE_URL` + `RESTAURANT_ID`
+3. **`RestaurantContext`** — DI + feature controllers; remotes take injected restaurant id
+4. **`RemoteJson`** — shared Nest→entity parsing for all remotes; `SessionCartRepository` in domain; `ConfirmBatchParams` extracted; unused `SessionMapper` DI removed
+
+### Verify
+```bash
+flutter analyze lib   # clean
+flutter test          # 84 passed
+flutter run -d "Pixel Tablet" --dart-define=API_BASE_URL=http://10.0.2.2:3000/api/v1 --dart-define=RESTAURANT_ID=demo-restaurant
+```
+
+## Iteration: 2026-07-16 — Production remote-only cleanup
+
+### What changed
+- DI always wires **remote** repositories; removed `OrderingModule` + hybrid selection
+- Deleted unused stub datasources/repos (`app_assets`, user/payment/session stubs)
+- Removed `cupertino_icons`; `USE_REMOTE_BACKEND` defaults `true`
+- Kept `OrderingStore` / local `*RepositoryImpl` / `MockAuth` **for tests only** (not in prod DI)
+- Report: `PRODUCTION_CLEANUP_REPORT.md` — readiness **9.0/10**
+
+### Verify
+```bash
+flutter analyze lib   # clean
+flutter test          # 84 passed
+cd backend && npm run build && npm test
+# GET /health + POST /auth/login cashier
+```
+
+## Iteration: 2026-07-15 — Customer freeze after first batch
+
+### Root cause
+After confirm, Flutter refreshed bill/progress via **staff-only** batch APIs → throw → cart sheet stuck / UI frozen. Leave-session was `kDebugMode`-only.
+
+### Fix
+- Bill trusts server `paymentSummary` when batch lines unavailable
+- Progress uses `GET /sessions/me/batches/progress`
+- Confirm caches ticket; refresh errors cannot block success
+- Leave session always visible + always clears local session
+
+## Iteration: 2026-07-15 — Real RBAC permissions + customer request auth
+
+### What changed
+- **MySQL RBAC:** `permission` + `role_permission` tables (`05_rbac_permissions.sql`); `npm run seed:rbac`
+- **Auth login/me:** returns real `permissions[]` from role grants (kitchen → `viewKitchenQueue`, `manageMenu`)
+- **Customer Call Staff / Request Payment:** `RemoteSessionEngineRepository.findById` uses `GET /sessions/me` with session token (no staff JWT)
+
+### Verify
+```bash
+cd backend && npm run seed:rbac && npm run start:dev
+# login kitchen → permissions include viewKitchenQueue
+# customer POST /sessions/me/requests with X-Session-Token
+```
+
 ## Iteration: 2026-07-15 — Cashier ops completion (remaining UX debt)
 
 ### What changed

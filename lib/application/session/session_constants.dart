@@ -1,5 +1,9 @@
-/// Demo restaurant identifier for mock session engine.
+/// Session engine defaults shared by tests and seed parity.
+///
+/// Production code should prefer [RestaurantContext.restaurantId] from DI.
 abstract final class SessionEngineConstants {
+  /// Default pilot restaurant id (Nest seed / The Forest). Prefer injecting
+  /// [RestaurantContext] in production features instead of this constant.
   static const demoRestaurantId = 'demo-restaurant';
   static const demoTable1Id = 'table-1';
   static const tokenTtl = Duration(hours: 8);

@@ -29,7 +29,7 @@ type StaffWithRoles = {
   isActive: boolean;
   restaurantId: string;
   createdAt: Date;
-  user_role: Array<{ role: { roleKey: string } }>;
+  user_role: Array<{ role: { id: string; roleKey: string } }>;
 };
 
 @Injectable()
@@ -119,6 +119,9 @@ export class AuthService {
 
   private async issueTokens(user: StaffWithRoles): Promise<AuthTokensResponse> {
     const role = user.user_role[0]?.role.roleKey ?? 'cashier';
+    const permissions = await this.permissionsForRoles(
+      user.user_role.map((ur) => ur.role.id),
+    );
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
@@ -145,23 +148,40 @@ export class AuthService {
     });
 
     return {
-      user: this.toUserDto(user),
+      user: await this.toUserDto(user, permissions),
       accessToken,
       refreshToken,
       expiresAt: expiresAt.toISOString(),
     };
   }
 
-  private toUserDto(user: StaffWithRoles): AuthenticatedUserDto {
+  private async toUserDto(
+    user: StaffWithRoles,
+    permissions?: string[],
+  ): Promise<AuthenticatedUserDto> {
+    const resolved =
+      permissions ??
+      (await this.permissionsForRoles(user.user_role.map((ur) => ur.role.id)));
     return {
       id: user.id,
       username: usernameFromEmail(user.email),
       fullName: user.displayName,
       role: user.user_role[0]?.role.roleKey ?? 'cashier',
-      permissions: [],
+      permissions: resolved,
       active: user.isActive,
       createdAt: user.createdAt.toISOString(),
     };
+  }
+
+  /** Loads permission_key values granted to the given role ids (union). */
+  private async permissionsForRoles(roleIds: string[]): Promise<string[]> {
+    if (roleIds.length === 0) return [];
+    const rows = await this.prisma.role_permission.findMany({
+      where: { role_id: { in: roleIds } },
+      include: { permission: true },
+    });
+    const keys = rows.map((r) => r.permission.permissionKey);
+    return [...new Set(keys)].sort();
   }
 
   private async findStaffByEmail(email: string): Promise<StaffWithRoles | null> {

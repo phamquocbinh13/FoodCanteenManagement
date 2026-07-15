@@ -14,13 +14,13 @@ import 'package:food_canteen_management/application/usecases/session/create_sess
     show CreateSessionParams, CreateSessionUseCase;
 import 'package:food_canteen_management/application/validators/customization_validator.dart';
 import 'package:food_canteen_management/core/result/result.dart';
-import 'package:food_canteen_management/data/datasources/cart/cart_local_datasource.dart';
-import 'package:food_canteen_management/data/datasources/ordering/ordering_store.dart';
-import 'package:food_canteen_management/data/datasources/session/in_memory_session_engine_datasource.dart';
-import 'package:food_canteen_management/data/repositories/batch/batch_repository_impl.dart';
-import 'package:food_canteen_management/data/repositories/cart/session_cart_repository_impl.dart';
-import 'package:food_canteen_management/data/repositories/menu/menu_repository_impl.dart';
-import 'package:food_canteen_management/data/repositories/session/session_engine_repository_impl.dart';
+import '../fakes/cart_local_datasource.dart';
+import '../fakes/ordering_store.dart';
+import '../fakes/in_memory_session_engine_datasource.dart';
+import '../fakes/batch_repository_impl.dart';
+import '../fakes/session_cart_repository_impl.dart';
+import '../fakes/menu_repository_impl.dart';
+import '../fakes/session_engine_repository_impl.dart';
 import 'package:food_canteen_management/domain/enums/domain_enums.dart';
 import 'package:food_canteen_management/domain/events/domain_events.dart';
 import 'package:food_canteen_management/domain/services/kitchen_domain_service.dart';
@@ -298,7 +298,7 @@ void main() {
       expect(result, isA<Success>());
       final views = (result as Success).value;
       expect(views.length, 1);
-      expect(views.first.statusLabel, 'Đang chuẩn bị');
+      expect(views.first.statusLabel, 'Preparing');
     });
   });
 

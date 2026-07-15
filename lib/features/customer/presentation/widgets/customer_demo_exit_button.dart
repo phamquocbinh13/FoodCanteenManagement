@@ -10,7 +10,7 @@ class CustomerDemoExitButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return IconButton(
-      tooltip: 'Thoát Demo',
+      tooltip: 'Leave session',
       icon: const Icon(Icons.logout),
       onPressed: () => confirmAndExitCustomerDemo(context: context, ref: ref),
       style: IconButton.styleFrom(

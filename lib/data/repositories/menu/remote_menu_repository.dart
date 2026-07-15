@@ -1,7 +1,7 @@
 import '../../../application/session/session_constants.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/http_api_client.dart';
-import '../../../core/network/json_key_codec.dart';
+import '../../../data/mappers/remote_json.dart';
 import '../../../domain/entities/customization_group.dart';
 import '../../../domain/entities/customization_option.dart';
 import '../../../domain/entities/menu_category.dart';
@@ -11,9 +11,14 @@ import '../../../domain/repositories/menu_repository.dart';
 
 /// [MenuRepository] backed by NestJS Menu APIs.
 final class RemoteMenuRepository implements MenuRepository {
-  RemoteMenuRepository({required ApiClient apiClient}) : _api = apiClient;
+  RemoteMenuRepository({
+    required ApiClient apiClient,
+    String defaultRestaurantId = SessionEngineConstants.demoRestaurantId,
+  })  : _api = apiClient,
+        _defaultRestaurantId = defaultRestaurantId;
 
   final ApiClient _api;
+  final String _defaultRestaurantId;
 
   final Map<String, String> _itemRestaurantIds = {};
   final Map<String, List<CustomizationGroup>> _groupsByItemId = {};
@@ -21,16 +26,16 @@ final class RemoteMenuRepository implements MenuRepository {
   final Map<String, int> _catalogVersions = {};
 
   MenuItem _parseItem(Map<String, dynamic> json) {
-    final item = MenuItem.fromJson(camelCaseKeysToSnake(json));
+    final item = RemoteJson.parse(json, MenuItem.fromJson);
     _itemRestaurantIds[item.id] = item.restaurantId;
     return item;
   }
 
   MenuCategory _parseCategory(Map<String, dynamic> json) =>
-      MenuCategory.fromJson(camelCaseKeysToSnake(json));
+      RemoteJson.parse(json, MenuCategory.fromJson);
 
   CustomizationGroup _parseGroup(Map<String, dynamic> json) {
-    final snake = camelCaseKeysToSnake(json);
+    final snake = RemoteJson.normalize(json);
     final optionsJson = (snake.remove('options') as List<dynamic>? ?? [])
         .cast<Map<String, dynamic>>();
     final group = CustomizationGroup.fromJson(snake);
@@ -60,8 +65,7 @@ final class RemoteMenuRepository implements MenuRepository {
   }
 
   String _restaurantIdForItem(String menuItemId) =>
-      _itemRestaurantIds[menuItemId] ??
-      SessionEngineConstants.demoRestaurantId;
+      _itemRestaurantIds[menuItemId] ?? _defaultRestaurantId;
 
   @override
   Future<List<MenuCategory>> listCategories(String restaurantId) async {

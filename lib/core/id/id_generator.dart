@@ -14,16 +14,3 @@ final class UuidGenerator implements IdGenerator {
   @override
   String nextId() => _uuid.v4();
 }
-
-/// Deterministic ID generator for tests.
-final class FakeIdGenerator implements IdGenerator {
-  FakeIdGenerator({this.prefix = 'test-id'});
-
-  final String prefix;
-  int _counter = 0;
-
-  @override
-  String nextId() => '$prefix-${_counter++}';
-
-  void reset([int value = 0]) => _counter = value;
-}

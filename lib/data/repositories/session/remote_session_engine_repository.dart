@@ -2,23 +2,29 @@ import '../../../application/session/session_constants.dart';
 import '../../../core/errors/failures.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/http_api_client.dart';
-import '../../../core/network/json_key_codec.dart';
+import '../../../core/network/session_token_headers.dart';
 import '../../../core/result/result.dart';
+import '../../../data/mappers/remote_json.dart';
 import '../../../domain/entities/dine_in_session.dart';
 import '../../../domain/entities/session_engine_snapshot.dart';
 import '../../../domain/entities/session_timeline_event.dart';
 import '../../../domain/enums/domain_enums.dart';
 import '../../../domain/repositories/session_engine_repository.dart';
+import '../../datasources/customer/customer_session_local_datasource.dart';
 
 /// [SessionEngineRepository] backed by NestJS Session APIs (Stage A).
 final class RemoteSessionEngineRepository implements SessionEngineRepository {
-  RemoteSessionEngineRepository({required ApiClient apiClient})
-      : _api = apiClient;
+  RemoteSessionEngineRepository({
+    required ApiClient apiClient,
+    required CustomerSessionLocalDataSource localSession,
+  })  : _api = apiClient,
+        _localSession = localSession;
 
   final ApiClient _api;
+  final CustomerSessionLocalDataSource _localSession;
 
   SessionEngineSnapshot _parseSnapshot(Map<String, dynamic> json) {
-    return SessionEngineSnapshot.fromJson(camelCaseKeysToSnake(json));
+    return RemoteJson.parse(json, SessionEngineSnapshot.fromJson);
   }
 
   @override
@@ -73,7 +79,7 @@ final class RemoteSessionEngineRepository implements SessionEngineRepository {
           requiresAuth: false,
           body: {
             'sessionToken': sessionTokenValue,
-            if (deviceId != null) 'deviceId': deviceId,
+            'deviceId': ?deviceId,
           },
         ),
       );
@@ -96,7 +102,7 @@ final class RemoteSessionEngineRepository implements SessionEngineRepository {
           path: '/restaurants/$restaurantId/sessions/$sessionId/close',
           method: HttpMethod.post,
           body: {
-            if (closedByUserId != null) 'closedByUserId': closedByUserId,
+            'closedByUserId': ?closedByUserId,
           },
         ),
       );
@@ -168,6 +174,27 @@ final class RemoteSessionEngineRepository implements SessionEngineRepository {
     required String sessionId,
     required String restaurantId,
   }) async {
+    // Customer path: session token → GET /sessions/me (no staff JWT).
+    final customerHeaders = await customerSessionHeaders(_localSession);
+    if (customerHeaders.isNotEmpty) {
+      try {
+        final me = await _api.send<Map<String, dynamic>>(
+          ApiRequest(
+            path: '/sessions/me',
+            requiresAuth: false,
+            headers: customerHeaders,
+          ),
+        );
+        final snapshot = _parseSnapshot(me.data);
+        if (snapshot.session.id == sessionId &&
+            snapshot.session.restaurantId == restaurantId) {
+          return Success(snapshot);
+        }
+      } catch (_) {
+        // Fall through to staff restaurant session lookup.
+      }
+    }
+
     try {
       final response = await _api.send<Map<String, dynamic>>(
         ApiRequest(

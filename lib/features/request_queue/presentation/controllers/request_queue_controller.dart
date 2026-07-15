@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 
 import '../../../../application/request/staff_request_view_models.dart';
-import '../../../../application/session/session_constants.dart';
 import '../../../../application/usecases/request/handle_staff_request_use_case.dart';
 import '../../../../application/usecases/request/list_pending_staff_requests_use_case.dart';
 import '../../../../core/result/result.dart';
@@ -9,11 +8,14 @@ import '../../../../core/result/result.dart';
 /// Cashier-facing pending request queue.
 final class RequestQueueController extends ChangeNotifier {
   RequestQueueController({
+    required String restaurantId,
     required ListPendingStaffRequestsUseCase listPending,
     required HandleStaffRequestUseCase handleRequest,
-  })  : _listPending = listPending,
+  })  : _restaurantId = restaurantId,
+        _listPending = listPending,
         _handleRequest = handleRequest;
 
+  final String _restaurantId;
   final ListPendingStaffRequestsUseCase _listPending;
   final HandleStaffRequestUseCase _handleRequest;
 
@@ -34,8 +36,8 @@ final class RequestQueueController extends ChangeNotifier {
     notifyListeners();
 
     final result = await _listPending(
-      const ListPendingStaffRequestsParams(
-        restaurantId: SessionEngineConstants.demoRestaurantId,
+      ListPendingStaffRequestsParams(
+        restaurantId: _restaurantId,
       ),
     );
 
@@ -59,7 +61,7 @@ final class RequestQueueController extends ChangeNotifier {
 
     final result = await _handleRequest(
       HandleStaffRequestParams(
-        restaurantId: SessionEngineConstants.demoRestaurantId,
+        restaurantId: _restaurantId,
         requestId: requestId,
         handledByUserId: handledByUserId,
       ),

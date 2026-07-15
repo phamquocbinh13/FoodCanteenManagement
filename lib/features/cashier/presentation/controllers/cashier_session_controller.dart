@@ -18,6 +18,7 @@ import '../../../../domain/services/session_state_machine.dart';
 /// Cashier-side session controller for floor open / pay / force-close.
 final class CashierSessionController extends ChangeNotifier {
   CashierSessionController({
+    required String restaurantId,
     required CreateSessionUseCase createSession,
     required CloseSessionUseCase closeSession,
     required MarkWaitingPaymentUseCase markWaitingPayment,
@@ -25,7 +26,8 @@ final class CashierSessionController extends ChangeNotifier {
     required GetCashierBatchSummariesUseCase getCashierBatchSummaries,
     required ListRestaurantTablesUseCase listTables,
     CloseSessionWithPaymentUseCase? closeWithPayment,
-  })  : _createSession = createSession,
+  })  : _restaurantId = restaurantId,
+        _createSession = createSession,
         _closeSession = closeSession,
         _markWaitingPayment = markWaitingPayment,
         _restoreSession = restoreSession,
@@ -33,6 +35,7 @@ final class CashierSessionController extends ChangeNotifier {
         _listTables = listTables,
         _closeWithPayment = closeWithPayment;
 
+  final String _restaurantId;
   final CreateSessionUseCase _createSession;
   final CloseSessionUseCase _closeSession;
   final MarkWaitingPaymentUseCase _markWaitingPayment;
@@ -94,8 +97,8 @@ final class CashierSessionController extends ChangeNotifier {
 
   Future<void> _loadTables() async {
     final result = await _listTables(
-      const ListRestaurantTablesParams(
-        restaurantId: SessionEngineConstants.demoRestaurantId,
+      ListRestaurantTablesParams(
+        restaurantId: _restaurantId,
       ),
     );
     if (result is Success<List<RestaurantTable>>) {
@@ -105,8 +108,8 @@ final class CashierSessionController extends ChangeNotifier {
 
   Future<void> _loadActiveSessions() async {
     final result = await _restoreSession(
-      const RestoreSessionParams(
-        restaurantId: SessionEngineConstants.demoRestaurantId,
+      RestoreSessionParams(
+        restaurantId: _restaurantId,
       ),
     );
     if (result is Success<List<SessionEngineSnapshot>>) {
@@ -168,7 +171,7 @@ final class CashierSessionController extends ChangeNotifier {
     _setLoading(true);
     final result = await _createSession(
       CreateSessionParams(
-        restaurantId: SessionEngineConstants.demoRestaurantId,
+        restaurantId: _restaurantId,
         tableId: tableId,
         tableStatus: TableStatus.available,
         openedVia: SessionOpenedVia.cashierManual,
@@ -296,7 +299,7 @@ final class CashierSessionController extends ChangeNotifier {
     final result = await _getCashierBatchSummaries(
       GetCashierBatchSummariesParams(
         sessionId: sessionId,
-        restaurantId: SessionEngineConstants.demoRestaurantId,
+        restaurantId: _restaurantId,
       ),
     );
     if (result is Success<List<CashierBatchSummaryView>>) {

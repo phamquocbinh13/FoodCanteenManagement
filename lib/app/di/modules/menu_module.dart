@@ -1,18 +1,16 @@
 import 'package:get_it/get_it.dart';
 
 import '../../../application/menu/customization_renderer.dart';
-import '../../../application/validators/customization_validator.dart';
 import '../../../application/usecases/menu/get_menu_catalog_use_case.dart';
 import '../../../application/usecases/menu/get_menu_item_detail_use_case.dart';
 import '../../../application/usecases/menu/lock_menu_item_use_case.dart';
+import '../../../application/validators/customization_validator.dart';
 import '../../../core/clock/clock.dart';
 import '../../../core/network/api_client.dart';
-import '../../../data/datasources/ordering/ordering_store.dart';
-import '../../../data/repositories/menu/menu_repository_impl.dart';
 import '../../../data/repositories/menu/remote_menu_repository.dart';
 import '../../../domain/repositories/menu_repository.dart';
 import '../../../domain/services/menu_domain_service.dart';
-import '../../config/app_config.dart';
+import '../../config/restaurant_context.dart';
 
 abstract final class MenuModule {
   static void register(GetIt sl) {
@@ -21,12 +19,10 @@ abstract final class MenuModule {
     sl.registerLazySingleton(() => const CustomizationRenderer());
 
     sl.registerLazySingleton<MenuRepository>(
-      () => sl<AppConfig>().useRemoteBackend
-          ? RemoteMenuRepository(apiClient: sl<ApiClient>())
-          : MenuRepositoryImpl(
-              store: sl<OrderingStore>(),
-              menuDomainService: sl<MenuDomainService>(),
-            ),
+      () => RemoteMenuRepository(
+        apiClient: sl<ApiClient>(),
+        defaultRestaurantId: sl<RestaurantContext>().restaurantId,
+      ),
     );
 
     sl.registerLazySingleton(

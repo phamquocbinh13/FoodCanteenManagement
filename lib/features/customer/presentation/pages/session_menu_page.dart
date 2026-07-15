@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -70,7 +69,7 @@ class _SessionMenuPageState extends ConsumerState<SessionMenuPage> {
                 ),
               ),
             ),
-          if (kDebugMode) const CustomerDemoExitButton(),
+          const CustomerDemoExitButton(),
         ],
       ),
       floatingActionButton: sessionId != null && ordering.cartItemCount > 0

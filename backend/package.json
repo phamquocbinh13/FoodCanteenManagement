@@ -22,7 +22,8 @@
     "prisma:pull": "prisma db pull",
     "prisma:studio": "prisma studio",
     "seed:passwords": "ts-node prisma/seed-passwords.ts",
-    "seed:demo-menu": "ts-node prisma/seed-demo-menu.ts"
+    "seed:demo-menu": "ts-node prisma/seed-demo-menu.ts",
+    "seed:rbac": "ts-node prisma/seed-rbac.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

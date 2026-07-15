@@ -6,18 +6,19 @@ import 'package:food_canteen_management/application/usecases/auth/logout_use_cas
 import 'package:food_canteen_management/application/usecases/use_case.dart';
 import 'package:food_canteen_management/application/validators/user_validator.dart';
 import 'package:food_canteen_management/app/router/route_paths.dart';
-import 'package:food_canteen_management/core/clock/fake_clock.dart';
-import 'package:food_canteen_management/core/id/id_generator.dart';
 import 'package:food_canteen_management/core/permissions/permission_service.dart';
 import 'package:food_canteen_management/core/result/result.dart';
 import 'package:food_canteen_management/core/storage/local_storage.dart';
 import 'package:food_canteen_management/data/datasources/auth/auth_local_datasource.dart';
-import 'package:food_canteen_management/data/datasources/auth/mock_auth_remote_datasource.dart';
 import 'package:food_canteen_management/data/repositories/auth/auth_repository_impl.dart';
 import 'package:food_canteen_management/domain/entities/auth_session.dart';
 import 'package:food_canteen_management/domain/entities/authenticated_user.dart';
 import 'package:food_canteen_management/domain/enums/domain_enums.dart';
 import 'package:food_canteen_management/domain/repositories/auth_repository.dart';
+
+import '../fakes/fake_clock.dart';
+import '../fakes/fake_id_generator.dart';
+import '../fakes/mock_auth_remote_datasource.dart';
 
 void main() {
   group('RoleResolver', () {

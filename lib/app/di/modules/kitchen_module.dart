@@ -5,7 +5,6 @@ import '../../../application/menu/kitchen_batch_ticket.dart';
 import '../../../application/policies/kitchen_policy.dart';
 import '../../../application/session/session_timeline_recorder.dart';
 import '../../../application/usecases/batch/add_batch_use_case.dart';
-import '../../../application/usecases/batch/complete_batch_use_case.dart';
 import '../../../application/usecases/batch/server_confirm_batch_use_case.dart';
 import '../../../application/usecases/cart/add_to_cart_use_case.dart';
 import '../../../application/usecases/cart/clear_session_cart_use_case.dart';
@@ -24,45 +23,35 @@ import '../../../application/validators/customization_validator.dart';
 import '../../../core/clock/clock.dart';
 import '../../../core/id/id_generator.dart';
 import '../../../core/network/api_client.dart';
-import '../../../core/storage/local_storage.dart';
-import '../../../data/datasources/cart/cart_local_datasource.dart';
 import '../../../data/datasources/customer/customer_session_local_datasource.dart';
-import '../../../data/datasources/ordering/ordering_store.dart';
-import '../../../data/repositories/batch/batch_repository_impl.dart';
 import '../../../data/repositories/batch/remote_batch_repository.dart';
 import '../../../data/repositories/cart/remote_session_cart_repository.dart';
-import '../../../data/repositories/cart/session_cart_repository_impl.dart';
 import '../../../domain/events/domain_events.dart';
 import '../../../domain/repositories/batch_repository.dart';
 import '../../../domain/repositories/menu_repository.dart';
+import '../../../domain/repositories/session_cart_repository.dart';
 import '../../../domain/repositories/session_engine_repository.dart';
+import '../../config/restaurant_context.dart';
 import '../../../domain/services/batch_domain_service.dart';
 import '../../../domain/services/kitchen_domain_service.dart';
 import '../../../domain/services/menu_domain_service.dart';
-import '../../config/app_config.dart';
 
 abstract final class KitchenModule {
   static void register(GetIt sl) {
-    sl.registerLazySingleton<CartLocalDataSource>(
-      () => CartLocalDataSourceImpl(sl<LocalStorage>()),
-    );
-
     sl.registerLazySingleton<SessionCartRepository>(
-      () => sl<AppConfig>().useRemoteBackend
-          ? RemoteSessionCartRepository(
-              apiClient: sl<ApiClient>(),
-              localSession: sl<CustomerSessionLocalDataSource>(),
-            )
-          : SessionCartRepositoryImpl(
-              store: sl<OrderingStore>(),
-              localDataSource: sl<CartLocalDataSource>(),
-            ),
+      () => RemoteSessionCartRepository(
+        apiClient: sl<ApiClient>(),
+        localSession: sl<CustomerSessionLocalDataSource>(),
+        restaurantId: sl<RestaurantContext>().restaurantId,
+      ),
     );
 
     sl.registerLazySingleton<BatchRepository>(
-      () => sl<AppConfig>().useRemoteBackend
-          ? RemoteBatchRepository(apiClient: sl<ApiClient>())
-          : BatchRepositoryImpl(store: sl<OrderingStore>()),
+      () => RemoteBatchRepository(
+        apiClient: sl<ApiClient>(),
+        localSession: sl<CustomerSessionLocalDataSource>(),
+        defaultRestaurantId: sl<RestaurantContext>().restaurantId,
+      ),
     );
 
     sl.registerLazySingleton(() => const BatchDomainService());
@@ -118,39 +107,22 @@ abstract final class KitchenModule {
       () => ClearSessionCartUseCase(cartRepository: sl<SessionCartRepository>()),
     );
 
-    if (sl<AppConfig>().useRemoteBackend) {
-      sl.registerLazySingleton(
-        () => ServerConfirmBatchUseCase(
+    sl.registerLazySingleton(
+      () {
+        final batches = sl<BatchRepository>();
+        return ServerConfirmBatchUseCase(
           apiClient: sl<ApiClient>(),
           localSession: sl<CustomerSessionLocalDataSource>(),
           eventPublisher: sl<DomainEventPublisher>(),
           idGenerator: sl<IdGenerator>(),
           clock: sl<Clock>(),
-        ),
-      );
-    } else {
-      sl.registerLazySingleton(
-        () => ConfirmBatchUseCase(
-          cartRepository: sl<SessionCartRepository>(),
-          batchRepository: sl<BatchRepository>(),
-          menuRepository: sl<MenuRepository>(),
-          sessionEngineRepository: sl<SessionEngineRepository>(),
-          customizationRenderer: sl<CustomizationRenderer>(),
-          timelineRecorder: sl<SessionTimelineRecorder>(),
-          idGenerator: sl<IdGenerator>(),
-          eventPublisher: sl<DomainEventPublisher>(),
-          clock: sl<Clock>(),
-          batchDomainService: sl<BatchDomainService>(),
-          menuDomainService: sl<MenuDomainService>(),
-        ),
-      );
-    }
+          batchCache: batches is RemoteBatchRepository ? batches : null,
+        );
+      },
+    );
 
-    sl.registerLazySingleton<
-        UseCase<KitchenBatchTicket, ConfirmBatchParams>>(
-      () => sl<AppConfig>().useRemoteBackend
-          ? sl<ServerConfirmBatchUseCase>()
-          : sl<ConfirmBatchUseCase>(),
+    sl.registerLazySingleton<UseCase<KitchenBatchTicket, ConfirmBatchParams>>(
+      () => sl<ServerConfirmBatchUseCase>(),
     );
 
     sl.registerLazySingleton(
@@ -208,6 +180,9 @@ abstract final class KitchenModule {
       () => GetSessionBatchProgressUseCase(
         batchRepository: sl<BatchRepository>(),
         kitchenDomainService: sl<KitchenDomainService>(),
+        apiClient: sl<ApiClient>(),
+        localSession: sl<CustomerSessionLocalDataSource>(),
+        preferCustomerProgressApi: true,
       ),
     );
 
@@ -216,10 +191,6 @@ abstract final class KitchenModule {
         batchRepository: sl<BatchRepository>(),
         kitchenDomainService: sl<KitchenDomainService>(),
       ),
-    );
-
-    sl.registerLazySingleton(
-      () => CompleteBatchUseCase(batchRepository: sl<BatchRepository>()),
     );
   }
 }

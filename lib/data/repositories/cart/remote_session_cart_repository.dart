@@ -2,13 +2,13 @@ import '../../../application/session/session_constants.dart';
 import '../../../core/errors/failures.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/http_api_client.dart';
-import '../../../core/network/json_key_codec.dart';
 import '../../../core/network/session_token_headers.dart';
 import '../../../core/result/result.dart';
+import '../../../data/mappers/remote_json.dart';
 import '../../../domain/entities/session_cart.dart';
 import '../../../domain/entities/session_cart_item.dart';
+import '../../../domain/repositories/session_cart_repository.dart';
 import '../../datasources/customer/customer_session_local_datasource.dart';
-import 'session_cart_repository_impl.dart';
 
 /// [SessionCartRepository] backed by NestJS Cart APIs (`/sessions/me/cart*`).
 final class RemoteSessionCartRepository implements SessionCartRepository {
@@ -28,10 +28,10 @@ final class RemoteSessionCartRepository implements SessionCartRepository {
   final Map<String, SessionCart> _cartsBySessionId = {};
 
   SessionCart _parseCart(Map<String, dynamic> json) =>
-      SessionCart.fromJson(camelCaseKeysToSnake(json));
+      RemoteJson.parse(json, SessionCart.fromJson);
 
   SessionCartItem _parseItem(Map<String, dynamic> json) =>
-      SessionCartItem.fromJson(camelCaseKeysToSnake(json));
+      RemoteJson.parse(json, SessionCartItem.fromJson);
 
   Future<Map<String, String>> _headers() => customerSessionHeaders(_local);
 

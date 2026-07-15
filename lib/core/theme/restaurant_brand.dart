@@ -35,6 +35,6 @@ final class RestaurantBrand {
     tagline: 'Calm dining. Precise service.',
   );
 
-  /// Active brand for this build (swap later for multi-tenant).
+  /// Active brand for this build — set from app RestaurantContext at DI init.
   static RestaurantBrand current = theForest;
 }

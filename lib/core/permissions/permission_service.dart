@@ -41,6 +41,7 @@ abstract final class RolePermissions {
     },
     RoleKey.cashier: {
       AppPermission.closeSession,
+      AppPermission.forceCloseSession,
       AppPermission.handleRequests,
       AppPermission.manageTables,
       AppPermission.reassignDelivery,

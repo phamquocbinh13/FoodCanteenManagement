@@ -124,6 +124,7 @@ let AuthService = class AuthService {
     }
     async issueTokens(user) {
         const role = user.user_role[0]?.role.roleKey ?? 'cashier';
+        const permissions = await this.permissionsForRoles(user.user_role.map((ur) => ur.role.id));
         const payload = {
             sub: user.id,
             email: user.email,
@@ -147,22 +148,34 @@ let AuthService = class AuthService {
             },
         });
         return {
-            user: this.toUserDto(user),
+            user: await this.toUserDto(user, permissions),
             accessToken,
             refreshToken,
             expiresAt: expiresAt.toISOString(),
         };
     }
-    toUserDto(user) {
+    async toUserDto(user, permissions) {
+        const resolved = permissions ??
+            (await this.permissionsForRoles(user.user_role.map((ur) => ur.role.id)));
         return {
             id: user.id,
             username: (0, auth_types_1.usernameFromEmail)(user.email),
             fullName: user.displayName,
             role: user.user_role[0]?.role.roleKey ?? 'cashier',
-            permissions: [],
+            permissions: resolved,
             active: user.isActive,
             createdAt: user.createdAt.toISOString(),
         };
+    }
+    async permissionsForRoles(roleIds) {
+        if (roleIds.length === 0)
+            return [];
+        const rows = await this.prisma.role_permission.findMany({
+            where: { role_id: { in: roleIds } },
+            include: { permission: true },
+        });
+        const keys = rows.map((r) => r.permission.permissionKey);
+        return [...new Set(keys)].sort();
     }
     async findStaffByEmail(email) {
         return this.prisma.staffUser.findFirst({

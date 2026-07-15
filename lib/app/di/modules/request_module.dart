@@ -10,27 +10,24 @@ import '../../../core/clock/clock.dart';
 import '../../../core/id/id_generator.dart';
 import '../../../core/network/api_client.dart';
 import '../../../data/datasources/customer/customer_session_local_datasource.dart';
-import '../../../data/datasources/ordering/ordering_store.dart';
 import '../../../data/repositories/request/remote_request_repository.dart';
-import '../../../data/repositories/request/request_repository_impl.dart';
 import '../../../domain/events/domain_events.dart';
 import '../../../domain/repositories/request_repository.dart';
 import '../../../domain/repositories/session_engine_repository.dart';
 import '../../../domain/services/request_domain_service.dart';
-import '../../config/app_config.dart';
+import '../../config/restaurant_context.dart';
 
-/// Request queue module — customer call-staff + cashier handling.
+/// Request queue — customer call-staff + cashier handling (remote).
 abstract final class RequestModule {
   static void register(GetIt sl) {
     sl.registerLazySingleton(() => const RequestDomainService());
 
     sl.registerLazySingleton<RequestRepository>(
-      () => sl<AppConfig>().useRemoteBackend
-          ? RemoteRequestRepository(
-              apiClient: sl<ApiClient>(),
-              localSession: sl<CustomerSessionLocalDataSource>(),
-            )
-          : RequestRepositoryImpl(store: sl<OrderingStore>()),
+      () => RemoteRequestRepository(
+        apiClient: sl<ApiClient>(),
+        localSession: sl<CustomerSessionLocalDataSource>(),
+        restaurantId: sl<RestaurantContext>().restaurantId,
+      ),
     );
 
     sl.registerLazySingleton(
@@ -43,7 +40,7 @@ abstract final class RequestModule {
         idGenerator: sl<IdGenerator>(),
         eventPublisher: sl<DomainEventPublisher>(),
         clock: sl<Clock>(),
-        serverOwnsSideEffects: sl<AppConfig>().useRemoteBackend,
+        serverOwnsSideEffects: true,
       ),
     );
 

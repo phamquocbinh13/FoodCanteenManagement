@@ -44,11 +44,15 @@ Future<void> exitCustomerDemo(WidgetRef ref) async {
   final ordering = ref.read(customerOrderingControllerProvider);
   final sessionId = session.snapshot?.session.id;
 
-  if (sessionId != null) {
-    await ordering.clearCart(sessionId);
+  try {
+    if (sessionId != null) {
+      await ordering.clearCart(sessionId);
+    }
+  } catch (_) {
+    // Leaving must succeed even if cart clear fails remotely.
+  } finally {
+    await session.leaveSession();
+    ordering.resetSessionState();
+    ref.invalidate(customerOrderingControllerProvider);
   }
-
-  await session.leaveSession();
-  ordering.resetSessionState();
-  ref.invalidate(customerOrderingControllerProvider);
 }

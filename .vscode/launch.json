@@ -1,0 +1,26 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "ROMS Emulator (Remote Backend)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "args": [
+        "--dart-define=API_BASE_URL=http://10.0.2.2:3000/api/v1",
+        "--dart-define=RESTAURANT_ID=demo-restaurant"
+      ]
+    },
+    {
+      "name": "ROMS Windows (Remote Backend)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "deviceId": "windows",
+      "args": [
+        "--dart-define=API_BASE_URL=http://localhost:3000/api/v1",
+        "--dart-define=RESTAURANT_ID=demo-restaurant"
+      ]
+    }
+  ]
+}

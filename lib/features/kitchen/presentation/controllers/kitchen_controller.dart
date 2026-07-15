@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 
 import '../../../../application/kitchen/kitchen_view_models.dart';
-import '../../../../application/session/session_constants.dart';
 import '../../../../application/usecases/kitchen/complete_batch_item_use_case.dart';
 import '../../../../application/usecases/kitchen/get_kitchen_menu_panel_use_case.dart';
 import '../../../../application/usecases/kitchen/get_kitchen_queue_use_case.dart';
@@ -12,15 +11,18 @@ import '../../../../domain/entities/menu_item.dart';
 /// Kitchen Display System controller — queue + one-tap item completion.
 final class KitchenController extends ChangeNotifier {
   KitchenController({
+    required String restaurantId,
     required GetKitchenQueueUseCase getKitchenQueue,
     required CompleteBatchItemUseCase completeBatchItem,
     required ToggleMenuAvailabilityUseCase toggleMenuAvailability,
     required GetKitchenMenuPanelUseCase getKitchenMenuPanel,
-  })  : _getKitchenQueue = getKitchenQueue,
+  })  : _restaurantId = restaurantId,
+        _getKitchenQueue = getKitchenQueue,
         _completeBatchItem = completeBatchItem,
         _toggleMenuAvailability = toggleMenuAvailability,
         _getKitchenMenuPanel = getKitchenMenuPanel;
 
+  final String _restaurantId;
   final GetKitchenQueueUseCase _getKitchenQueue;
   final CompleteBatchItemUseCase _completeBatchItem;
   final ToggleMenuAvailabilityUseCase _toggleMenuAvailability;
@@ -45,7 +47,7 @@ final class KitchenController extends ChangeNotifier {
     _setLoading(true);
     final result = await _getKitchenQueue(
       GetKitchenQueueParams(
-        restaurantId: SessionEngineConstants.demoRestaurantId,
+        restaurantId: _restaurantId,
         showCompleted: _showCompleted,
       ),
     );
@@ -62,8 +64,8 @@ final class KitchenController extends ChangeNotifier {
 
   Future<void> loadMenuPanel() async {
     final result = await _getKitchenMenuPanel(
-      const GetKitchenMenuPanelParams(
-        restaurantId: SessionEngineConstants.demoRestaurantId,
+      GetKitchenMenuPanelParams(
+        restaurantId: _restaurantId,
       ),
     );
     if (result is Success<List<KitchenMenuItemViewModel>>) {
@@ -91,7 +93,7 @@ final class KitchenController extends ChangeNotifier {
 
     final result = await _completeBatchItem(
       CompleteBatchItemParams(
-        restaurantId: SessionEngineConstants.demoRestaurantId,
+        restaurantId: _restaurantId,
         batchItemId: batchItemId,
       ),
     );
@@ -111,7 +113,7 @@ final class KitchenController extends ChangeNotifier {
   Future<bool> toggleMenuItem(String menuItemId) async {
     final result = await _toggleMenuAvailability(
       ToggleMenuAvailabilityParams(
-        restaurantId: SessionEngineConstants.demoRestaurantId,
+        restaurantId: _restaurantId,
         menuItemId: menuItemId,
       ),
     );

@@ -1,8 +1,8 @@
 import '../../../core/errors/app_exception.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/http_api_client.dart';
-import '../../../core/network/json_key_codec.dart';
 import '../../../core/network/session_token_headers.dart';
+import '../../../data/mappers/remote_json.dart';
 import '../../../domain/entities/staff_request.dart';
 import '../../../domain/enums/domain_enums.dart';
 import '../../../domain/repositories/request_repository.dart';
@@ -26,7 +26,7 @@ final class RemoteRequestRepository implements RequestRepository {
   final Map<String, StaffRequest> _byId = {};
 
   StaffRequest _parse(Map<String, dynamic> json) {
-    final request = StaffRequest.fromJson(camelCaseKeysToSnake(json));
+    final request = RemoteJson.parse(json, StaffRequest.fromJson);
     _byId[request.id] = request;
     return request;
   }

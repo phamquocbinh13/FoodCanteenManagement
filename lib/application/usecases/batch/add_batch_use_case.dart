@@ -1,10 +1,10 @@
 import '../../../application/menu/kitchen_batch_ticket.dart';
-import '../../../application/usecases/batch/confirm_batch_use_case.dart';
 import '../../../core/result/result.dart';
 import '../../../domain/enums/domain_enums.dart';
 import '../use_case.dart';
+import 'confirm_batch_params.dart';
 
-export 'confirm_batch_use_case.dart';
+export 'confirm_batch_params.dart';
 
 /// Confirms cart and creates immutable batch. Delegates to ConfirmBatch.
 final class AddBatchUseCase
