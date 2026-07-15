@@ -31,6 +31,7 @@ let KitchenService = class KitchenService {
             where: {
                 restaurant_id: restaurantId,
                 session_id: { not: null },
+                batch_item: { some: {} },
             },
             include: {
                 batch_item: { orderBy: { created_at: 'asc' } },
@@ -63,6 +64,7 @@ let KitchenService = class KitchenService {
             where: {
                 restaurant_id: restaurantId,
                 session_id: { not: null },
+                batch_item: { some: {} },
             },
             include: {
                 batch_item: {

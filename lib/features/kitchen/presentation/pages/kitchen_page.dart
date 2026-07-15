@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,6 +26,7 @@ class KitchenPage extends ConsumerStatefulWidget {
 class _KitchenPageState extends ConsumerState<KitchenPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  Timer? _refreshTimer;
 
   final Set<String> _seenBatchIds = {};
   final Set<String> _highlightedBatchIds = {};
@@ -36,6 +38,17 @@ class _KitchenPageState extends ConsumerState<KitchenPage>
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(_onTabChanged);
+    _startRefreshTimer();
+  }
+
+  void _startRefreshTimer() {
+    _refreshTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      if (!mounted) return;
+      ref.invalidate(kitchenOverviewProvider);
+      if (_ordersLoaded) {
+        ref.read(kitchenControllerProvider).refresh();
+      }
+    });
   }
 
   void _onTabChanged() {
@@ -49,6 +62,7 @@ class _KitchenPageState extends ConsumerState<KitchenPage>
 
   @override
   void dispose() {
+    _refreshTimer?.cancel();
     _tabController
       ..removeListener(_onTabChanged)
       ..dispose();
