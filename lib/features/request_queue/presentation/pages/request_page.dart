@@ -5,6 +5,7 @@ import '../../../../application/request/staff_request_view_models.dart';
 import '../../../../application/session/customer_session_messages.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/widgets.dart';
 import '../../../../domain/enums/domain_enums.dart';
 import '../../../../shared/presentation/staff_scaffold.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -65,22 +66,15 @@ class RequestPage extends ConsumerWidget {
             if (queue.isLoading && queue.items.isEmpty)
               const SliverFillRemaining(
                 hasScrollBody: false,
-                child: Center(child: CircularProgressIndicator()),
+                child: LoadingIndicator(message: 'Loading requests…'),
               )
             else if (queue.items.isEmpty)
-              SliverFillRemaining(
+              const SliverFillRemaining(
                 hasScrollBody: false,
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppSpacing.xl),
-                    child: Text(
-                      'No pending requests.\nPull to refresh.',
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
+                child: EmptyState(
+                  title: 'Queue clear',
+                  message: 'No pending requests. Pull to refresh.',
+                  icon: Icons.inbox_outlined,
                 ),
               )
             else
@@ -350,49 +344,53 @@ class _RequestOptionCard extends StatelessWidget {
       child: InkWell(
         onTap: enabled ? onTap : null,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Row(
-            children: [
-              Icon(
-                icon,
-                size: 32,
-                color: enabled
-                    ? theme.colorScheme.primary
-                    : theme.colorScheme.onSurface.withValues(alpha: 0.38),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: enabled
-                            ? null
-                            : theme.colorScheme.onSurface.withValues(
-                                alpha: 0.38,
-                              ),
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.xxs),
-                    Text(
-                      subtitle,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 72),
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Row(
+              children: [
+                Icon(
+                  icon,
+                  size: 28,
+                  color: enabled
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.onSurface.withValues(alpha: 0.38),
                 ),
-              ),
-              Icon(
-                Icons.chevron_right,
-                color: enabled
-                    ? theme.colorScheme.onSurfaceVariant
-                    : theme.colorScheme.onSurface.withValues(alpha: 0.24),
-              ),
-            ],
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        title,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: enabled
+                              ? null
+                              : theme.colorScheme.onSurface.withValues(
+                                  alpha: 0.38,
+                                ),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xxs),
+                      Text(
+                        subtitle,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right,
+                  color: enabled
+                      ? theme.colorScheme.onSurfaceVariant
+                      : theme.colorScheme.onSurface.withValues(alpha: 0.24),
+                ),
+              ],
+            ),
           ),
         ),
       ),

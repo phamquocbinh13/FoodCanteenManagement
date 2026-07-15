@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../../theme/app_colors.dart';
+import '../../theme/app_radius.dart';
 import '../../theme/app_spacing.dart';
 
-/// Primary filled action — one per viewport when possible.
-class PrimaryButton extends StatelessWidget {
-  const PrimaryButton({
+/// Destructive action (force-close, clear). Pair with a confirm dialog.
+class DangerButton extends StatelessWidget {
+  const DangerButton({
     super.key,
     required this.label,
     required this.onPressed,
@@ -21,14 +23,13 @@ class PrimaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final onPrimary = Theme.of(context).colorScheme.onPrimary;
     final child = isLoading
-        ? SizedBox(
+        ? const SizedBox(
             width: 22,
             height: 22,
             child: CircularProgressIndicator(
               strokeWidth: 2.5,
-              color: onPrimary,
+              color: AppColors.onBrand,
             ),
           )
         : icon != null
@@ -44,6 +45,16 @@ class PrimaryButton extends StatelessWidget {
 
     final button = ElevatedButton(
       onPressed: isLoading ? null : onPressed,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.danger,
+        foregroundColor: AppColors.onBrand,
+        disabledBackgroundColor: AppColors.dangerSoft,
+        minimumSize: const Size(48, 48),
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+        ),
+      ),
       child: child,
     );
 

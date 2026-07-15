@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../application/kitchen/kitchen_view_models.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
 
@@ -23,15 +24,13 @@ class KitchenItemTile extends StatelessWidget {
     final completed = item.isCompleted;
 
     return Material(
-      color: completed
-          ? theme.colorScheme.surfaceContainerHighest
-          : theme.colorScheme.primaryContainer,
+      color: completed ? AppColors.surfaceRaised : AppColors.brandSoft,
       borderRadius: BorderRadius.circular(AppRadius.md),
       child: InkWell(
         onTap: isPending ? null : onTap,
         borderRadius: BorderRadius.circular(AppRadius.md),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 72),
+          constraints: const BoxConstraints(minHeight: 64),
           child: Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.lg,
@@ -44,18 +43,21 @@ class KitchenItemTile extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '🍛 ${item.name}${item.quantityLabel.isNotEmpty ? ' ${item.quantityLabel}' : ''}',
+                        '${item.name}${item.quantityLabel.isNotEmpty ? ' ${item.quantityLabel}' : ''}',
                         style: theme.textTheme.titleMedium?.copyWith(
                           decoration:
                               completed ? TextDecoration.lineThrough : null,
+                          color: completed ? AppColors.inkMuted : null,
                         ),
                       ),
                       if (item.kitchenNotes.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(top: AppSpacing.xs),
                           child: Text(
-                            '"${item.kitchenNotes}"',
-                            style: theme.textTheme.bodySmall,
+                            item.kitchenNotes,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: AppColors.inkMuted,
+                            ),
                           ),
                         ),
                     ],
@@ -68,12 +70,9 @@ class KitchenItemTile extends StatelessWidget {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 else if (completed)
-                  Icon(Icons.check_circle, color: theme.colorScheme.primary)
+                  const Icon(Icons.check_circle, color: AppColors.success)
                 else
-                  Icon(
-                    Icons.touch_app,
-                    color: theme.colorScheme.onPrimaryContainer,
-                  ),
+                  const Icon(Icons.touch_app, color: AppColors.brand),
               ],
             ),
           ),

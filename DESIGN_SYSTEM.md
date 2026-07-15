@@ -12,6 +12,15 @@
 
 Evolves today’s Material-green tool UI into a commercial 2026 product language without looking like a template.
 
+### Platform vs restaurant brand
+
+| Layer | Owns |
+|-------|------|
+| **ROMS Atelier** | Platform chrome, tokens, components (restaurant-agnostic) |
+| **RestaurantBrand** (`lib/core/theme/restaurant_brand.dart`) | Guest-facing name/tagline only |
+
+Demo restaurant brand: **The Forest** (`id: demo-restaurant`). Swap `RestaurantBrand.current` for multi-tenant later — do not hardcode restaurant identity into platform widgets except via this API.
+
 ---
 
 ## 2. Foundations

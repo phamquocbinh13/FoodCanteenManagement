@@ -208,3 +208,182 @@ Dine-in journeys prioritized (Customer → Kitchen → Cashier → Requests); ta
 | UI Roadmap | `UI_ROADMAP.md` |
 
 **Gate:** Human approval of Design System v1.0 (especially color + typography) before large-scale screen redesign.
+
+---
+
+## Iteration 0 — Design System Bootstrap — 2026-07-15
+
+### Screens improved
+
+None (foundation only). Existing screens inherit Atelier colors/type via theme.
+
+### Components added
+
+`RestaurantBrand`, `AppBreakpoints`, `AppMotion`, `DangerButton`, `RomsTextButton`, `RomsIconButton`, `RomsTextField`, `RomsQtyStepper`, `RomsSegmentedControl`, `RomsSkeleton` / `RomsSkeletonList`, `RomsMoneyText`, `RomsSessionBadge`, `RomsTableLabel`, `RomsPageHeader`, `RomsSplitView`, `showRomsBottomSheet`, `RomsBottomSheetScaffold`, `showRomsConfirmDialog`. Extended buttons/chips/empty/error.
+
+### Components removed
+
+None.
+
+### UX / a11y / responsive / performance
+
+Semantic tokens + StatusTone; 48dp button mins; breakpoints phone→KDS; motion respects reduce-motion; dark ThemeData parity.
+
+### Restaurant workflow
+
+Platform restaurant-agnostic; demo brand **The Forest** via `RestaurantBrand.current`.
+
+### Technical debt remaining
+
+Feature screens still mixed EN/VI; cashier/payment UI not redesigned yet; kitchen/customer partially started in Iter 1–2.
+
+### Product quality score
+
+| Area | Score |
+|------|------:|
+| Visual Design | 6 |
+| UX | 5 |
+| Consistency | 6 |
+| Accessibility | 6 |
+| Performance | 6 |
+| Scalability | 7 |
+| Restaurant Readiness | 6 |
+| Commercial Readiness | 5 |
+| Maintainability | 8 |
+| **Overall** | **6** |
+
+### Next
+
+Iteration 1 Customer → Iteration 2 Kitchen (in progress below).
+
+---
+
+## Iteration 1 — Customer Journey — 2026-07-15
+
+### Screens improved
+
+`customer_landing_page`, `customer_dashboard_page`, `session_menu_page`, call-staff option touch targets.
+
+### Components added
+
+(None new beyond Iter 0 — consumed Atelier primitives.)
+
+### Components removed
+
+Demo exit gated to `kDebugMode` on customer hub/menu.
+
+### UX improvements
+
+The Forest brand hero; clearer join path; session hub hierarchy (table → session → batches → bill → CTAs); menu skeletons; cart FAB; money via `RomsMoneyText`.
+
+### Accessibility
+
+48dp icon buttons; status chips with text; large call-staff tiles.
+
+### Responsive
+
+Landing constrained 420; menu list scrolls; cart FAB thumb zone.
+
+### Restaurant workflow
+
+Guest trust signal = restaurant name; browse → cart → confirm path clearer.
+
+### Product quality score (dine-in customer slice)
+
+| Area | Score |
+|------|------:|
+| Visual Design | 7 |
+| UX | 7 |
+| Consistency | 7 |
+| Accessibility | 7 |
+| Restaurant Readiness | 7 |
+| Commercial Readiness | 6 |
+| **Overall (customer)** | **7** |
+
+### Next
+
+Iteration 2 Kitchen KDS polish.
+
+---
+
+## Iteration 2 — Kitchen KDS — 2026-07-15
+
+### Screens improved
+
+`kitchen_page`, `kitchen_batch_card`, `kitchen_item_tile`, `kitchen_segmented_tabs`.
+
+### UX improvements
+
+Table-first ticket hierarchy; aging border (≥10 min); one-tap complete retained; no emoji chrome; role badge debug-only; calmer segment tabs.
+
+### Micro-interactions
+
+Highlight/aging borders without glow spam; motion tokens.
+
+### Product quality score (kitchen slice)
+
+| Area | Score |
+|------|------:|
+| Visual Design | 7 |
+| UX | 8 |
+| Restaurant Readiness | 8 |
+| Commercial Readiness | 7 |
+| **Overall (kitchen)** | **7.5** |
+
+### Next highest-impact iteration
+
+**Iteration 3 — Cashier + payment close** (bill clarity, tender ritual, master–detail).
+
+---
+
+## Iteration 3 — Cashier + payment close — 2026-07-15
+
+### Screens improved
+
+`cashier_page` — Atelier status/share cards, request preview chips, confirm dialog before payment close, primary “Take payment & close”.
+
+### UX improvements
+
+Payment close is an intentional ritual (confirm → atomic payment). Floor hierarchy: table/session → requests → batches → QR share → actions.
+
+### Restaurant Reality Check
+
+Cashier can open Table 1, share join code/QR, triage requests, close with cash payment without hunting chrome.
+
+### Product quality score (cashier slice)
+
+| Area | Score |
+|------|------:|
+| Visual Design | 7 |
+| UX | 7.5 |
+| Restaurant Readiness | 7.5 |
+| Commercial Readiness | 7 |
+| **Overall (cashier)** | **7.5** |
+
+### Combined dine-in product score (after Iter 0–3)
+
+| Area | Score |
+|------|------:|
+| Visual Design | 7 |
+| UX | 7.5 |
+| Consistency | 7 |
+| Accessibility | 7 |
+| Performance | 7 |
+| Scalability | 7.5 |
+| Restaurant Readiness | 7.5 |
+| Commercial Readiness | 7 |
+| Maintainability | 8 |
+| **Overall Product Quality** | **7.5** |
+
+### Technical debt remaining
+
+- Cart/customize sheets not fully migrated to `RomsBottomSheetScaffold`
+- Staff request queue page still lightly polished
+- Auth/login chrome (Iter 5)
+- Tender method picker (cash-only default — product OK for MVP)
+- Cross-role EN/VI consistency pass (Iter 6)
+- Overall still &lt; 9 — continue roadmap
+
+### Next highest-impact iteration
+
+**Iteration 4 — Staff request queue** polish, then Iter 5 auth chrome, Iter 6 consistency.

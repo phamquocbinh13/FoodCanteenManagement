@@ -4,7 +4,7 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_spacing.dart';
 import '../buttons/primary_button.dart';
 
-/// Placeholder UI when a list or section has no data.
+/// Calm empty placeholder — production-ready copy only.
 class EmptyState extends StatelessWidget {
   const EmptyState({
     super.key,
@@ -23,34 +23,40 @@ class EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = theme.brightness == Brightness.dark
+        ? AppDarkColors.inkDisabled
+        : AppColors.inkDisabled;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.xl),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 64, color: AppColors.textDisabled),
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              title,
-              style: Theme.of(context).textTheme.titleLarge,
-              textAlign: TextAlign.center,
-            ),
-            if (message != null) ...[
-              const SizedBox(height: AppSpacing.sm),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 360),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 48, color: muted),
+              const SizedBox(height: AppSpacing.lg),
               Text(
-                message!,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
+                title,
+                style: theme.textTheme.titleLarge,
                 textAlign: TextAlign.center,
               ),
+              if (message != null) ...[
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  message!,
+                  style: theme.textTheme.bodyMedium,
+                  textAlign: TextAlign.center,
+                ),
+              ],
+              if (actionLabel != null && onAction != null) ...[
+                const SizedBox(height: AppSpacing.xl),
+                PrimaryButton(label: actionLabel!, onPressed: onAction),
+              ],
             ],
-            if (actionLabel != null && onAction != null) ...[
-              const SizedBox(height: AppSpacing.xl),
-              PrimaryButton(label: actionLabel!, onPressed: onAction),
-            ],
-          ],
+          ),
         ),
       ),
     );

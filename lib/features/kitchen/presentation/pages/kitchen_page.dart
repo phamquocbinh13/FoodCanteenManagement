@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -79,12 +80,12 @@ class _KitchenPageState extends ConsumerState<KitchenPage>
     final kitchen = ref.watch(kitchenControllerProvider);
 
     return StaffScaffold(
-      title: 'Bếp',
+      title: 'Kitchen',
       requiredPermission: AppPermission.viewKitchenQueue,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (role != null) ...[
+          if (kDebugMode && role != null) ...[
             const SizedBox(height: AppSpacing.sm),
             Center(child: StaffRoleBadge(role: role)),
           ],

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../theme/app_colors.dart';
 import '../../theme/app_spacing.dart';
+import '../buttons/danger_button.dart';
 import '../buttons/primary_button.dart';
 import '../buttons/secondary_button.dart';
 
@@ -28,7 +29,7 @@ class ErrorState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline, size: 64, color: AppColors.error),
+            const Icon(Icons.error_outline, size: 48, color: AppColors.danger),
             const SizedBox(height: AppSpacing.lg),
             Text(
               title,
@@ -38,9 +39,7 @@ class ErrorState extends StatelessWidget {
             const SizedBox(height: AppSpacing.sm),
             Text(
               message,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
+              style: Theme.of(context).textTheme.bodyMedium,
               textAlign: TextAlign.center,
             ),
             if (onRetry != null) ...[
@@ -102,10 +101,16 @@ class ConfirmDialog extends StatelessWidget {
           label: cancelLabel,
           onPressed: () => Navigator.of(context).pop(false),
         ),
-        PrimaryButton(
-          label: confirmLabel,
-          onPressed: () => Navigator.of(context).pop(true),
-        ),
+        if (isDestructive)
+          DangerButton(
+            label: confirmLabel,
+            onPressed: () => Navigator.of(context).pop(true),
+          )
+        else
+          PrimaryButton(
+            label: confirmLabel,
+            onPressed: () => Navigator.of(context).pop(true),
+          ),
       ],
     );
   }

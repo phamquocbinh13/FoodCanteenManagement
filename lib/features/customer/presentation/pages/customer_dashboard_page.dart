@@ -1,15 +1,19 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../application/session/customer_session_messages.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/restaurant_brand.dart';
+import '../../../../core/widgets/widgets.dart';
 import '../../../../domain/enums/domain_enums.dart';
 import '../providers/customer_ordering_provider.dart';
 import '../providers/customer_session_provider.dart';
 import '../widgets/customer_demo_exit_button.dart';
 
-/// Customer dashboard after a successful join.
+/// Customer session hub after a successful join.
 class SessionPage extends ConsumerStatefulWidget {
   const SessionPage({super.key, required this.sessionToken});
 
@@ -53,34 +57,50 @@ class _SessionPageState extends ConsumerState<SessionPage> {
     );
   }
 
+  StatusTone _phaseTone(SessionLifecyclePhase phase) {
+    return switch (phase) {
+      SessionLifecyclePhase.available => StatusTone.success,
+      SessionLifecyclePhase.occupied => StatusTone.brand,
+      SessionLifecyclePhase.waitingPayment => StatusTone.warning,
+      SessionLifecyclePhase.closed => StatusTone.neutral,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final controller = ref.watch(customerSessionControllerProvider);
     final ordering = ref.watch(customerOrderingControllerProvider);
     final theme = Theme.of(context);
     final snapshot = controller.snapshot;
+    final brand = RestaurantBrand.current;
 
     if (controller.isLoading && snapshot == null) {
       return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+        body: Center(child: LoadingIndicator()),
       );
     }
 
     if (snapshot == null) {
       return Scaffold(
-        body: Center(
-          child: Text(
-            controller.errorMessage ?? CustomerSessionMessages.sessionNotFound,
-          ),
+        body: ErrorState(
+          title: 'Session unavailable',
+          message:
+              controller.errorMessage ?? CustomerSessionMessages.sessionNotFound,
+          onRetry: () => context.go('/customer'),
+          retryLabel: 'Back to join',
         ),
       );
     }
 
+    final phase = controller.lifecyclePhase;
+    final bill = ordering.bill;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Your Session'),
+        title: Text(brand.displayName),
         actions: [
-          IconButton(
+          RomsIconButton(
+            icon: Icons.refresh_rounded,
             tooltip: 'Refresh',
             onPressed: controller.isLoading
                 ? null
@@ -91,9 +111,8 @@ class _SessionPageState extends ConsumerState<SessionPage> {
                       snapshot.session.id,
                     );
                   },
-            icon: const Icon(Icons.refresh),
           ),
-          const CustomerDemoExitButton(),
+          if (kDebugMode) const CustomerDemoExitButton(),
         ],
       ),
       body: SafeArea(
@@ -102,111 +121,130 @@ class _SessionPageState extends ConsumerState<SessionPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Restaurant', style: theme.textTheme.labelLarge),
-                      Text(
-                        'Demo Restaurant',
-                        style: theme.textTheme.titleLarge,
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      Text('Table', style: theme.textTheme.labelLarge),
-                      Text(
-                        snapshot.tableLabel,
-                        style: theme.textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      Text('Status', style: theme.textTheme.labelLarge),
-                      Text(
-                        controller.statusLabel,
-                        style: theme.textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      Text('Session', style: theme.textTheme.labelLarge),
-                      Text(snapshot.session.displayNumber),
-                    ],
-                  ),
+              AppCard(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    RomsTableLabel(
+                      label: snapshot.tableLabel,
+                      emphasize: true,
+                      statusLabel: controller.statusLabel,
+                      tone: _phaseTone(phase),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    RomsSessionBadge(
+                      displayNumber: snapshot.session.displayNumber,
+                      phaseLabel: controller.statusLabel,
+                      tone: _phaseTone(phase),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      brand.tagline ?? 'Your dining session',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: AppSpacing.lg),
-              Text('Your Batches', style: theme.textTheme.titleMedium),
+              const SizedBox(height: AppSpacing.xl),
+              Text('Order progress', style: theme.textTheme.titleMedium),
               const SizedBox(height: AppSpacing.sm),
               if (ordering.batchProgress.isEmpty)
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppSpacing.lg),
-                    child: Text(
-                      'Chưa có batch nào được gửi bếp.',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                AppCard(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.restaurant_outlined,
+                        color: AppColors.inkMuted,
                       ),
-                    ),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: Text(
+                          'No orders sent to the kitchen yet. Browse the menu to begin.',
+                          style: theme.textTheme.bodyMedium,
+                        ),
+                      ),
+                    ],
                   ),
                 )
               else
                 ...ordering.batchProgress.map(
-                  (batch) => Card(
-                    child: ListTile(
-                      title: Text('Batch #${batch.batchNumber}'),
-                      trailing: Text(
-                        batch.statusLabel,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          color: batch.isCompleted
-                              ? theme.colorScheme.primary
-                              : theme.colorScheme.onSurfaceVariant,
+                  (batch) => Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                    child: AppCard(
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.lg,
+                          vertical: AppSpacing.xs,
+                        ),
+                        title: Text(
+                          'Batch #${batch.batchNumber}',
+                          style: theme.textTheme.titleMedium,
+                        ),
+                        trailing: StatusChip(
+                          label: batch.statusLabel,
+                          tone: batch.isCompleted
+                              ? StatusTone.success
+                              : StatusTone.warning,
                         ),
                       ),
                     ),
                   ),
                 ),
-              const SizedBox(height: AppSpacing.lg),
-              Text('Order Summary', style: theme.textTheme.titleMedium),
-              const SizedBox(height: AppSpacing.sm),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  child: Text(
-                    ordering.bill != null && ordering.bill!.totalMinor > 0
-                        ? 'Total: \$${(ordering.bill!.totalMinor / 100).toStringAsFixed(2)}'
-                        : 'No items ordered yet.',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-              ),
               const SizedBox(height: AppSpacing.xl),
-              OutlinedButton(
+              Text('Bill so far', style: theme.textTheme.titleMedium),
+              const SizedBox(height: AppSpacing.sm),
+              AppCard(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                child: bill != null && bill.totalMinor > 0
+                    ? Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Total', style: theme.textTheme.bodyLarge),
+                          RomsMoneyText(
+                            amountMinor: bill.totalMinor,
+                            currencyCode: 'VND',
+                            large: true,
+                          ),
+                        ],
+                      )
+                    : Text(
+                        'No items ordered yet.',
+                        style: theme.textTheme.bodyMedium,
+                      ),
+              ),
+              const SizedBox(height: AppSpacing.xxl),
+              PrimaryButton(
+                label: 'Browse menu',
+                icon: Icons.menu_book_outlined,
+                isExpanded: true,
                 onPressed: () async {
                   await context.push('/s/${widget.sessionToken}/menu');
                   if (!context.mounted) return;
                   await ordering.refreshSessionOrdering(snapshot.session.id);
                 },
-                child: const Text('Add More'),
               ),
               const SizedBox(height: AppSpacing.sm),
-              OutlinedButton(
+              SecondaryButton(
+                label: 'Call staff',
+                icon: Icons.support_agent_outlined,
+                isExpanded: true,
                 onPressed: () => context.push(
                   '/s/${widget.sessionToken}/request',
                 ),
-                child: const Text('Call Staff'),
               ),
               const SizedBox(height: AppSpacing.sm),
-              FilledButton(
-                onPressed: controller.lifecyclePhase ==
-                            SessionLifecyclePhase.closed ||
+              PrimaryButton(
+                label: controller.paymentRequested
+                    ? 'Payment requested'
+                    : 'Request payment',
+                icon: Icons.payments_outlined,
+                isExpanded: true,
+                onPressed: phase == SessionLifecyclePhase.closed ||
                         controller.paymentRequested
                     ? null
                     : _requestPayment,
-                child: Text(
-                  controller.paymentRequested
-                      ? 'Payment Requested'
-                      : 'Request Payment',
-                ),
               ),
             ],
           ),

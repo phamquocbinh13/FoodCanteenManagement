@@ -1,9 +1,13 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/widgets.dart';
 import '../../../../domain/entities/menu_item.dart';
 import '../../../../domain/enums/domain_enums.dart';
-import '../../../../shared/formatters/money_formatter.dart';
 import '../providers/customer_ordering_provider.dart';
 import '../providers/customer_session_provider.dart';
 import '../widgets/cart_bottom_sheet.dart';
@@ -44,65 +48,96 @@ class _SessionMenuPageState extends ConsumerState<SessionMenuPage> {
     final ordering = ref.watch(customerOrderingControllerProvider);
     final sessionId = session.snapshot?.session.id;
     final catalog = ordering.catalog;
+    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Thực đơn'),
+        title: const Text('Menu'),
         actions: [
           if (sessionId != null)
-            IconButton(
-              icon: Badge(
-                label: Text('${ordering.cartItemCount}'),
-                isLabelVisible: ordering.cartItemCount > 0,
-                child: const Icon(Icons.shopping_cart_outlined),
-              ),
+            RomsIconButton(
+              icon: Icons.shopping_cart_outlined,
+              tooltip: 'Cart',
               onPressed: () => _showCart(sessionId),
             ),
-          const CustomerDemoExitButton(),
+          if (sessionId != null && ordering.cartItemCount > 0)
+            Padding(
+              padding: const EdgeInsets.only(right: AppSpacing.sm),
+              child: Center(
+                child: StatusChip(
+                  label: '${ordering.cartItemCount}',
+                  tone: StatusTone.brand,
+                ),
+              ),
+            ),
+          if (kDebugMode) const CustomerDemoExitButton(),
         ],
       ),
+      floatingActionButton: sessionId != null && ordering.cartItemCount > 0
+          ? FloatingActionButton.extended(
+              onPressed: () => _showCart(sessionId),
+              icon: const Icon(Icons.shopping_bag_outlined),
+              label: Text('Cart · ${ordering.cartItemCount}'),
+            )
+          : null,
       body: catalog == null
-          ? const Center(child: CircularProgressIndicator())
+          ? const RomsSkeletonList()
           : Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  child: TextField(
-                    decoration: const InputDecoration(
-                      hintText: 'Tìm món…',
-                      prefixIcon: Icon(Icons.search),
-                      border: OutlineInputBorder(),
-                    ),
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.md,
+                    AppSpacing.lg,
+                    AppSpacing.sm,
+                  ),
+                  child: SearchField(
+                    hintText: 'Search dishes…',
                     onChanged: ordering.setSearchQuery,
                   ),
                 ),
                 if (ordering.searchQuery.isNotEmpty &&
                     !ordering.hasSearchResults)
-                  const Padding(
-                    padding: EdgeInsets.all(AppSpacing.lg),
-                    child: Text('Không tìm thấy món phù hợp.'),
+                  Expanded(
+                    child: EmptyState(
+                      title: 'No matches',
+                      message: 'Try another name or clear the search.',
+                      icon: Icons.search_off_outlined,
+                    ),
                   )
                 else
                   Expanded(
                     child: ListView(
-                      padding: const EdgeInsets.all(AppSpacing.md),
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.lg,
+                        AppSpacing.sm,
+                        AppSpacing.lg,
+                        AppSpacing.xxxl,
+                      ),
                       children: [
                         for (final category in catalog.categories) ...[
-                          if (ordering.filteredItems(category.id).isNotEmpty) ...[
+                          if (ordering
+                              .filteredItems(category.id)
+                              .isNotEmpty) ...[
                             Text(
                               category.name,
-                              style: Theme.of(context).textTheme.titleMedium,
+                              style: theme.textTheme.titleMedium,
                             ),
                             const SizedBox(height: AppSpacing.sm),
                             ...ordering.filteredItems(category.id).map(
-                              (item) => _MenuItemTile(
-                                item: item as MenuItem,
-                                onTap: sessionId == null
-                                    ? null
-                                    : () => _openCustomize(
-                                          item: item,
-                                          sessionId: sessionId,
-                                        ),
+                              (item) => Padding(
+                                padding: const EdgeInsets.only(
+                                  bottom: AppSpacing.sm,
+                                ),
+                                child: _MenuItemTile(
+                                  item: item as MenuItem,
+                                  onTap: sessionId == null
+                                      ? null
+                                      : () => _openCustomize(
+                                            item: item,
+                                            sessionId: sessionId,
+                                          ),
+                                ),
                               ),
                             ),
                             const SizedBox(height: AppSpacing.lg),
@@ -132,26 +167,25 @@ class _SessionMenuPageState extends ConsumerState<SessionMenuPage> {
     }
 
     if (!mounted) return;
-    await showModalBottomSheet<void>(
+    await showRomsBottomSheet<void>(
       context: context,
-      isScrollControlled: true,
       builder: (context) => CustomizeSheet(
         detail: detail,
-        submitLabel: 'Thêm vào giỏ',
+        submitLabel: 'Add to cart',
         isSubmitting: ordering.isLoading,
         onSubmit: (selections) async {
-          final ok = await ref.read(customerOrderingControllerProvider).addToCart(
-                sessionId: sessionId,
-                menuItemId: item.id,
-                quantity: 1,
-                selectionsJson: selections,
-              );
+          final ok =
+              await ref.read(customerOrderingControllerProvider).addToCart(
+                    sessionId: sessionId,
+                    menuItemId: item.id,
+                    quantity: 1,
+                    selectionsJson: selections,
+                  );
           if (context.mounted && ok) Navigator.pop(context);
           if (context.mounted && !ok) {
-            final message = ref
-                    .read(customerOrderingControllerProvider)
-                    .errorMessage ??
-                CartOrderingMessages.editItemFailed;
+            final message =
+                ref.read(customerOrderingControllerProvider).errorMessage ??
+                    CartOrderingMessages.editItemFailed;
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(message)),
             );
@@ -166,9 +200,8 @@ class _SessionMenuPageState extends ConsumerState<SessionMenuPage> {
     await ref.read(customerOrderingControllerProvider).refreshCart(sessionId);
     if (!mounted) return;
 
-    await showModalBottomSheet<void>(
+    await showRomsBottomSheet<void>(
       context: context,
-      isScrollControlled: true,
       builder: (context) => CartBottomSheet(sessionId: sessionId),
     );
   }
@@ -183,29 +216,59 @@ class _MenuItemTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final unavailable = item.availability != MenuAvailability.available;
-    final price = formatMoneyDisplay(
-      amountMinor: item.basePrice.amountMinor,
-      currencyCode: item.basePrice.currencyCode,
-    );
-    return Card(
-      child: ListTile(
-        enabled: !unavailable && onTap != null,
-        leading: item.imageUrl != null
-            ? Image.network(
-                item.imageUrl!,
-                width: 48,
-                height: 48,
-                fit: BoxFit.cover,
-              )
-            : const Icon(Icons.rice_bowl_outlined),
-        title: Text(item.name),
-        subtitle: Text(
-          unavailable ? 'Hết món' : item.description ?? price,
-        ),
-        trailing: unavailable
-            ? const Icon(Icons.block, color: Colors.grey)
-            : Text(price),
-        onTap: unavailable ? null : onTap,
+    final theme = Theme.of(context);
+
+    return AppCard(
+      onTap: unavailable ? null : onTap,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: AppColors.surfaceRaised,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+            child: Icon(
+              unavailable ? Icons.block : Icons.rice_bowl_outlined,
+              color: unavailable ? AppColors.inkDisabled : AppColors.brand,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(item.name, style: theme.textTheme.titleMedium),
+                const SizedBox(height: 2),
+                if (unavailable)
+                  const StatusChip(
+                    label: 'Out of stock',
+                    tone: StatusTone.danger,
+                  )
+                else if (item.description != null &&
+                    item.description!.trim().isNotEmpty)
+                  Text(
+                    item.description!,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall,
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          if (!unavailable)
+            RomsMoneyText(
+              amountMinor: item.basePrice.amountMinor,
+              currencyCode: item.basePrice.currencyCode,
+            ),
+        ],
       ),
     );
   }

@@ -21,12 +21,15 @@
 
 | Token module | Path | Status |
 |--------------|------|--------|
-| Colors | `lib/core/theme/app_colors.dart` | Extend → Atelier map |
-| Typography | `lib/core/theme/app_typography.dart` | Extend → new families |
+| Colors | `lib/core/theme/app_colors.dart` | **Exists** (Atelier + legacy aliases) |
+| Typography | `lib/core/theme/app_typography.dart` | **Exists** (Plus Jakarta + Fraunces) |
 | Spacing | `lib/core/theme/app_spacing.dart` | Exists |
 | Radius | `lib/core/theme/app_radius.dart` | Exists |
 | Shadows | `lib/core/theme/app_shadows.dart` | Exists |
-| ThemeData | `lib/core/theme/app_theme.dart` | Extend (dark parity) |
+| Breakpoints | `lib/core/theme/app_breakpoints.dart` | **Exists** |
+| Motion | `lib/core/theme/app_motion.dart` | **Exists** |
+| RestaurantBrand | `lib/core/theme/restaurant_brand.dart` | **Exists** (The Forest demo) |
+| ThemeData | `lib/core/theme/app_theme.dart` | **Exists** (light + dark parity) |
 | Money format | `lib/shared/formatters/money_formatter.dart` | Exists |
 
 ---

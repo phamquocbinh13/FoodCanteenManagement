@@ -3,7 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/route_paths.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_motion.dart';
+import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/restaurant_brand.dart';
+import '../../../../core/widgets/widgets.dart';
 import '../providers/customer_session_provider.dart';
 
 /// Customer entry: scan QR or enter the session code manually.
@@ -53,8 +58,10 @@ class _CustomerPageState extends ConsumerState<CustomerPage> {
   Widget build(BuildContext context) {
     final controller = ref.watch(customerSessionControllerProvider);
     final theme = Theme.of(context);
+    final brand = RestaurantBrand.current;
 
     return Scaffold(
+      backgroundColor: AppColors.canvas,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -65,30 +72,39 @@ class _CustomerPageState extends ConsumerState<CustomerPage> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'Welcome to Restaurant',
+                    brand.displayName,
+                    style: theme.textTheme.displayMedium,
+                    textAlign: TextAlign.center,
+                  ),
+                  if (brand.tagline != null) ...[
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      brand.tagline!,
+                      style: theme.textTheme.bodyLarge,
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                  const SizedBox(height: AppSpacing.xxl),
+                  Text(
+                    'Join your table',
                     style: theme.textTheme.headlineSmall,
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: AppSpacing.sm),
+                  const SizedBox(height: AppSpacing.xs),
                   Text(
-                    'Join your dining session',
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
+                    'Scan the QR on your table, or enter the session code from staff.',
+                    style: theme.textTheme.bodyMedium,
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: AppSpacing.xxxl),
-                  FilledButton.icon(
+                  PrimaryButton(
+                    label: 'Scan QR',
+                    icon: Icons.qr_code_scanner_rounded,
+                    isExpanded: true,
+                    isLoading: false,
                     onPressed: controller.isLoading
                         ? null
                         : () => context.push(RoutePaths.customerScan),
-                    icon: const Icon(Icons.qr_code_scanner),
-                    label: const Text('Scan QR'),
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: AppSpacing.lg,
-                      ),
-                    ),
                   ),
                   const SizedBox(height: AppSpacing.xl),
                   Row(
@@ -98,46 +114,56 @@ class _CustomerPageState extends ConsumerState<CustomerPage> {
                         padding: const EdgeInsets.symmetric(
                           horizontal: AppSpacing.md,
                         ),
-                        child: Text('OR', style: theme.textTheme.labelMedium),
+                        child: Text(
+                          'OR',
+                          style: theme.textTheme.labelMedium,
+                        ),
                       ),
                       const Expanded(child: Divider()),
                     ],
                   ),
                   const SizedBox(height: AppSpacing.xl),
-                  Text(
-                    'Enter Session Code',
-                    style: theme.textTheme.titleSmall,
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  TextField(
+                  RomsTextField(
                     controller: _codeController,
-                    decoration: const InputDecoration(
-                      hintText: 'sess_…',
-                      border: OutlineInputBorder(),
-                    ),
+                    label: 'Session code',
+                    hint: 'Paste code from staff',
                     textInputAction: TextInputAction.done,
+                    prefixIcon: Icons.vpn_key_outlined,
                     onSubmitted: (_) => _joinByCode(),
+                    enabled: !controller.isLoading,
                   ),
                   const SizedBox(height: AppSpacing.lg),
-                  FilledButton.tonal(
+                  SecondaryButton(
+                    label: 'Join with code',
+                    isExpanded: true,
+                    isLoading: controller.isLoading,
                     onPressed: controller.isLoading ? null : _joinByCode,
-                    child: const Text('Join'),
                   ),
-                  if (controller.errorMessage != null) ...[
-                    const SizedBox(height: AppSpacing.lg),
-                    Text(
-                      controller.errorMessage!,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.error,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                  if (controller.isLoading)
-                    const Padding(
-                      padding: EdgeInsets.only(top: AppSpacing.xl),
-                      child: Center(child: CircularProgressIndicator()),
-                    ),
+                  AnimatedSize(
+                    duration: AppMotion.duration(context, AppMotion.fast),
+                    child: controller.errorMessage == null
+                        ? const SizedBox.shrink()
+                        : Padding(
+                            padding: const EdgeInsets.only(top: AppSpacing.lg),
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: AppColors.dangerSoft,
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.sm),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(AppSpacing.md),
+                                child: Text(
+                                  controller.errorMessage!,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: AppColors.danger,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ),
+                          ),
+                  ),
                 ],
               ),
             ),

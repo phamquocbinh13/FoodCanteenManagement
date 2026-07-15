@@ -61,23 +61,21 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Icon(
-                      Icons.restaurant_menu,
-                      size: 56,
-                      color: theme.colorScheme.primary,
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
                     Text(
-                      'Staff Login',
-                      style: theme.textTheme.headlineMedium,
+                      'ROMS',
+                      style: theme.textTheme.displaySmall,
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     Text(
-                      'Sign in to access your workspace',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
+                      'Staff sign-in',
+                      style: theme.textTheme.headlineSmall,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      'Operational access for your restaurant floor.',
+                      style: theme.textTheme.bodyMedium,
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: AppSpacing.xxxl),
@@ -132,23 +130,23 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       const SizedBox(height: AppSpacing.md),
                       Text(
                         auth.errorMessage!,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: AppColors.error,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: AppColors.danger,
                         ),
                         textAlign: TextAlign.center,
                       ),
                     ],
                     const SizedBox(height: AppSpacing.xxl),
                     PrimaryButton(
-                      label: 'Login',
+                      label: 'Sign in',
                       isLoading: auth.isLoading,
                       isExpanded: true,
                       onPressed: auth.isLoading ? null : _submit,
                     ),
                     const SizedBox(height: AppSpacing.lg),
-                    TextButton(
+                    RomsTextButton(
+                      label: 'Guest? Join your table',
                       onPressed: () => context.go(RoutePaths.customer),
-                      child: const Text('Customer? Join your session'),
                     ),
                   ],
                 ),

@@ -184,15 +184,15 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Batch #1'), findsOneWidget);
-    expect(find.text('🍛 Cơm cà ri gà'), findsOneWidget);
-    expect(find.text('🍛 Trà đá'), findsOneWidget);
+    expect(find.textContaining('Batch #1'), findsOneWidget);
+    expect(find.textContaining('Cơm cà ri gà'), findsOneWidget);
+    expect(find.textContaining('Trà đá'), findsOneWidget);
 
-    await tester.tap(find.text('🍛 Cơm cà ri gà'));
+    await tester.tap(find.textContaining('Cơm cà ri gà'));
     await tester.pumpAndSettle();
 
-    expect(find.text('🍛 Cơm cà ri gà'), findsOneWidget);
-    expect(find.text('Batch #1'), findsOneWidget);
+    expect(find.textContaining('Cơm cà ri gà'), findsOneWidget);
+    expect(find.textContaining('Batch #1'), findsOneWidget);
   });
 
   testWidgets('KitchenPage one tap completes item without confirmation dialog',
@@ -211,7 +211,7 @@ void main() {
 
     expect(find.byType(AlertDialog), findsNothing);
 
-    await tester.tap(find.text('🍛 Trà đá'));
+    await tester.tap(find.textContaining('Trà đá'));
     await tester.pumpAndSettle();
 
     expect(find.byType(AlertDialog), findsNothing);

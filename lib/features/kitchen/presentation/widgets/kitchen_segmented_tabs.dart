@@ -35,28 +35,17 @@ class KitchenSegmentedTabs extends StatelessWidget {
           labelPadding: EdgeInsets.zero,
           indicator: BoxDecoration(
             color: theme.colorScheme.primary,
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            boxShadow: [
-              BoxShadow(
-                color: theme.colorScheme.primary.withValues(alpha: 0.25),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            borderRadius: BorderRadius.circular(AppRadius.sm),
           ),
           labelColor: theme.colorScheme.onPrimary,
           unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
-          labelStyle: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
-          unselectedLabelStyle: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w500,
-          ),
+          labelStyle: theme.textTheme.labelLarge,
+          unselectedLabelStyle: theme.textTheme.labelLarge,
           tabs: [
             Tab(
               height: 48,
               child: _TabLabel(
-                title: 'Đơn cần làm',
+                title: 'Orders',
                 count: pendingBatchCount,
                 selected: controller.index == 0,
               ),
@@ -64,7 +53,7 @@ class KitchenSegmentedTabs extends StatelessWidget {
             Tab(
               height: 48,
               child: _TabLabel(
-                title: 'Tồn kho',
+                title: 'Inventory',
                 count: unavailableItemCount,
                 selected: controller.index == 1,
               ),

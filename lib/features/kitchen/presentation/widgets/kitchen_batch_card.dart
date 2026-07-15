@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 
 import '../../../../application/kitchen/kitchen_view_models.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_motion.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/widgets.dart';
 import 'elapsed_time_text.dart';
 import 'kitchen_item_tile.dart';
 
-/// Kitchen ticket card — batch metadata + one-tap item completion.
+/// Kitchen ticket card — glanceable table + one-tap item completion.
 class KitchenBatchCard extends StatelessWidget {
   const KitchenBatchCard({
     super.key,
@@ -22,42 +25,37 @@ class KitchenBatchCard extends StatelessWidget {
   final bool isHighlighted;
 
   String get _statusLabel => switch (batch.status) {
-        KitchenBatchDisplayStatus.completed => 'Đã hoàn thành',
-        KitchenBatchDisplayStatus.pending => 'Đang chuẩn bị',
+        KitchenBatchDisplayStatus.completed => 'Done',
+        KitchenBatchDisplayStatus.pending => 'Preparing',
       };
-
-  int get _itemCount => batch.items.length;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDone = batch.status == KitchenBatchDisplayStatus.completed;
-    final highlightColor = theme.colorScheme.primary.withValues(alpha: 0.45);
+    final age = DateTime.now().difference(batch.createdAt);
+    final aging = !isDone && age.inMinutes >= 10;
 
     return AnimatedOpacity(
       opacity: isDone ? 0.55 : 1,
-      duration: const Duration(milliseconds: 400),
+      duration: AppMotion.duration(context, AppMotion.normal),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 600),
-        curve: Curves.easeOut,
+        duration: AppMotion.duration(context, AppMotion.normal),
+        curve: AppMotion.easeOut,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: isHighlighted
-              ? Border.all(color: highlightColor, width: 2.5)
-              : Border.all(color: Colors.transparent, width: 2.5),
-          boxShadow: isHighlighted
-              ? [
-                  BoxShadow(
-                    color: highlightColor.withValues(alpha: 0.35),
-                    blurRadius: 12,
-                    spreadRadius: 1,
-                  ),
-                ]
-              : null,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(
+            color: isHighlighted
+                ? AppColors.brand
+                : aging
+                    ? AppColors.accent
+                    : AppColors.border,
+            width: isHighlighted || aging ? 2 : 1,
+          ),
         ),
-        child: Card(
-          elevation: isDone ? 0 : 2,
-          margin: EdgeInsets.zero,
+        child: Material(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(AppRadius.md),
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.lg),
             child: Column(
@@ -71,56 +69,36 @@ class KitchenBatchCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Batch #${batch.batchNumber}',
-                            style: theme.textTheme.titleLarge,
+                            batch.tableLabel,
+                            style: theme.textTheme.headlineSmall,
                           ),
-                          const SizedBox(height: AppSpacing.xs),
+                          const SizedBox(height: AppSpacing.xxs),
                           Text(
-                            '$_itemCount món',
+                            'Batch #${batch.batchNumber} · ${batch.items.length} items',
                             style: theme.textTheme.titleSmall?.copyWith(
-                              color: theme.colorScheme.primary,
-                              fontWeight: FontWeight.w600,
+                              color: AppColors.inkMuted,
                             ),
+                          ),
+                          Text(
+                            batch.sessionDisplayNumber,
+                            style: theme.textTheme.bodyMedium,
                           ),
                         ],
                       ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.sm,
-                        vertical: AppSpacing.xs,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isDone
-                            ? theme.colorScheme.surfaceContainerHighest
-                            : theme.colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                      ),
-                      child: Text(
-                        _statusLabel,
-                        style: theme.textTheme.labelMedium,
-                      ),
+                    StatusChip(
+                      label: _statusLabel,
+                      tone: isDone ? StatusTone.success : StatusTone.warning,
                     ),
                   ],
                 ),
                 const SizedBox(height: AppSpacing.sm),
-                Text(
-                  batch.tableLabel,
-                  style: theme.textTheme.titleMedium,
-                ),
-                Text(
-                  batch.sessionDisplayNumber,
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xs),
                 Row(
                   children: [
                     Icon(
                       Icons.schedule,
                       size: 16,
-                      color: theme.colorScheme.onSurfaceVariant,
+                      color: aging ? AppColors.accent : AppColors.inkMuted,
                     ),
                     const SizedBox(width: AppSpacing.xs),
                     Text(
@@ -131,7 +109,7 @@ class KitchenBatchCard extends StatelessWidget {
                     ElapsedTimeText(
                       createdAt: batch.createdAt,
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.secondary,
+                        color: aging ? AppColors.accent : AppColors.inkMuted,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
