@@ -1,39 +1,40 @@
 # ROMS Iteration Memory
 
-## Iteration: 2026-07-15 — Request Staff Queue E2E
+## Iteration: 2026-07-15 — Backend B0 bootstrap
 
 ### What changed
 
-- Wired **Call Staff / Request Queue** end-to-end through Clean Architecture.
-- Domain: hardened `RequestDomainService` (clock-injected timestamps, duplicate payment guard).
-- Data: `OrderingStore.staffRequests`, `RequestRepositoryImpl`, session snapshot `requestIds`.
-- Application use cases: create / list pending / list by session / handle.
-- Customer UI: real `SessionRequestPage` (assistance, water, bowl, spoon, payment).
-- Cashier UI: live queue on Cashier page + full `/request` queue page.
-- Payment request now creates a `StaffRequest` **and** transitions session to `paymentPending`.
-- Tests updated; new `request_domain_service_test.dart`.
+- Installed **Node.js LTS** on the machine (was missing).
+- Created NestJS API at `backend/` (Phase B0):
+  - Prisma 5 + MySQL `roms`
+  - Config, Swagger (`/docs`), health (`/api/v1/health`)
+  - Smoke endpoints: restaurant + tables
+  - SQL copy at `backend/prisma/sql/04_schema_mysql8.sql`
+  - `.env.example` + README
+- Build succeeds (`npm run build`). Runtime DB ping needs real MySQL password in `.env`.
 
 ### Why
 
-Call Staff and Request Queue were visible **Sprint 9 placeholders**. A café cannot operate if customers cannot call staff and cashiers cannot see those requests. Highest Phase-1 ops value after the existing single-table demo slice.
+DB schema ready in Workbench; start server code so Flutter can later talk to a real API.
 
-### Remaining blockers (production)
+### How to run (human)
 
-1. **In-memory only** — restart loses sessions, batches, requests.
-2. **Stable physical table QR** — still session-token QR, not fixed table join tokens.
-3. **Single demo table** — no 10-table floor board.
-4. **Real payment close** — close session still skips `SessionPayment` / receipt.
-5. **Restaurant open/close day** — missing.
-6. **Realtime** — cashier/kitchen must pull-to-refresh.
+1. Edit `backend/.env` → set `DATABASE_URL` password to match Workbench.  
+2. `cd backend && npx prisma generate && npm run start:dev`  
+3. Open `http://localhost:3000/api/v1/health` and `/docs`.
 
-### Lessons learned
+### Remaining
 
-- Prefer finishing a visible broken workflow over polishing a working one.
-- Payment request must be a queue entry first; soft-lock is a side effect, not a substitute.
-- DI order matters when Customer controllers depend on Request use cases (lazy OK; register Request before Customer for clarity).
+- B1 auth, B2 QR/session, B3 kitchen…  
+- Phase A5 Flutter UseCase purification before B5 remote wiring.  
+- Flutter still in-memory (unchanged).
 
-### Suggested next iteration
+### Suggested next
 
-**Multi-table floor + stable table QR join** (seed ~10 tables, `/join/<tableToken>` create-or-join, cashier table board). Highest remaining business value for “10-table café can operate.”
+Set `.env` password → verify health → implement **B1 Auth**.
 
-Alternate if persistence is preferred: local durable store behind existing datasource interfaces.
+---
+
+## Prior: Sprint 0 design + corrections
+
+See `docs/backend/sprint-0/`. Schema includes payment summary + force-close CHECKs. Phase A5 documented.

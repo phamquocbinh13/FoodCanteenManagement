@@ -1,0 +1,22 @@
+# Optional local stack. If MySQL already runs via Workbench/Installer, you only need the API.
+# Usage: docker compose up -d redis
+#        (MySQL: use your existing local server with database `roms`)
+
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - '6379:6379'
+    profiles: ['full']
+
+  # Uncomment if you prefer MySQL in Docker instead of local Workbench server:
+  # mysql:
+  #   image: mysql:8.0
+  #   environment:
+  #     MYSQL_ROOT_PASSWORD: root
+  #     MYSQL_DATABASE: roms
+  #   ports:
+  #     - '3306:3306'
+  #   volumes:
+  #     - ./prisma/sql/04_schema_mysql8.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+  #   profiles: ['full']
