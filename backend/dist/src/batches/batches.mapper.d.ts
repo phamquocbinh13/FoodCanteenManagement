@@ -34,6 +34,7 @@ export type BatchProgressDto = {
     batchNumber: number;
     statusLabel: string;
     isCompleted: boolean;
+    items: BatchItemDto[];
 };
 export declare function mapBatch(row: kitchen_batch): KitchenBatchDto;
 export declare function mapBatchItem(row: batch_item): BatchItemDto;

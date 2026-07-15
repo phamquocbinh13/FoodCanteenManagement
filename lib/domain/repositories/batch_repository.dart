@@ -55,4 +55,15 @@ abstract interface class BatchRepository {
     String? sessionId,
     String? orderId,
   });
+
+  Future<void> updateItemQuantity({
+    required String restaurantId,
+    required String batchItemId,
+    required int delta,
+  });
+
+  Future<void> deleteItem({
+    required String restaurantId,
+    required String batchItemId,
+  });
 }

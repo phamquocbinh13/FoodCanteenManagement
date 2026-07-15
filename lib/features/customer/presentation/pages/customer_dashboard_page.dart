@@ -172,21 +172,55 @@ class _SessionPageState extends ConsumerState<SessionPage> {
                   (batch) => Padding(
                     padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                     child: AppCard(
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.lg,
-                          vertical: AppSpacing.xs,
-                        ),
-                        title: Text(
-                          'Batch #${batch.batchNumber}',
-                          style: theme.textTheme.titleMedium,
-                        ),
-                        trailing: StatusChip(
-                          label: batch.statusLabel,
-                          tone: batch.isCompleted
-                              ? StatusTone.success
-                              : StatusTone.warning,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          ListTile(
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.lg,
+                              vertical: AppSpacing.xs,
+                            ),
+                            title: Text(
+                              'Batch #${batch.batchNumber}',
+                              style: theme.textTheme.titleMedium,
+                            ),
+                            trailing: StatusChip(
+                              label: batch.statusLabel,
+                              tone: batch.isCompleted
+                                  ? StatusTone.success
+                                  : StatusTone.warning,
+                            ),
+                          ),
+                          if (batch.items.isNotEmpty) ...[
+                            const Divider(height: 1),
+                            ...batch.items.map((item) => ListTile(
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.lg,
+                              ),
+                              title: Text(item.name),
+                              subtitle: item.kitchenNotes.isNotEmpty
+                                ? Text(item.kitchenNotes)
+                                : null,
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    item.quantityLabel,
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: AppColors.inkMuted,
+                                    ),
+                                  ),
+                                  const SizedBox(width: AppSpacing.md),
+                                  RomsMoneyText(
+                                    amountMinor: item.lineTotalMinor,
+                                    currencyCode: 'VND',
+                                  ),
+                                ],
+                              ),
+                            )),
+                            const SizedBox(height: AppSpacing.xs),
+                          ],
+                        ],
                       ),
                     ),
                   ),

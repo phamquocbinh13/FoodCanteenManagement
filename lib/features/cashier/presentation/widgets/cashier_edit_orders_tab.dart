@@ -11,6 +11,10 @@ import '../../../../application/usecases/cart/get_session_cart_use_case.dart';
 import '../../../../application/usecases/cart/remove_cart_item_use_case.dart';
 import '../../../../application/usecases/cart/update_cart_item_quantity_use_case.dart';
 import '../../../../application/usecases/menu/get_menu_catalog_use_case.dart';
+import '../../../../application/usecases/menu/get_menu_item_detail_use_case.dart';
+import '../../../../application/usecases/batch/update_batch_item_quantity_use_case.dart';
+import '../../../../application/usecases/batch/remove_batch_item_use_case.dart';
+import '../../../../application/menu/menu_item_detail_view.dart';
 import '../../../../core/result/result.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -19,6 +23,7 @@ import '../../../../domain/entities/menu_item.dart';
 import '../../../../domain/entities/session_engine_snapshot.dart';
 import '../../../../domain/entities/authenticated_user.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../customer/presentation/widgets/customize_sheet.dart';
 import '../providers/cashier_session_provider.dart';
 
 /// Tab 3 — amend guest orders via staff cart → new kitchen batch.
@@ -262,20 +267,50 @@ class _CashierEditOrdersTabState extends ConsumerState<CashierEditOrdersTab> {
                     (b) => Padding(
                       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                       child: AppCard(
-                        child: ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: Text('Batch #${b.batchNumber}'),
-                          subtitle: Text(
-                            b.completedAt != null
-                                ? 'Completed — locked'
-                                : 'In kitchen — add-ons via new batch',
-                          ),
-                          trailing: StatusChip(
-                            label: b.statusLabel,
-                            tone: b.completedAt != null
-                                ? StatusTone.success
-                                : StatusTone.warning,
-                          ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              title: Text('Batch #${b.batchNumber}'),
+                              subtitle: Text(
+                                b.completedAt != null
+                                    ? 'Completed — locked'
+                                    : 'In kitchen — add-ons via new batch',
+                              ),
+                              trailing: StatusChip(
+                                label: b.statusLabel,
+                                tone: b.completedAt != null
+                                    ? StatusTone.success
+                                    : StatusTone.warning,
+                              ),
+                            ),
+                            if (b.items.isNotEmpty) ...[
+                              const Divider(),
+                              ...b.items.map((item) => ListTile(
+                                contentPadding: EdgeInsets.zero,
+                                title: Text(item.name),
+                                subtitle: Text('Qty ${item.quantityLabel}'),
+                                trailing: b.completedAt != null ? null : Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.remove),
+                                      onPressed: _busy ? null : () => _changeBatchItemQty(item.id, -1),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.add),
+                                      onPressed: _busy ? null : () => _changeBatchItemQty(item.id, 1),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete_outline),
+                                      onPressed: _busy ? null : () => _removeBatchItem(item.id),
+                                    ),
+                                  ],
+                                ),
+                              )),
+                            ],
+                          ],
                         ),
                       ),
                     ),
@@ -422,21 +457,72 @@ class _CashierEditOrdersTabState extends ConsumerState<CashierEditOrdersTab> {
     final sessionId = _selectedSessionId;
     if (sessionId == null) return;
     setState(() => _busy = true);
-    final result = await sl<AddToCartUseCase>()(
-      AddToCartParams(
-        sessionId: sessionId,
+
+    final detailResult = await sl<GetMenuItemDetailUseCase>()(
+      GetMenuItemDetailParams(
         restaurantId: _restaurantId,
         menuItemId: menuItemId,
-        quantity: 1,
-        selectionsJson: const {'groups': {}},
       ),
     );
     setState(() => _busy = false);
-    if (result is Err) {
-      setState(() => _error = (result as Err).failure.message);
+
+    if (detailResult is Err) {
+      setState(() => _error = (detailResult as Err).failure.message);
       return;
     }
-    await _loadCart(sessionId);
+
+    final detail = (detailResult as Success<MenuItemDetailView>).value;
+
+    if (detail.groups.isNotEmpty) {
+      if (!mounted) return;
+      await showRomsBottomSheet<void>(
+        context: context,
+        builder: (context) => CustomizeSheet(
+          detail: detail,
+          submitLabel: 'Add to cart',
+          onSubmit: (selections) async {
+            setState(() => _busy = true);
+            final result = await sl<AddToCartUseCase>()(
+              AddToCartParams(
+                sessionId: sessionId,
+                restaurantId: _restaurantId,
+                menuItemId: menuItemId,
+                quantity: 1,
+                selectionsJson: selections,
+              ),
+            );
+            setState(() => _busy = false);
+            if (result is Err) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text((result as Err).failure.message)),
+                );
+              }
+            } else {
+              if (mounted) Navigator.pop(context);
+              await _loadCart(sessionId);
+            }
+          },
+        ),
+      );
+    } else {
+      setState(() => _busy = true);
+      final result = await sl<AddToCartUseCase>()(
+        AddToCartParams(
+          sessionId: sessionId,
+          restaurantId: _restaurantId,
+          menuItemId: menuItemId,
+          quantity: 1,
+          selectionsJson: const {'groups': {}},
+        ),
+      );
+      setState(() => _busy = false);
+      if (result is Err) {
+        setState(() => _error = (result as Err).failure.message);
+        return;
+      }
+      await _loadCart(sessionId);
+    }
   }
 
   Future<void> _changeQty(String cartItemId, int delta) async {
@@ -479,6 +565,57 @@ class _CashierEditOrdersTabState extends ConsumerState<CashierEditOrdersTab> {
     );
     setState(() => _busy = false);
     await _loadCart(sessionId);
+  }
+
+  Future<void> _changeBatchItemQty(String batchItemId, int delta) async {
+    final sessionId = _selectedSessionId;
+    if (sessionId == null) return;
+    setState(() => _busy = true);
+    
+    final result = await sl<UpdateBatchItemQuantityUseCase>()(
+      UpdateBatchItemQuantityParams(
+        restaurantId: _restaurantId,
+        batchItemId: batchItemId,
+        delta: delta,
+      ),
+    );
+    setState(() => _busy = false);
+
+    if (result is Err) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text((result as Err).failure.message)),
+        );
+      }
+      return;
+    }
+    
+    await ref.read(cashierSessionControllerProvider).refreshSessionDetail();
+  }
+
+  Future<void> _removeBatchItem(String batchItemId) async {
+    final sessionId = _selectedSessionId;
+    if (sessionId == null) return;
+    setState(() => _busy = true);
+    
+    final result = await sl<RemoveBatchItemUseCase>()(
+      RemoveBatchItemParams(
+        restaurantId: _restaurantId,
+        batchItemId: batchItemId,
+      ),
+    );
+    setState(() => _busy = false);
+
+    if (result is Err) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text((result as Err).failure.message)),
+        );
+      }
+      return;
+    }
+    
+    await ref.read(cashierSessionControllerProvider).refreshSessionDetail();
   }
 
   Future<void> _confirm(String? actorId) async {

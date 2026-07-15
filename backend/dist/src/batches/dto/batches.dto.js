@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.BulkCustomizationsDto = exports.BatchCustomizationDto = exports.CreateBatchItemDto = exports.CreateBatchDto = exports.ConfirmBatchDto = void 0;
+exports.UpdateBatchItemQuantityDto = exports.BulkCustomizationsDto = exports.BatchCustomizationDto = exports.CreateBatchItemDto = exports.CreateBatchDto = exports.ConfirmBatchDto = void 0;
 const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
 class ConfirmBatchDto {
@@ -155,4 +155,12 @@ __decorate([
     (0, class_transformer_1.Type)(() => BatchCustomizationDto),
     __metadata("design:type", Array)
 ], BulkCustomizationsDto.prototype, "customizations", void 0);
+class UpdateBatchItemQuantityDto {
+    delta;
+}
+exports.UpdateBatchItemQuantityDto = UpdateBatchItemQuantityDto;
+__decorate([
+    (0, class_validator_1.IsInt)(),
+    __metadata("design:type", Number)
+], UpdateBatchItemQuantityDto.prototype, "delta", void 0);
 //# sourceMappingURL=batches.dto.js.map

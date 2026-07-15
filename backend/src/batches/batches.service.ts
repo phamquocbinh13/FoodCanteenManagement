@@ -183,28 +183,12 @@ export class BatchesService {
         data: { version: cart.version + 1, updated_at: now },
       });
 
-      const allItems = await tx.batch_item.findMany({
-        where: {
-          kitchen_batch: { session_id: sessionId },
-        },
-      });
-      let subtotal = 0n;
-      for (const bi of allItems) {
-        subtotal += bi.line_total_minor;
-      }
-      const discount = session.payment_discount_minor;
-      const tax = session.payment_tax_minor;
-      const service = session.payment_service_charge_minor;
-      let total = subtotal - discount + tax + service;
-      if (total < 0n) total = 0n;
+      await this._recalculateSessionTotals(tx, sessionId, session);
 
       await tx.dine_in_session.update({
         where: { id: sessionId },
         data: {
           current_batch_number: nextBatchNumber,
-          payment_subtotal_minor: subtotal,
-          payment_total_minor: total,
-          updated_at: now,
         },
       });
 
@@ -253,6 +237,7 @@ export class BatchesService {
         batchNumber: b.batch_number,
         statusLabel: completed ? 'Đã hoàn thành' : 'Đang chuẩn bị',
         isCompleted: completed,
+        items: b.batch_item.map(mapBatchItem),
       };
     });
 
@@ -413,6 +398,88 @@ export class BatchesService {
     };
   }
 
+  async updateItemQuantity(
+    restaurantId: string,
+    batchItemId: string,
+    delta: number,
+  ): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      const item = await tx.batch_item.findFirst({
+        where: { id: batchItemId, restaurant_id: restaurantId },
+        include: { kitchen_batch: true },
+      });
+      if (!item) {
+        throw notFound('BATCH_ITEM_NOT_FOUND', 'Batch item not found');
+      }
+
+      const session = await tx.dine_in_session.findUnique({
+        where: { id: item.kitchen_batch.session_id! },
+      });
+      if (!session) throw notFound('SESSION_NOT_FOUND', 'Session not found');
+
+      const newQty = item.quantity + delta;
+
+      if (newQty <= 0) {
+        await tx.batch_item_customization.deleteMany({
+          where: { batch_item_id: batchItemId },
+        });
+        await tx.batch_item.delete({ where: { id: batchItemId } });
+        
+        const remaining = await tx.batch_item.count({
+          where: { batch_id: item.batch_id },
+        });
+        if (remaining === 0) {
+          await tx.kitchen_batch.delete({ where: { id: item.batch_id } });
+        }
+      } else {
+        const newLineTotal = item.unit_price_minor * BigInt(newQty);
+        await tx.batch_item.update({
+          where: { id: batchItemId },
+          data: {
+            quantity: newQty,
+            line_total_minor: newLineTotal,
+          },
+        });
+      }
+
+      await this._recalculateSessionTotals(tx, session.id, session);
+    });
+  }
+
+  async deleteItem(
+    restaurantId: string,
+    batchItemId: string,
+  ): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      const item = await tx.batch_item.findFirst({
+        where: { id: batchItemId, restaurant_id: restaurantId },
+        include: { kitchen_batch: true },
+      });
+      if (!item) {
+        throw notFound('BATCH_ITEM_NOT_FOUND', 'Batch item not found');
+      }
+
+      const session = await tx.dine_in_session.findUnique({
+        where: { id: item.kitchen_batch.session_id! },
+      });
+      if (!session) throw notFound('SESSION_NOT_FOUND', 'Session not found');
+
+      await tx.batch_item_customization.deleteMany({
+        where: { batch_item_id: batchItemId },
+      });
+      await tx.batch_item.delete({ where: { id: batchItemId } });
+
+      const remaining = await tx.batch_item.count({
+        where: { batch_id: item.batch_id },
+      });
+      if (remaining === 0) {
+        await tx.kitchen_batch.delete({ where: { id: item.batch_id } });
+      }
+
+      await this._recalculateSessionTotals(tx, session.id, session);
+    });
+  }
+
   private async requireSession(restaurantId: string, sessionId: string) {
     const session = await this.prisma.dine_in_session.findFirst({
       where: { id: sessionId, restaurant_id: restaurantId },
@@ -429,5 +496,39 @@ export class BatchesService {
       throw unprocessable('SESSION_CLOSED', 'Session is closed');
     }
     return session;
+  }
+
+  private async _recalculateSessionTotals(
+    tx: Prisma.TransactionClient,
+    sessionId: string,
+    session: {
+      payment_discount_minor: bigint;
+      payment_tax_minor: bigint;
+      payment_service_charge_minor: bigint;
+    },
+  ) {
+    const allItems = await tx.batch_item.findMany({
+      where: {
+        kitchen_batch: { session_id: sessionId },
+      },
+    });
+    let subtotal = 0n;
+    for (const bi of allItems) {
+      subtotal += bi.line_total_minor;
+    }
+    const discount = session.payment_discount_minor;
+    const tax = session.payment_tax_minor;
+    const service = session.payment_service_charge_minor;
+    let total = subtotal - discount + tax + service;
+    if (total < 0n) total = 0n;
+
+    await tx.dine_in_session.update({
+      where: { id: sessionId },
+      data: {
+        payment_subtotal_minor: subtotal,
+        payment_total_minor: total,
+        updated_at: new Date(),
+      },
+    });
   }
 }

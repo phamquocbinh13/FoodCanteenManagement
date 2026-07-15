@@ -5,6 +5,7 @@ import '../../../core/result/result.dart';
 import '../../../data/datasources/customer/customer_session_local_datasource.dart';
 import '../../../domain/repositories/batch_repository.dart';
 import '../../../domain/services/kitchen_domain_service.dart';
+import '../../../domain/enums/domain_enums.dart';
 import '../../kitchen/kitchen_view_models.dart';
 import '../use_case.dart';
 
@@ -55,6 +56,14 @@ final class GetSessionBatchProgressUseCase
             batchNumber: batch.batchNumber,
             statusLabel: completed ? 'Ready' : 'Preparing',
             isCompleted: completed,
+            items: items.map((i) => KitchenBatchItemViewModel(
+              id: i.id,
+              name: i.menuItemNameSnapshot,
+              quantityLabel: '${i.quantity.value}x',
+              kitchenNotes: i.kitchenNotesRendered,
+              status: i.status,
+              lineTotalMinor: i.lineTotal.amountMinor,
+            )).toList(),
           ),
         );
       }
@@ -89,11 +98,24 @@ final class GetSessionBatchProgressUseCase
             batchNumber: (row['batchNumber'] as num).toInt(),
             statusLabel: row['statusLabel'] as String? ?? 'Preparing',
             isCompleted: row['isCompleted'] as bool? ?? false,
+            items: ((row['items'] as List<dynamic>?) ?? []).map((i) => KitchenBatchItemViewModel(
+              id: i['id'] as String,
+              name: i['menuItemNameSnapshot'] as String,
+              quantityLabel: '${i['quantity']}x',
+              kitchenNotes: i['kitchenNotesRendered'] as String? ?? '',
+              status: _parseItemStatus(i['status'] as String?),
+              lineTotalMinor: (i['lineTotal']?['amountMinor'] as num?)?.toInt() ?? 0,
+            )).toList(),
           ),
       ];
     } catch (_) {
       return null;
     }
+  }
+
+  BatchItemStatus _parseItemStatus(String? status) {
+    if (status == 'completed') return BatchItemStatus.completed;
+    return BatchItemStatus.preparing;
   }
 }
 
@@ -136,9 +158,17 @@ final class GetCashierBatchSummariesUseCase
       final completedAt = await _batchRepository.getBatchCompletedAt(batch.id);
       views.add(
         CashierBatchSummaryView(
+          batchId: batch.id,
           batchNumber: batch.batchNumber,
           statusLabel: completed ? 'Completed' : 'In kitchen',
           createdAt: batch.confirmedAt,
+          items: items.map((i) => KitchenBatchItemViewModel(
+            id: i.id,
+            name: i.menuItemNameSnapshot,
+            quantityLabel: '${i.quantity.value}x',
+            kitchenNotes: i.kitchenNotesRendered,
+            status: i.status,
+          )).toList(),
           completedAt: completedAt,
         ),
       );

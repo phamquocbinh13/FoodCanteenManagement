@@ -1,10 +1,12 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   Post,
   UseGuards,
 } from '@nestjs/common';
@@ -17,6 +19,7 @@ import {
   ConfirmBatchDto,
   CreateBatchDto,
   CreateBatchItemDto,
+  UpdateBatchItemQuantityDto,
 } from './dto/batches.dto';
 
 @ApiTags('batches-staff')
@@ -93,5 +96,29 @@ export class BatchesStaffController {
     @Param('batchId') batchId: string,
   ) {
     return this.batches.getBatch(restaurantId, batchId);
+  }
+
+  @Patch('batch-items/:batchItemId/quantity')
+  @ApiOperation({ summary: 'Update batch item quantity' })
+  updateItemQuantity(
+    @Param('restaurantId') restaurantId: string,
+    @Param('batchItemId') batchItemId: string,
+    @Body() dto: UpdateBatchItemQuantityDto,
+  ) {
+    return this.batches.updateItemQuantity(
+      restaurantId,
+      batchItemId,
+      dto.delta,
+    );
+  }
+
+  @Delete('batch-items/:batchItemId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Delete batch item' })
+  deleteItem(
+    @Param('restaurantId') restaurantId: string,
+    @Param('batchItemId') batchItemId: string,
+  ) {
+    return this.batches.deleteItem(restaurantId, batchItemId);
   }
 }

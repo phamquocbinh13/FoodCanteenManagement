@@ -29,3 +29,6 @@ export declare class BatchCustomizationDto {
 export declare class BulkCustomizationsDto {
     customizations: BatchCustomizationDto[];
 }
+export declare class UpdateBatchItemQuantityDto {
+    delta: number;
+}

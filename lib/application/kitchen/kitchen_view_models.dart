@@ -14,6 +14,7 @@ final class KitchenBatchItemViewModel {
     required this.quantityLabel,
     required this.kitchenNotes,
     required this.status,
+    this.lineTotalMinor = 0,
   });
 
   final String id;
@@ -21,6 +22,7 @@ final class KitchenBatchItemViewModel {
   final String quantityLabel;
   final String kitchenNotes;
   final BatchItemStatus status;
+  final int lineTotalMinor;
 
   bool get isCompleted => status == BatchItemStatus.completed;
   bool get isActionable => status == BatchItemStatus.preparing;
@@ -64,31 +66,37 @@ final class KitchenQueueView {
   bool get isEmpty => batches.isEmpty;
 }
 
-/// Customer-visible batch progress (no item-level detail).
+/// Customer-visible batch progress.
 final class CustomerBatchProgressView {
   const CustomerBatchProgressView({
     required this.batchNumber,
     required this.statusLabel,
     required this.isCompleted,
+    this.items = const [],
   });
 
   final int batchNumber;
   final String statusLabel;
   final bool isCompleted;
+  final List<KitchenBatchItemViewModel> items;
 }
 
 /// Cashier read-only batch summary.
 final class CashierBatchSummaryView {
   const CashierBatchSummaryView({
+    required this.batchId,
     required this.batchNumber,
     required this.statusLabel,
     required this.createdAt,
+    required this.items,
     this.completedAt,
   });
 
+  final String batchId;
   final int batchNumber;
   final String statusLabel;
   final DateTime createdAt;
+  final List<KitchenBatchItemViewModel> items;
   final DateTime? completedAt;
 }
 

@@ -17,6 +17,9 @@ export declare class BatchesService {
         count: number;
     }>;
     getBatch(restaurantId: string, batchId: string): Promise<KitchenBatchTicketDto>;
+    updateItemQuantity(restaurantId: string, batchItemId: string, delta: number): Promise<void>;
+    deleteItem(restaurantId: string, batchItemId: string): Promise<void>;
     private requireSession;
     private requireOpenSession;
+    private _recalculateSessionTotals;
 }

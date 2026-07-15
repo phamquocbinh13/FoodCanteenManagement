@@ -487,4 +487,42 @@ final class RemoteBatchRepository implements BatchRepository {
     return batches.map((b) => b.batchNumber).reduce((a, b) => a > b ? a : b) +
         1;
   }
+
+  @override
+  Future<void> updateItemQuantity({
+    required String restaurantId,
+    required String batchItemId,
+    required int delta,
+  }) async {
+    try {
+      final serverItemId = _serverItemId(batchItemId);
+      await _api.send<void>(
+        ApiRequest(
+          path: '/restaurants/$restaurantId/batch-items/$serverItemId/quantity',
+          method: HttpMethod.patch,
+          body: {'delta': delta},
+        ),
+      );
+    } catch (e) {
+      throw failureFromException(e);
+    }
+  }
+
+  @override
+  Future<void> deleteItem({
+    required String restaurantId,
+    required String batchItemId,
+  }) async {
+    try {
+      final serverItemId = _serverItemId(batchItemId);
+      await _api.send<void>(
+        ApiRequest(
+          path: '/restaurants/$restaurantId/batch-items/$serverItemId',
+          method: HttpMethod.delete,
+        ),
+      );
+    } catch (e) {
+      throw failureFromException(e);
+    }
+  }
 }

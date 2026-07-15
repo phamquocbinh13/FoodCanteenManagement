@@ -147,28 +147,11 @@ let BatchesService = class BatchesService {
                 where: { id: cart.id },
                 data: { version: cart.version + 1, updated_at: now },
             });
-            const allItems = await tx.batch_item.findMany({
-                where: {
-                    kitchen_batch: { session_id: sessionId },
-                },
-            });
-            let subtotal = 0n;
-            for (const bi of allItems) {
-                subtotal += bi.line_total_minor;
-            }
-            const discount = session.payment_discount_minor;
-            const tax = session.payment_tax_minor;
-            const service = session.payment_service_charge_minor;
-            let total = subtotal - discount + tax + service;
-            if (total < 0n)
-                total = 0n;
+            await this._recalculateSessionTotals(tx, sessionId, session);
             await tx.dine_in_session.update({
                 where: { id: sessionId },
                 data: {
                     current_batch_number: nextBatchNumber,
-                    payment_subtotal_minor: subtotal,
-                    payment_total_minor: total,
-                    updated_at: now,
                 },
             });
             await tx.session_timeline_event.create({
@@ -208,6 +191,7 @@ let BatchesService = class BatchesService {
                 batchNumber: b.batch_number,
                 statusLabel: completed ? 'Đã hoàn thành' : 'Đang chuẩn bị',
                 isCompleted: completed,
+                items: b.batch_item.map(batches_mapper_1.mapBatchItem),
             };
         });
         return { progress };
@@ -334,6 +318,73 @@ let BatchesService = class BatchesService {
             items: batch.batch_item.map(batches_mapper_1.mapBatchItem),
         };
     }
+    async updateItemQuantity(restaurantId, batchItemId, delta) {
+        await this.prisma.$transaction(async (tx) => {
+            const item = await tx.batch_item.findFirst({
+                where: { id: batchItemId, restaurant_id: restaurantId },
+                include: { kitchen_batch: true },
+            });
+            if (!item) {
+                throw (0, api_exception_1.notFound)('BATCH_ITEM_NOT_FOUND', 'Batch item not found');
+            }
+            const session = await tx.dine_in_session.findUnique({
+                where: { id: item.kitchen_batch.session_id },
+            });
+            if (!session)
+                throw (0, api_exception_1.notFound)('SESSION_NOT_FOUND', 'Session not found');
+            const newQty = item.quantity + delta;
+            if (newQty <= 0) {
+                await tx.batch_item_customization.deleteMany({
+                    where: { batch_item_id: batchItemId },
+                });
+                await tx.batch_item.delete({ where: { id: batchItemId } });
+                const remaining = await tx.batch_item.count({
+                    where: { batch_id: item.batch_id },
+                });
+                if (remaining === 0) {
+                    await tx.kitchen_batch.delete({ where: { id: item.batch_id } });
+                }
+            }
+            else {
+                const newLineTotal = item.unit_price_minor * BigInt(newQty);
+                await tx.batch_item.update({
+                    where: { id: batchItemId },
+                    data: {
+                        quantity: newQty,
+                        line_total_minor: newLineTotal,
+                    },
+                });
+            }
+            await this._recalculateSessionTotals(tx, session.id, session);
+        });
+    }
+    async deleteItem(restaurantId, batchItemId) {
+        await this.prisma.$transaction(async (tx) => {
+            const item = await tx.batch_item.findFirst({
+                where: { id: batchItemId, restaurant_id: restaurantId },
+                include: { kitchen_batch: true },
+            });
+            if (!item) {
+                throw (0, api_exception_1.notFound)('BATCH_ITEM_NOT_FOUND', 'Batch item not found');
+            }
+            const session = await tx.dine_in_session.findUnique({
+                where: { id: item.kitchen_batch.session_id },
+            });
+            if (!session)
+                throw (0, api_exception_1.notFound)('SESSION_NOT_FOUND', 'Session not found');
+            await tx.batch_item_customization.deleteMany({
+                where: { batch_item_id: batchItemId },
+            });
+            await tx.batch_item.delete({ where: { id: batchItemId } });
+            const remaining = await tx.batch_item.count({
+                where: { batch_id: item.batch_id },
+            });
+            if (remaining === 0) {
+                await tx.kitchen_batch.delete({ where: { id: item.batch_id } });
+            }
+            await this._recalculateSessionTotals(tx, session.id, session);
+        });
+    }
     async requireSession(restaurantId, sessionId) {
         const session = await this.prisma.dine_in_session.findFirst({
             where: { id: sessionId, restaurant_id: restaurantId },
@@ -349,6 +400,31 @@ let BatchesService = class BatchesService {
             throw (0, api_exception_1.unprocessable)('SESSION_CLOSED', 'Session is closed');
         }
         return session;
+    }
+    async _recalculateSessionTotals(tx, sessionId, session) {
+        const allItems = await tx.batch_item.findMany({
+            where: {
+                kitchen_batch: { session_id: sessionId },
+            },
+        });
+        let subtotal = 0n;
+        for (const bi of allItems) {
+            subtotal += bi.line_total_minor;
+        }
+        const discount = session.payment_discount_minor;
+        const tax = session.payment_tax_minor;
+        const service = session.payment_service_charge_minor;
+        let total = subtotal - discount + tax + service;
+        if (total < 0n)
+            total = 0n;
+        await tx.dine_in_session.update({
+            where: { id: sessionId },
+            data: {
+                payment_subtotal_minor: subtotal,
+                payment_total_minor: total,
+                updated_at: new Date(),
+            },
+        });
     }
 };
 exports.BatchesService = BatchesService;

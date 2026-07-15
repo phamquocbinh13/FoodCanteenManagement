@@ -105,3 +105,8 @@ export class BulkCustomizationsDto {
   @Type(() => BatchCustomizationDto)
   customizations!: BatchCustomizationDto[];
 }
+
+export class UpdateBatchItemQuantityDto {
+  @IsInt()
+  delta!: number;
+}

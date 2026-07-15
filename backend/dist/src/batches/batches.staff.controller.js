@@ -45,6 +45,12 @@ let BatchesStaffController = class BatchesStaffController {
     getBatch(restaurantId, batchId) {
         return this.batches.getBatch(restaurantId, batchId);
     }
+    updateItemQuantity(restaurantId, batchItemId, dto) {
+        return this.batches.updateItemQuantity(restaurantId, batchItemId, dto.delta);
+    }
+    deleteItem(restaurantId, batchItemId) {
+        return this.batches.deleteItem(restaurantId, batchItemId);
+    }
 };
 exports.BatchesStaffController = BatchesStaffController;
 __decorate([
@@ -109,6 +115,26 @@ __decorate([
     __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", void 0)
 ], BatchesStaffController.prototype, "getBatch", null);
+__decorate([
+    (0, common_1.Patch)('batch-items/:batchItemId/quantity'),
+    (0, swagger_1.ApiOperation)({ summary: 'Update batch item quantity' }),
+    __param(0, (0, common_1.Param)('restaurantId')),
+    __param(1, (0, common_1.Param)('batchItemId')),
+    __param(2, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, batches_dto_1.UpdateBatchItemQuantityDto]),
+    __metadata("design:returntype", void 0)
+], BatchesStaffController.prototype, "updateItemQuantity", null);
+__decorate([
+    (0, common_1.Delete)('batch-items/:batchItemId'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.NO_CONTENT),
+    (0, swagger_1.ApiOperation)({ summary: 'Delete batch item' }),
+    __param(0, (0, common_1.Param)('restaurantId')),
+    __param(1, (0, common_1.Param)('batchItemId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", void 0)
+], BatchesStaffController.prototype, "deleteItem", null);
 exports.BatchesStaffController = BatchesStaffController = __decorate([
     (0, swagger_1.ApiTags)('batches-staff'),
     (0, swagger_1.ApiBearerAuth)(),
