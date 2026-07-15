@@ -16,6 +16,9 @@ final cashierSessionControllerProvider =
     restoreSession: sl(),
     getCashierBatchSummaries: sl(),
     listTables: sl(),
+    getSessionBill: sl(),
+    listSessionRequests: sl(),
+    reissueSessionToken: sl(),
     closeWithPayment: sl(),
   );
   controller.restore();

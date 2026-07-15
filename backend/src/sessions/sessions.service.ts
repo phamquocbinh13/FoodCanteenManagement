@@ -240,6 +240,69 @@ export class SessionsService {
     return this.getSnapshotById(restaurantId, sessionId);
   }
 
+  async reissueToken(
+    restaurantId: string,
+    sessionId: string,
+  ): Promise<{
+    sessionToken: string;
+    expiresAt: string;
+    snapshot: SessionSnapshot;
+  }> {
+    const session = await this.requireSession(restaurantId, sessionId);
+    if (session.status !== 'open' && session.status !== 'payment_pending') {
+      throw unprocessable(
+        'SESSION_NOT_REISSUABLE',
+        'Only open or payment_pending sessions can reissue tokens',
+      );
+    }
+
+    const settings = await this.prisma.restaurantSettings.findUnique({
+      where: { restaurantId },
+    });
+    const ttlMinutes = settings?.sessionTokenTtlMinutes ?? 480;
+    const now = new Date();
+    const sessionToken = generateOpaqueToken(32);
+    const tokenExpiresAt = new Date(now.getTime() + ttlMinutes * 60_000);
+    const tokenId = uuidv4();
+    const tokenHash = sha256Hex(sessionToken);
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.session_auth_token.updateMany({
+        where: { session_id: sessionId, revoked_at: null },
+        data: { revoked_at: now },
+      });
+
+      await tx.session_auth_token.create({
+        data: {
+          id: tokenId,
+          session_id: sessionId,
+          token_hash: tokenHash,
+          expires_at: tokenExpiresAt,
+          created_at: now,
+        },
+      });
+
+      await tx.session_timeline_event.create({
+        data: {
+          id: uuidv4(),
+          session_id: sessionId,
+          event_type: 'session_token_reissued',
+          payload_json: {},
+          actor_type: 'user',
+          actor_id: null,
+          occurred_at: now,
+        },
+      });
+    });
+
+    const snapshot = await this.getSnapshotById(restaurantId, sessionId);
+    return {
+      sessionToken,
+      expiresAt: tokenExpiresAt.toISOString(),
+      snapshot,
+    };
+  }
+
   async listActive(restaurantId: string): Promise<{ items: SessionSnapshot[] }> {
     const sessions = await this.prisma.dine_in_session.findMany({
       where: {

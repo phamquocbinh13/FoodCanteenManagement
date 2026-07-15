@@ -19,6 +19,11 @@ export declare class RestaurantSessionsController {
         session: import("./session-snapshot.mapper").SessionSnapshot | null;
     }>;
     waitingPayment(restaurantId: string, sessionId: string): Promise<import("./session-snapshot.mapper").SessionSnapshot>;
+    reissueToken(restaurantId: string, sessionId: string): Promise<{
+        sessionToken: string;
+        expiresAt: string;
+        snapshot: import("./session-snapshot.mapper").SessionSnapshot;
+    }>;
     close(restaurantId: string, sessionId: string, user: JwtPayload, dto: CloseSessionDto): Promise<import("./session-snapshot.mapper").SessionSnapshot>;
     transfer(_restaurantId: string, _sessionId: string, _dto: TransferSessionDto): never;
     update(restaurantId: string, sessionId: string, dto: UpdateSessionDto): Promise<import("./session-snapshot.mapper").SessionSnapshot>;

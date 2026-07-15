@@ -27,6 +27,9 @@ let KitchenController = class KitchenController {
     queue(restaurantId) {
         return this.kitchen.getQueue(restaurantId);
     }
+    overview(restaurantId) {
+        return this.kitchen.getOverview(restaurantId);
+    }
     complete(restaurantId, batchItemId, user) {
         return this.kitchen.completeBatchItem(restaurantId, batchItemId, user.sub);
     }
@@ -42,6 +45,16 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], KitchenController.prototype, "queue", null);
+__decorate([
+    (0, common_1.Get)('overview'),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Kitchen overview aggregate — active orders, wait times, demand',
+    }),
+    __param(0, (0, common_1.Param)('restaurantId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], KitchenController.prototype, "overview", null);
 __decorate([
     (0, common_1.Post)('items/:batchItemId/complete'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),

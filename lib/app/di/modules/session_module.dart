@@ -8,6 +8,7 @@ import '../../../application/usecases/session/join_session_use_case.dart';
 import '../../../application/usecases/session/list_restaurant_tables_use_case.dart';
 import '../../../application/usecases/session/mark_waiting_payment_use_case.dart';
 import '../../../application/usecases/session/restore_session_use_case.dart';
+import '../../../application/usecases/session/reissue_session_token_use_case.dart';
 import '../../../application/usecases/session/transfer_session_use_case.dart';
 import '../../../application/usecases/session/validate_session_use_case.dart';
 import '../../../application/validators/session_validator.dart';
@@ -108,6 +109,10 @@ abstract final class SessionModule {
         policy: sl<SessionPolicy>(),
         clock: sl<Clock>(),
       ),
+    );
+
+    sl.registerLazySingleton(
+      () => ReissueSessionTokenUseCase(apiClient: sl<ApiClient>()),
     );
   }
 }

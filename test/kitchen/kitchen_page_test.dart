@@ -31,8 +31,10 @@ import 'package:food_canteen_management/domain/enums/domain_enums.dart';
 import 'package:food_canteen_management/domain/events/domain_events.dart';
 import 'package:food_canteen_management/domain/services/kitchen_domain_service.dart';
 import 'package:food_canteen_management/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:food_canteen_management/application/kitchen/kitchen_overview_view.dart';
 import 'package:food_canteen_management/features/kitchen/presentation/controllers/kitchen_controller.dart';
 import 'package:food_canteen_management/features/kitchen/presentation/pages/kitchen_page.dart';
+import 'package:food_canteen_management/features/kitchen/presentation/providers/kitchen_overview_provider.dart';
 import 'package:food_canteen_management/features/kitchen/presentation/providers/kitchen_provider.dart';
 
 import '../helpers/test_helpers.dart';
@@ -196,10 +198,27 @@ void main() {
       ProviderScope(
         overrides: [
           kitchenControllerProvider.overrideWith((ref) => controller),
+          kitchenOverviewProvider.overrideWith(
+            (ref) async => const KitchenOverviewView(
+              totalActiveOrders: 1,
+              totalFoodOrders: 1,
+              totalDrinkOrders: 1,
+              averageWaitingMinutes: 0,
+              longestWaitingTable: null,
+              longestWaitingMinutes: 0,
+              ordersReady: 0,
+              ordersPreparing: 1,
+              ordersWaiting: 0,
+              menuDemand: [],
+            ),
+          ),
         ],
         child: const MaterialApp(home: KitchenPage()),
       ),
     );
+    await tester.pumpAndSettle();
+    // Overview is tab 0; Orders is tab 1.
+    await tester.tap(find.text('Orders'));
     await tester.pumpAndSettle();
   }
 

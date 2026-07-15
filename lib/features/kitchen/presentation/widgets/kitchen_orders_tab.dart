@@ -67,9 +67,11 @@ class _KitchenOrdersTabState extends ConsumerState<KitchenOrdersTab>
     }
 
     final batches = kitchen.queue?.batches ?? [];
-    final columns = AppBreakpoints.useKitchenRail(context)
+    // Phone 1 · tablet/POS 2 · KDS 1280+ 3 (fills width, no dead columns).
+    final w = AppBreakpoints.widthOf(context);
+    final columns = w >= AppBreakpoints.kds
         ? 3
-        : (AppBreakpoints.useSplitView(context) ? 2 : 1);
+        : (w >= AppBreakpoints.tablet ? 2 : 1);
 
     return RefreshIndicator(
       onRefresh: kitchen.refresh,
@@ -79,23 +81,26 @@ class _KitchenOrdersTabState extends ConsumerState<KitchenOrdersTab>
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg,
                 AppSpacing.md,
-                AppSpacing.lg,
                 AppSpacing.sm,
+                AppSpacing.md,
+                AppSpacing.xs,
               ),
               child: Row(
                 children: [
                   Expanded(
                     child: Text(
-                      'FIFO · oldest tickets first',
-                      style: theme.textTheme.bodyMedium,
+                      'NEXT: oldest ticket first · $columns-col',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
                   FilterChip(
-                    label: const Text('Show completed'),
+                    label: const Text('Completed'),
                     selected: kitchen.showCompleted,
                     onSelected: kitchen.setShowCompleted,
+                    visualDensity: VisualDensity.compact,
                   ),
                 ],
               ),
@@ -104,7 +109,7 @@ class _KitchenOrdersTabState extends ConsumerState<KitchenOrdersTab>
           if (kitchen.errorMessage != null)
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                 child: Text(
                   kitchen.errorMessage!,
                   style: theme.textTheme.bodyMedium?.copyWith(
@@ -125,15 +130,15 @@ class _KitchenOrdersTabState extends ConsumerState<KitchenOrdersTab>
           else
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md,
+                AppSpacing.xs,
+                AppSpacing.md,
                 AppSpacing.lg,
-                AppSpacing.sm,
-                AppSpacing.lg,
-                AppSpacing.xl,
               ),
               sliver: SliverToBoxAdapter(
                 child: LayoutBuilder(
                   builder: (context, constraints) {
-                    final gap = AppSpacing.lg;
+                    final gap = AppSpacing.sm;
                     final width = columns == 1
                         ? constraints.maxWidth
                         : (constraints.maxWidth - gap * (columns - 1)) /

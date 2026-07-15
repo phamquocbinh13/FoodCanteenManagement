@@ -85,6 +85,16 @@ export class RestaurantSessionsController {
     return this.sessions.markWaitingPayment(restaurantId, sessionId);
   }
 
+  @Post('sessions/:sessionId/reissue-token')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Revoke active session token and issue a new one' })
+  reissueToken(
+    @Param('restaurantId') restaurantId: string,
+    @Param('sessionId') sessionId: string,
+  ) {
+    return this.sessions.reissueToken(restaurantId, sessionId);
+  }
+
   @Post('sessions/:sessionId/close')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Close session and free table' })

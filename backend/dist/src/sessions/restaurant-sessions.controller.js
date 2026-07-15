@@ -43,6 +43,9 @@ let RestaurantSessionsController = class RestaurantSessionsController {
     waitingPayment(restaurantId, sessionId) {
         return this.sessions.markWaitingPayment(restaurantId, sessionId);
     }
+    reissueToken(restaurantId, sessionId) {
+        return this.sessions.reissueToken(restaurantId, sessionId);
+    }
     close(restaurantId, sessionId, user, dto) {
         return this.sessions.close(restaurantId, sessionId, dto.closedByUserId ?? user.sub);
     }
@@ -119,6 +122,16 @@ __decorate([
     __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", void 0)
 ], RestaurantSessionsController.prototype, "waitingPayment", null);
+__decorate([
+    (0, common_1.Post)('sessions/:sessionId/reissue-token'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.CREATED),
+    (0, swagger_1.ApiOperation)({ summary: 'Revoke active session token and issue a new one' }),
+    __param(0, (0, common_1.Param)('restaurantId')),
+    __param(1, (0, common_1.Param)('sessionId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", void 0)
+], RestaurantSessionsController.prototype, "reissueToken", null);
 __decorate([
     (0, common_1.Post)('sessions/:sessionId/close'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),

@@ -5,6 +5,7 @@ import '../../features/admin/presentation/pages/admin_page.dart';
 import '../../features/auth/presentation/controllers/auth_controller.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/cashier/presentation/pages/cashier_page.dart';
+import '../../features/cashier/presentation/pages/cashier_session_detail_page.dart';
 import '../../features/customer/presentation/pages/customer_page.dart';
 import '../../features/delivery/presentation/pages/delivery_page.dart';
 import '../../features/kitchen/presentation/pages/kitchen_page.dart';
@@ -101,6 +102,16 @@ abstract final class AppRouter {
               name: RoutePaths.cashierName,
               redirect: RoleGuard.cashierGuard,
               builder: (context, state) => const CashierPage(),
+              routes: [
+                GoRoute(
+                  path: 'session/:sessionId',
+                  name: RoutePaths.cashierSessionName,
+                  redirect: RoleGuard.cashierGuard,
+                  builder: (context, state) => CashierSessionDetailPage(
+                    sessionId: state.pathParameters['sessionId'] ?? '',
+                  ),
+                ),
+              ],
             ),
             GoRoute(
               path: RoutePaths.kitchen,

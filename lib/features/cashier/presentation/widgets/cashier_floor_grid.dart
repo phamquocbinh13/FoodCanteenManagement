@@ -8,7 +8,7 @@ import '../../../../domain/entities/session_engine_snapshot.dart';
 import '../../../../domain/enums/domain_enums.dart';
 import '../controllers/cashier_session_controller.dart';
 
-/// Floor map of restaurant tables for cashier open / select.
+/// Compact floor map — high density table cards for rush hour.
 class CashierFloorGrid extends StatelessWidget {
   const CashierFloorGrid({
     super.key,
@@ -31,48 +31,43 @@ class CashierFloorGrid extends StatelessWidget {
       );
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text('Floor', style: theme.textTheme.titleMedium),
-        const SizedBox(height: AppSpacing.xs),
-        Text(
-          'Tap Available to open · tap Occupied to manage.',
-          style: theme.textTheme.bodySmall,
-        ),
-        const SizedBox(height: AppSpacing.md),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final crossAxisCount = constraints.maxWidth >= 480 ? 4 : 3;
-            return GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: tables.length,
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: crossAxisCount,
-                mainAxisSpacing: AppSpacing.sm,
-                crossAxisSpacing: AppSpacing.sm,
-                childAspectRatio: 1.15,
-              ),
-              itemBuilder: (context, index) {
-                final table = tables[index];
-                final occupied = session.isTableOccupied(table.id);
-                final selected =
-                    session.activeSnapshot?.session.tableId == table.id;
-                final snapshot = session.sessionForTable(table.id);
-                return _FloorTableTile(
-                  table: table,
-                  occupied: occupied,
-                  selected: selected,
-                  snapshot: snapshot,
-                  enabled: !session.isLoading,
-                  onTap: () => onTableTap(table),
-                );
-              },
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final w = constraints.maxWidth;
+        final crossAxisCount = w >= 720
+            ? 5
+            : w >= 520
+                ? 4
+                : w >= 360
+                    ? 3
+                    : 2;
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: tables.length,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            mainAxisSpacing: AppSpacing.xs,
+            crossAxisSpacing: AppSpacing.xs,
+            childAspectRatio: 1.35,
+          ),
+          itemBuilder: (context, index) {
+            final table = tables[index];
+            final occupied = session.isTableOccupied(table.id);
+            final selected =
+                session.activeSnapshot?.session.tableId == table.id;
+            final snapshot = session.sessionForTable(table.id);
+            return _FloorTableTile(
+              table: table,
+              occupied: occupied,
+              selected: selected,
+              snapshot: snapshot,
+              enabled: !session.isLoading,
+              onTap: () => onTableTap(table),
             );
           },
-        ),
-      ],
+        );
+      },
     );
   }
 }
@@ -98,11 +93,11 @@ class _FloorTableTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final payDue =
+        snapshot?.session.status == SessionStatus.paymentPending;
     final statusLabel = occupied
-        ? (snapshot?.session.status == SessionStatus.paymentPending
-            ? 'Pay due'
-            : 'Occupied')
-        : 'Available';
+        ? (payDue ? 'Pay due' : 'Occ')
+        : 'Free';
 
     final bg = selected
         ? AppColors.brandSoft
@@ -111,49 +106,60 @@ class _FloorTableTile extends StatelessWidget {
             : (isDark ? AppDarkColors.surface : AppColors.surface);
     final border = selected
         ? AppColors.brand
-        : occupied
-            ? AppColors.warning
-            : AppColors.success.withValues(alpha: 0.55);
+        : payDue
+            ? AppColors.danger
+            : occupied
+                ? AppColors.warning
+                : AppColors.success.withValues(alpha: 0.55);
 
     return Material(
       color: bg,
-      borderRadius: BorderRadius.circular(AppRadius.md),
+      borderRadius: BorderRadius.circular(AppRadius.sm),
       child: InkWell(
         onTap: enabled ? onTap : null,
-        borderRadius: BorderRadius.circular(AppRadius.md),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
         child: DecoratedBox(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadius.md),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
             border: Border.all(color: border, width: selected ? 2 : 1),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.sm),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.xs,
+              vertical: AppSpacing.xxs,
+            ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
                   table.label,
-                  style: theme.textTheme.titleMedium,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
                   textAlign: TextAlign.center,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: AppSpacing.xxs),
                 Text(
                   statusLabel,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: occupied ? AppColors.warning : AppColors.success,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: payDue
+                        ? AppColors.danger
+                        : occupied
+                            ? AppColors.warning
+                            : AppColors.success,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-                if (snapshot != null) ...[
-                  const SizedBox(height: AppSpacing.xxs),
+                if (snapshot != null)
                   Text(
                     snapshot!.session.displayNumber,
-                    style: theme.textTheme.labelSmall,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                ],
               ],
             ),
           ),

@@ -29,6 +29,14 @@ export class KitchenController {
     return this.kitchen.getQueue(restaurantId);
   }
 
+  @Get('overview')
+  @ApiOperation({
+    summary: 'Kitchen overview aggregate — active orders, wait times, demand',
+  })
+  overview(@Param('restaurantId') restaurantId: string) {
+    return this.kitchen.getOverview(restaurantId);
+  }
+
   @Post('items/:batchItemId/complete')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Mark batch item completed' })

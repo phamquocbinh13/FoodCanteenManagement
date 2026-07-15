@@ -20,5 +20,6 @@ export 'inputs/search_field.dart';
 export 'layout/app_scaffold.dart';
 export 'layout/roms_page_header.dart';
 export 'layout/roms_split_view.dart';
+export 'navigation/staff_segmented_tabs.dart';
 export 'overlays/roms_bottom_sheet.dart';
 export 'overlays/roms_dialog.dart';

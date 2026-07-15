@@ -11,6 +11,22 @@ export declare class KitchenService {
         batches: KitchenQueueBatchDto[];
         loadedAt: string;
     }>;
+    getOverview(restaurantId: string): Promise<{
+        totalActiveOrders: number;
+        totalFoodOrders: number;
+        totalDrinkOrders: number;
+        averageWaitingMinutes: number;
+        longestWaitingTable: string | null;
+        longestWaitingMinutes: number;
+        ordersReady: number;
+        ordersPreparing: number;
+        ordersWaiting: number;
+        menuDemand: Array<{
+            menuItemId: string;
+            name: string;
+            quantity: number;
+        }>;
+    }>;
     completeBatchItem(restaurantId: string, batchItemId: string, changedByUserId: string): Promise<{
         ok: boolean;
     }>;

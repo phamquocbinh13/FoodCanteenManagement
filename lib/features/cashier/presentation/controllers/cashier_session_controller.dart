@@ -4,14 +4,19 @@ import '../../../../application/kitchen/kitchen_view_models.dart';
 import '../../../../application/session/session_constants.dart';
 import '../../../../application/usecases/kitchen/get_session_batch_progress_use_case.dart';
 import '../../../../application/usecases/payment/close_session_with_payment_use_case.dart';
+import '../../../../application/usecases/request/list_session_staff_requests_use_case.dart';
 import '../../../../application/usecases/session/close_session_use_case.dart';
 import '../../../../application/usecases/session/create_session_use_case.dart';
+import '../../../../application/usecases/session/get_session_bill_use_case.dart';
 import '../../../../application/usecases/session/list_restaurant_tables_use_case.dart';
 import '../../../../application/usecases/session/mark_waiting_payment_use_case.dart';
+import '../../../../application/usecases/session/reissue_session_token_use_case.dart';
 import '../../../../application/usecases/session/restore_session_use_case.dart';
 import '../../../../core/result/result.dart';
 import '../../../../domain/entities/restaurant_table.dart';
 import '../../../../domain/entities/session_engine_snapshot.dart';
+import '../../../../domain/entities/session_payment_summary.dart';
+import '../../../../domain/entities/staff_request.dart';
 import '../../../../domain/enums/domain_enums.dart';
 import '../../../../domain/services/session_state_machine.dart';
 
@@ -25,6 +30,9 @@ final class CashierSessionController extends ChangeNotifier {
     required RestoreSessionUseCase restoreSession,
     required GetCashierBatchSummariesUseCase getCashierBatchSummaries,
     required ListRestaurantTablesUseCase listTables,
+    required GetSessionBillUseCase getSessionBill,
+    required ListSessionStaffRequestsUseCase listSessionRequests,
+    required ReissueSessionTokenUseCase reissueSessionToken,
     CloseSessionWithPaymentUseCase? closeWithPayment,
   })  : _restaurantId = restaurantId,
         _createSession = createSession,
@@ -33,6 +41,9 @@ final class CashierSessionController extends ChangeNotifier {
         _restoreSession = restoreSession,
         _getCashierBatchSummaries = getCashierBatchSummaries,
         _listTables = listTables,
+        _getSessionBill = getSessionBill,
+        _listSessionRequests = listSessionRequests,
+        _reissueSessionToken = reissueSessionToken,
         _closeWithPayment = closeWithPayment;
 
   final String _restaurantId;
@@ -42,15 +53,21 @@ final class CashierSessionController extends ChangeNotifier {
   final RestoreSessionUseCase _restoreSession;
   final GetCashierBatchSummariesUseCase _getCashierBatchSummaries;
   final ListRestaurantTablesUseCase _listTables;
+  final GetSessionBillUseCase _getSessionBill;
+  final ListSessionStaffRequestsUseCase _listSessionRequests;
+  final ReissueSessionTokenUseCase _reissueSessionToken;
   final CloseSessionWithPaymentUseCase? _closeWithPayment;
 
   SessionEngineSnapshot? _activeSnapshot;
   List<SessionEngineSnapshot> _activeSessions = [];
   List<RestaurantTable> _tables = [];
   String? _sessionToken;
+  final Map<String, String> _tokensBySessionId = {};
   String? _errorMessage;
   bool _isLoading = false;
   List<CashierBatchSummaryView> _batchSummaries = [];
+  SessionPaymentSummary? _bill;
+  List<StaffRequest> _sessionRequests = [];
 
   SessionEngineSnapshot? get activeSnapshot => _activeSnapshot;
   List<SessionEngineSnapshot> get activeSessions =>
@@ -61,6 +78,12 @@ final class CashierSessionController extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get hasActiveSession => _activeSnapshot != null;
   List<CashierBatchSummaryView> get batchSummaries => _batchSummaries;
+  SessionPaymentSummary? get bill => _bill;
+  List<StaffRequest> get sessionRequests =>
+      List.unmodifiable(_sessionRequests);
+
+  int get occupiedTableCount =>
+      _tables.where((t) => isTableOccupied(t.id)).length;
 
   SessionLifecyclePhase get lifecyclePhase {
     final status = _activeSnapshot?.session.status;
@@ -68,9 +91,22 @@ final class CashierSessionController extends ChangeNotifier {
     return status.lifecyclePhase;
   }
 
+  Duration? get sessionDuration {
+    final opened = _activeSnapshot?.session.openedAt;
+    if (opened == null) return null;
+    return DateTime.now().toUtc().difference(opened.toUtc());
+  }
+
   SessionEngineSnapshot? sessionForTable(String tableId) {
     for (final snapshot in _activeSessions) {
       if (snapshot.session.tableId == tableId) return snapshot;
+    }
+    return null;
+  }
+
+  SessionEngineSnapshot? sessionById(String sessionId) {
+    for (final snapshot in _activeSessions) {
+      if (snapshot.session.id == sessionId) return snapshot;
     }
     return null;
   }
@@ -97,9 +133,7 @@ final class CashierSessionController extends ChangeNotifier {
 
   Future<void> _loadTables() async {
     final result = await _listTables(
-      ListRestaurantTablesParams(
-        restaurantId: _restaurantId,
-      ),
+      ListRestaurantTablesParams(restaurantId: _restaurantId),
     );
     if (result is Success<List<RestaurantTable>>) {
       _tables = result.value;
@@ -108,9 +142,7 @@ final class CashierSessionController extends ChangeNotifier {
 
   Future<void> _loadActiveSessions() async {
     final result = await _restoreSession(
-      RestoreSessionParams(
-        restaurantId: _restaurantId,
-      ),
+      RestoreSessionParams(restaurantId: _restaurantId),
     );
     if (result is Success<List<SessionEngineSnapshot>>) {
       _activeSessions = result.value;
@@ -128,26 +160,45 @@ final class CashierSessionController extends ChangeNotifier {
         _activeSnapshot = _activeSessions.first;
       }
       if (_activeSnapshot != null) {
-        await refreshBatchSummaries();
+        await refreshSessionDetail();
       } else {
         _batchSummaries = [];
+        _bill = null;
+        _sessionRequests = [];
       }
       _errorMessage = null;
     }
   }
 
-  void selectSession(SessionEngineSnapshot snapshot) {
+  Future<void> selectSession(SessionEngineSnapshot snapshot) async {
     _activeSnapshot = snapshot;
-    _sessionToken = null;
+    _sessionToken = _tokensBySessionId[snapshot.session.id];
     _errorMessage = null;
-    refreshBatchSummaries();
     notifyListeners();
+    await refreshSessionDetail();
+  }
+
+  Future<bool> openSessionById(String sessionId) async {
+    final existing = sessionById(sessionId);
+    if (existing != null) {
+      await selectSession(existing);
+      return true;
+    }
+    await restore();
+    final after = sessionById(sessionId);
+    if (after != null) {
+      await selectSession(after);
+      return true;
+    }
+    return false;
   }
 
   void clearSelection() {
     _activeSnapshot = null;
     _sessionToken = null;
     _batchSummaries = [];
+    _bill = null;
+    _sessionRequests = [];
     notifyListeners();
   }
 
@@ -164,7 +215,7 @@ final class CashierSessionController extends ChangeNotifier {
   }) async {
     final existing = sessionForTable(tableId);
     if (existing != null) {
-      selectSession(existing);
+      await selectSession(existing);
       return;
     }
 
@@ -184,18 +235,19 @@ final class CashierSessionController extends ChangeNotifier {
       case Success(:final value):
         _activeSnapshot = value.snapshot;
         _sessionToken = value.sessionTokenValue;
+        _tokensBySessionId[value.snapshot.session.id] = value.sessionTokenValue;
         _errorMessage = null;
         await Future.wait([_loadTables(), _loadActiveSessions()]);
-        await refreshBatchSummaries();
+        await refreshSessionDetail();
       case Err(:final failure):
         _errorMessage = failure.message;
         await Future.wait([_loadTables(), _loadActiveSessions()]);
         final afterConflict = sessionForTable(tableId);
         if (afterConflict != null) {
           _activeSnapshot = afterConflict;
-          _sessionToken = null;
+          _sessionToken = _tokensBySessionId[afterConflict.session.id];
           _errorMessage = null;
-          await refreshBatchSummaries();
+          await refreshSessionDetail();
         }
     }
     notifyListeners();
@@ -207,7 +259,7 @@ final class CashierSessionController extends ChangeNotifier {
   }) async {
     final existing = sessionForTable(tableId);
     if (existing != null) {
-      selectSession(existing);
+      await selectSession(existing);
       return;
     }
     if (isTableOccupied(tableId)) {
@@ -279,15 +331,59 @@ final class CashierSessionController extends ChangeNotifier {
 
     switch (result) {
       case Success():
+        _tokensBySessionId.remove(snapshot.session.id);
         _activeSnapshot = null;
         _sessionToken = null;
         _batchSummaries = [];
+        _bill = null;
+        _sessionRequests = [];
         _errorMessage = null;
         await Future.wait([_loadTables(), _loadActiveSessions()]);
       case Err(:final failure):
         _errorMessage = failure.message;
     }
     notifyListeners();
+  }
+
+  Future<void> reissueJoinToken() async {
+    final snapshot = _activeSnapshot;
+    if (snapshot == null) return;
+
+    _setLoading(true);
+    final result = await _reissueSessionToken(
+      ReissueSessionTokenParams(
+        restaurantId: snapshot.session.restaurantId,
+        sessionId: snapshot.session.id,
+      ),
+    );
+    _setLoading(false);
+
+    switch (result) {
+      case Success(:final value):
+        _activeSnapshot = value.snapshot;
+        _sessionToken = value.sessionTokenValue;
+        _tokensBySessionId[value.snapshot.session.id] = value.sessionTokenValue;
+        _errorMessage = null;
+      case Err(:final failure):
+        _errorMessage = failure.message;
+    }
+    notifyListeners();
+  }
+
+  Future<void> refreshSessionDetail() async {
+    final sessionId = _activeSnapshot?.session.id;
+    if (sessionId == null) {
+      _batchSummaries = [];
+      _bill = null;
+      _sessionRequests = [];
+      return;
+    }
+
+    await Future.wait([
+      refreshBatchSummaries(),
+      _refreshBill(sessionId),
+      _refreshRequests(sessionId),
+    ]);
   }
 
   Future<void> refreshBatchSummaries() async {
@@ -304,6 +400,30 @@ final class CashierSessionController extends ChangeNotifier {
     );
     if (result is Success<List<CashierBatchSummaryView>>) {
       _batchSummaries = result.value;
+      notifyListeners();
+    }
+  }
+
+  Future<void> _refreshBill(String sessionId) async {
+    final result = await _getSessionBill(
+      GetSessionBillParams(
+        sessionId: sessionId,
+        restaurantId: _restaurantId,
+        includeOpenCart: true,
+      ),
+    );
+    if (result is Success<SessionPaymentSummary>) {
+      _bill = result.value;
+      notifyListeners();
+    }
+  }
+
+  Future<void> _refreshRequests(String sessionId) async {
+    final result = await _listSessionRequests(
+      ListSessionStaffRequestsParams(sessionId: sessionId),
+    );
+    if (result is Success<List<StaffRequest>>) {
+      _sessionRequests = result.value;
       notifyListeners();
     }
   }

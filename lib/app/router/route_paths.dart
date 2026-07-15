@@ -22,8 +22,12 @@ abstract final class RoutePaths {
   // Staff surfaces
   static const kitchen = '/kitchen';
   static const cashier = '/cashier';
+  static const cashierSession = '/cashier/session/:sessionId';
   static const admin = '/admin';
   static const shipper = '/shipper';
+
+  static String cashierSessionPath(String sessionId) =>
+      '/cashier/session/$sessionId';
 
   // Staff order flows
   static const menu = '/menu';
@@ -38,6 +42,7 @@ abstract final class RoutePaths {
   static const customerScanName = 'customerScan';
   static const kitchenName = 'kitchen';
   static const cashierName = 'cashier';
+  static const cashierSessionName = 'cashierSession';
   static const adminName = 'admin';
   static const shipperName = 'shipper';
   static const menuName = 'menu';

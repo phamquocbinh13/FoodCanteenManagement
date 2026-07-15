@@ -13,7 +13,9 @@ import '../../../application/usecases/cart/get_session_cart_use_case.dart';
 import '../../../application/usecases/cart/remove_cart_item_use_case.dart';
 import '../../../application/usecases/cart/update_cart_item_quantity_use_case.dart';
 import '../../../application/usecases/kitchen/complete_batch_item_use_case.dart';
+import '../../../application/usecases/batch/staff_confirm_batch_use_case.dart';
 import '../../../application/usecases/kitchen/get_kitchen_menu_panel_use_case.dart';
+import '../../../application/usecases/kitchen/get_kitchen_overview_use_case.dart';
 import '../../../application/usecases/kitchen/get_kitchen_queue_use_case.dart';
 import '../../../application/usecases/kitchen/get_session_batch_progress_use_case.dart';
 import '../../../application/usecases/kitchen/toggle_menu_availability_use_case.dart';
@@ -191,6 +193,14 @@ abstract final class KitchenModule {
         batchRepository: sl<BatchRepository>(),
         kitchenDomainService: sl<KitchenDomainService>(),
       ),
+    );
+
+    sl.registerLazySingleton(
+      () => GetKitchenOverviewUseCase(apiClient: sl<ApiClient>()),
+    );
+
+    sl.registerLazySingleton(
+      () => StaffConfirmBatchUseCase(apiClient: sl<ApiClient>()),
     );
   }
 }

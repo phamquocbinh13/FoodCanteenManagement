@@ -11,6 +11,11 @@ export declare class SessionsService {
     join(sessionToken: string, deviceId?: string): Promise<SessionSnapshot>;
     me(sessionToken: string): Promise<SessionSnapshot>;
     findById(restaurantId: string, sessionId: string): Promise<SessionSnapshot>;
+    reissueToken(restaurantId: string, sessionId: string): Promise<{
+        sessionToken: string;
+        expiresAt: string;
+        snapshot: SessionSnapshot;
+    }>;
     listActive(restaurantId: string): Promise<{
         items: SessionSnapshot[];
     }>;

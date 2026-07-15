@@ -1,5 +1,24 @@
 # ROMS Iteration Memory
 
+## Iteration: 2026-07-16 — Cashier/Kitchen workflow redesign
+
+### Cashier (3 tabs)
+- Floor → session detail `/cashier/session/:id` (QR, bill, batches, requests, pay/force/reissue)
+- Requests tab with filters (Pending/Handling/Resolved)
+- Edit orders: staff cart → `POST .../batches/confirm` (completed batches locked)
+
+### Kitchen
+- Overview first tab via `GET .../kitchen/overview`
+- Orders + Inventory unchanged in behavior
+
+### New APIs
+- `GET /restaurants/:rid/kitchen/overview`
+- `POST /restaurants/:rid/sessions/:sid/reissue-token`
+
+### Verify
+`flutter analyze lib` clean · `flutter test` 84 passed · backend build/tests OK  
+Report: `CASHIER_KITCHEN_REDESIGN_REPORT.md`
+
 ## Iteration: 2026-07-16 — Structural debt cleanup
 
 ### What changed

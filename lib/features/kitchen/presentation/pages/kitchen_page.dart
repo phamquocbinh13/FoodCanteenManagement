@@ -7,12 +7,14 @@ import '../../../../core/permissions/permission_service.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../shared/presentation/staff_scaffold.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../providers/kitchen_overview_provider.dart';
 import '../providers/kitchen_provider.dart';
 import '../widgets/kitchen_inventory_tab.dart';
 import '../widgets/kitchen_orders_tab.dart';
+import '../widgets/kitchen_overview_tab.dart';
 import '../widgets/kitchen_segmented_tabs.dart';
 
-/// Kitchen Display System — tabbed queue + inventory (presentation only).
+/// Kitchen Display System — Overview + Orders + Inventory.
 class KitchenPage extends ConsumerStatefulWidget {
   const KitchenPage({super.key});
 
@@ -27,20 +29,29 @@ class _KitchenPageState extends ConsumerState<KitchenPage>
   final Set<String> _seenBatchIds = {};
   final Set<String> _highlightedBatchIds = {};
   bool _highlightsReady = false;
+  bool _ordersLoaded = false;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    _tabController.addListener(() => setState(() {}));
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(_onTabChanged);
+  }
+
+  void _onTabChanged() {
+    setState(() {});
+    if ((_tabController.index == 1 || _tabController.index == 2) &&
+        !_ordersLoaded) {
+      _ordersLoaded = true;
       ref.read(kitchenControllerProvider).refresh();
-    });
+    }
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
+    _tabController
+      ..removeListener(_onTabChanged)
+      ..dispose();
     super.dispose();
   }
 
@@ -78,6 +89,8 @@ class _KitchenPageState extends ConsumerState<KitchenPage>
   Widget build(BuildContext context) {
     final role = ref.watch(currentRoleProvider);
     final kitchen = ref.watch(kitchenControllerProvider);
+    final overview = ref.watch(kitchenOverviewProvider);
+    final overviewCount = overview.asData?.value.totalActiveOrders ?? 0;
 
     return StaffScaffold(
       title: 'Kitchen',
@@ -92,6 +105,7 @@ class _KitchenPageState extends ConsumerState<KitchenPage>
           const SizedBox(height: AppSpacing.md),
           KitchenSegmentedTabs(
             controller: _tabController,
+            activeOrderCount: overviewCount,
             pendingBatchCount: _pendingBatchCount(kitchen.queue),
             unavailableItemCount: _unavailableCount(kitchen.menuItems),
           ),
@@ -100,11 +114,12 @@ class _KitchenPageState extends ConsumerState<KitchenPage>
             child: TabBarView(
               controller: _tabController,
               children: [
+                const KitchenOverviewTab(),
                 KitchenOrdersTab(
                   highlightedBatchIds: _highlightedBatchIds,
                   onBatchesUpdated: _onBatchesUpdated,
                 ),
-                KitchenInventoryTab(),
+                const KitchenInventoryTab(),
               ],
             ),
           ),
