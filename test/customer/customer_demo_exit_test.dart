@@ -21,7 +21,7 @@ import 'package:food_canteen_management/application/usecases/menu/get_menu_item_
 import 'package:food_canteen_management/application/usecases/request/create_staff_request_use_case.dart';
 import 'package:food_canteen_management/application/usecases/request/list_session_staff_requests_use_case.dart';
 import 'package:food_canteen_management/application/usecases/session/create_session_use_case.dart'
-    show CreateSessionParams, CreateSessionUseCase, SessionEngineDataSourceDailySequence;
+    show CreateSessionParams, CreateSessionUseCase;
 import 'package:food_canteen_management/application/usecases/session/get_session_bill_use_case.dart';
 import 'package:food_canteen_management/application/usecases/session/join_session_use_case.dart';
 import 'package:food_canteen_management/application/usecases/session/mark_waiting_payment_use_case.dart';
@@ -52,12 +52,6 @@ final class _NoOpEvents implements DomainEventPublisher {
   Future<void> publish(DomainEvent event) async {}
 }
 
-final class _Sequence implements SessionEngineDataSourceDailySequence {
-  _Sequence(this._ds);
-  final InMemorySessionEngineDataSource _ds;
-  @override
-  int nextDailySequence(String dateKey) => _ds.nextDailySequence(dateKey);
-}
 
 Future<
     ({
@@ -91,7 +85,6 @@ Future<
     clock: clock,
     idGenerator: ids,
     eventPublisher: _NoOpEvents(),
-    sequenceProvider: _Sequence(sessionDs),
   );
   final created = await create(
     const CreateSessionParams(
@@ -119,7 +112,7 @@ Future<
     ),
     createStaffRequest: CreateStaffRequestUseCase(
       requestRepository: requestRepo,
-      sessionDataSource: sessionDs,
+      sessionEngineRepository: sessionRepo,
       timelineRecorder: timeline,
       markWaitingPayment: MarkWaitingPaymentUseCase(
         repository: sessionRepo,
@@ -149,7 +142,6 @@ Future<
   final ordering = CustomerOrderingController(
     getMenuCatalog: GetMenuCatalogUseCase(
       menuRepository: menuRepo,
-      store: store,
       clock: clock,
     ),
     getMenuItemDetail: GetMenuItemDetailUseCase(menuRepository: menuRepo),
@@ -159,7 +151,7 @@ Future<
       customizationValidator: const CustomizationValidator(),
       customizationRenderer: const CustomizationRenderer(),
       timelineRecorder: timeline,
-      sessionDataSource: sessionDs,
+      sessionEngineRepository: sessionRepo,
       idGenerator: ids,
       clock: clock,
     ),
@@ -183,21 +175,18 @@ Future<
       batchRepository: batchRepo,
       menuRepository: menuRepo,
       sessionEngineRepository: sessionRepo,
-      sessionDataSource: sessionDs,
       customizationRenderer: const CustomizationRenderer(),
       timelineRecorder: timeline,
       idGenerator: ids,
       eventPublisher: _NoOpEvents(),
       clock: clock,
-      orderingStore: store,
     ),
     getSessionBill: GetSessionBillUseCase(
-      store: store,
-      sessionDataSource: sessionDs,
+      sessionRepository: sessionRepo,
+      batchRepository: BatchRepositoryImpl(store: store),
       getSessionCart: getCart,
     ),
     getSessionBatchProgress: GetSessionBatchProgressUseCase(
-      store: store,
       batchRepository: batchRepo,
     ),
   );

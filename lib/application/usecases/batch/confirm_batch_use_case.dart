@@ -9,14 +9,13 @@ import '../../../domain/entities/kitchen_batch.dart';
 import '../../../domain/enums/domain_enums.dart';
 import '../../../domain/events/domain_events.dart';
 import '../../../domain/exceptions/domain_exception.dart';
+import '../../../domain/entities/session_engine_snapshot.dart';
 import '../../../domain/repositories/batch_repository.dart';
 import '../../../domain/repositories/menu_repository.dart';
 import '../../../domain/repositories/session_engine_repository.dart';
 import '../../../domain/services/batch_domain_service.dart';
 import '../../../domain/services/menu_domain_service.dart';
 import '../../../domain/value_objects/money.dart';
-import '../../../data/datasources/ordering/ordering_store.dart';
-import '../../../data/datasources/session/session_engine_datasource.dart';
 import '../../../data/repositories/cart/session_cart_repository_impl.dart';
 import '../../menu/customization_renderer.dart';
 import '../../menu/kitchen_batch_ticket.dart';
@@ -32,26 +31,24 @@ final class ConfirmBatchUseCase
     required BatchRepository batchRepository,
     required MenuRepository menuRepository,
     required SessionEngineRepository sessionEngineRepository,
-    required SessionEngineDataSource sessionDataSource,
     required CustomizationRenderer customizationRenderer,
     required SessionTimelineRecorder timelineRecorder,
     required IdGenerator idGenerator,
     required DomainEventPublisher eventPublisher,
     required Clock clock,
-    required OrderingStore orderingStore,
+    SessionBillProjector billProjector = const SessionBillProjector(),
     BatchDomainService? batchDomainService,
     MenuDomainService? menuDomainService,
   })  : _cartRepository = cartRepository,
         _batchRepository = batchRepository,
         _menuRepository = menuRepository,
         _sessionEngine = sessionEngineRepository,
-        _sessionDataSource = sessionDataSource,
         _customizationRenderer = customizationRenderer,
         _timeline = timelineRecorder,
         _idGenerator = idGenerator,
         _eventPublisher = eventPublisher,
         _clock = clock,
-        _billProjector = SessionBillProjector(store: orderingStore),
+        _billProjector = billProjector,
         _batchService = batchDomainService ?? const BatchDomainService(),
         _menuService = menuDomainService ?? const MenuDomainService();
 
@@ -59,7 +56,6 @@ final class ConfirmBatchUseCase
   final BatchRepository _batchRepository;
   final MenuRepository _menuRepository;
   final SessionEngineRepository _sessionEngine;
-  final SessionEngineDataSource _sessionDataSource;
   final CustomizationRenderer _customizationRenderer;
   final SessionTimelineRecorder _timeline;
   final IdGenerator _idGenerator;
@@ -72,10 +68,18 @@ final class ConfirmBatchUseCase
   @override
   Future<Result<KitchenBatchTicket>> call(ConfirmBatchParams params) async {
     final now = _clock.now();
-    final session = _sessionDataSource.getSession(params.sessionId);
-    if (session == null || session.restaurantId != params.restaurantId) {
+    final sessionLookup = await _sessionEngine.findById(
+      sessionId: params.sessionId,
+      restaurantId: params.restaurantId,
+    );
+    if (sessionLookup is Err<SessionEngineSnapshot>) {
+      return Err(sessionLookup.failure);
+    }
+    if (sessionLookup is! Success<SessionEngineSnapshot>) {
       return const Err(NotFoundFailure('Session not found'));
     }
+    final sessionSnapshot = sessionLookup.value;
+    final session = sessionSnapshot.session;
     if (session.status == SessionStatus.closed) {
       return const Err(ValidationFailure('Session is closed'));
     }
@@ -194,10 +198,26 @@ final class ConfirmBatchUseCase
 
     await _cartRepository.clearCart(params.sessionId);
 
-    final latestSession = _sessionDataSource.getSession(params.sessionId)!;
+    final latestLookup = await _sessionEngine.findById(
+      sessionId: params.sessionId,
+      restaurantId: params.restaurantId,
+    );
+    if (latestLookup is! Success<SessionEngineSnapshot>) {
+      return const Err(NotFoundFailure('Session not found'));
+    }
+    final latestSession = latestLookup.value.session;
+
+    // Include just-created batch items (snapshot batchIds may lag until relaod).
+    final priorItems = <BatchItem>[];
+    for (final id in latestLookup.value.batchIds) {
+      if (id == batchId) continue;
+      priorItems.addAll(await _batchRepository.getItemsByBatchId(id));
+    }
+    final allItems = [...priorItems, ...batchItems];
+
     final projectedSummary = _billProjector.project(
       existing: latestSession.paymentSummary,
-      sessionId: params.sessionId,
+      batchSubtotalMinor: _billProjector.batchSubtotalMinor(allItems),
     );
 
     final updatedSession = latestSession.copyWith(
@@ -206,12 +226,13 @@ final class ConfirmBatchUseCase
     );
     await _sessionEngine.update(updatedSession);
 
-    _sessionDataSource.appendTimeline(
+    await _sessionEngine.appendTimeline(
       _timeline.batchCreated(
         sessionId: params.sessionId,
         batchNumber: batchNumber,
         actorId: params.actorId,
       ),
+      restaurantId: params.restaurantId,
     );
 
     await _eventPublisher.publish(
@@ -224,11 +245,10 @@ final class ConfirmBatchUseCase
       ),
     );
 
-    final table = _sessionDataSource.getTable(session.tableId);
     return Success(
       KitchenBatchTicket(
         batch: batch,
-        tableLabel: table?.label ?? session.tableId,
+        tableLabel: sessionSnapshot.tableLabel,
         items: batchItems,
       ),
     );

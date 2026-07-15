@@ -20,20 +20,17 @@ final class CreateSessionUseCase
     required Clock clock,
     required IdGenerator idGenerator,
     required DomainEventPublisher eventPublisher,
-    SessionEngineDataSourceDailySequence? sequenceProvider,
   })  : _repository = repository,
         _policy = policy,
         _clock = clock,
         _idGenerator = idGenerator,
-        _eventPublisher = eventPublisher,
-        _sequenceProvider = sequenceProvider;
+        _eventPublisher = eventPublisher;
 
   final SessionEngineRepository _repository;
   final SessionPolicy _policy;
   final Clock _clock;
   final IdGenerator _idGenerator;
   final DomainEventPublisher _eventPublisher;
-  final SessionEngineDataSourceDailySequence? _sequenceProvider;
 
   @override
   Future<Result<SessionAccess>> call(CreateSessionParams params) async {
@@ -56,9 +53,14 @@ final class CreateSessionUseCase
     }
 
     final dateKey = _dateKey(now);
-    final sequence = _sequenceProvider?.nextDailySequence(dateKey) ??
-        params.fallbackSequence ??
-        1;
+    final sequenceResult = await _repository.nextDailySequence(
+      restaurantId: params.restaurantId,
+      dateKey: dateKey,
+    );
+    if (sequenceResult is Err<int>) {
+      return Err(sequenceResult.failure);
+    }
+    final sequence = sequenceResult.valueOrNull ?? params.fallbackSequence ?? 1;
     final displayNumber = SessionDisplayNumberGenerator.generate(
       clock: _clock,
       dailySequence: sequence,
@@ -98,11 +100,6 @@ final class CreateSessionUseCase
   String _dateKey(DateTime now) {
     return '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
   }
-}
-
-/// Supplies daily session sequence from datasource.
-abstract interface class SessionEngineDataSourceDailySequence {
-  int nextDailySequence(String dateKey);
 }
 
 final class CreateSessionParams {

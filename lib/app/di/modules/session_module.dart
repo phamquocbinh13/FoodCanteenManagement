@@ -1,7 +1,6 @@
 import 'package:get_it/get_it.dart';
 
 import '../../../application/policies/session_policy.dart';
-import '../../../application/session/datasource_daily_sequence.dart';
 import '../../../application/session/session_timeline_recorder.dart';
 import '../../../application/usecases/session/close_session_use_case.dart';
 import '../../../application/usecases/session/create_session_use_case.dart';
@@ -18,11 +17,14 @@ import '../../../data/datasources/ordering/ordering_store.dart';
 import '../../../data/datasources/session/in_memory_session_engine_datasource.dart';
 import '../../../data/datasources/session/session_datasource.dart';
 import '../../../data/datasources/session/session_engine_datasource.dart';
+import '../../../core/network/api_client.dart';
+import '../../../data/repositories/session/remote_session_engine_repository.dart';
 import '../../../data/repositories/session/session_engine_repository_impl.dart';
 import '../../../data/repositories/session/session_repository_impl.dart';
 import '../../../domain/events/domain_events.dart';
 import '../../../domain/repositories/session_engine_repository.dart';
 import '../../../domain/repositories/session_repository.dart';
+import '../../config/app_config.dart';
 
 abstract final class SessionModule {
   static void register(GetIt sl) {
@@ -34,13 +36,6 @@ abstract final class SessionModule {
       () => SessionRepositoryImpl(remote: sl<SessionRemoteDataSource>()),
     );
 
-    sl.registerLazySingleton<SessionEngineDataSource>(
-      () => InMemorySessionEngineDataSource(
-        clock: sl<Clock>(),
-        store: sl<OrderingStore>(),
-      ),
-    );
-
     sl.registerLazySingleton(
       () => SessionTimelineRecorder(
         idGenerator: sl<IdGenerator>(),
@@ -48,17 +43,25 @@ abstract final class SessionModule {
       ),
     );
 
-    sl.registerLazySingleton<SessionEngineRepository>(
-      () => SessionEngineRepositoryImpl(
-        dataSource: sl<SessionEngineDataSource>(),
-        idGenerator: sl<IdGenerator>(),
-        timelineRecorder: sl<SessionTimelineRecorder>(),
-        clock: sl<Clock>(),
-      ),
-    );
+    final useRemote = sl<AppConfig>().useRemoteBackend;
+    if (!useRemote) {
+      sl.registerLazySingleton<SessionEngineDataSource>(
+        () => InMemorySessionEngineDataSource(
+          clock: sl<Clock>(),
+          store: sl<OrderingStore>(),
+        ),
+      );
+    }
 
-    sl.registerLazySingleton(
-      () => DatasourceDailySequence(sl<SessionEngineDataSource>()),
+    sl.registerLazySingleton<SessionEngineRepository>(
+      () => useRemote
+          ? RemoteSessionEngineRepository(apiClient: sl<ApiClient>())
+          : SessionEngineRepositoryImpl(
+              dataSource: sl<SessionEngineDataSource>(),
+              idGenerator: sl<IdGenerator>(),
+              timelineRecorder: sl<SessionTimelineRecorder>(),
+              clock: sl<Clock>(),
+            ),
     );
 
     sl.registerLazySingleton(() => const SessionMapper());
@@ -72,7 +75,6 @@ abstract final class SessionModule {
         clock: sl<Clock>(),
         idGenerator: sl<IdGenerator>(),
         eventPublisher: sl<DomainEventPublisher>(),
-        sequenceProvider: sl<DatasourceDailySequence>(),
       ),
     );
 

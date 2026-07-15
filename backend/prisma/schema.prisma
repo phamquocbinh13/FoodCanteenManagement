@@ -1,8 +1,3 @@
-// ROMS Prisma schema — mirrors docs/backend/sprint-0/04_schema_mysql8.sql
-// Source of truth for DDL remains the SQL script (already applied in Workbench).
-// After setting DATABASE_URL: npx prisma db pull  (to refresh from live DB)
-//                           OR npx prisma generate (use this file)
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,50 +8,62 @@ datasource db {
 }
 
 model Restaurant {
-  id        String   @id @db.Char(36)
-  name      String   @db.VarChar(200)
-  slug      String   @unique @db.VarChar(100)
-  timezone  String   @default("UTC") @db.VarChar(64)
-  isActive  Boolean  @default(true) @map("is_active")
-  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(3)
-  updatedAt DateTime @updatedAt @map("updated_at") @db.DateTime(3)
-
-  settings RestaurantSettings?
-  tables   RestaurantTable[]
-  users    StaffUser[]
+  id                       String                     @id @db.Char(36)
+  name                     String                     @db.VarChar(200)
+  slug                     String                     @unique(map: "uq_restaurant_slug") @db.VarChar(100)
+  timezone                 String                     @default("UTC") @db.VarChar(64)
+  isActive                 Boolean                    @default(true) @map("is_active")
+  createdAt                DateTime                   @default(now()) @map("created_at")
+  updatedAt                DateTime                   @default(now()) @updatedAt @map("updated_at")
+  audit_log                audit_log[]
+  batch_item               batch_item[]
+  dine_in_session          dine_in_session[]
+  domain_outbox            domain_outbox[]
+  idempotency_record       idempotency_record[]
+  kitchen_batch            kitchen_batch[]
+  menu_category            MenuCategory[]
+  menu_item                MenuItem[]
+  restaurant_daily_counter restaurant_daily_counter[]
+  settings                 RestaurantSettings?
+  tables                   RestaurantTable[]
+  roms_order               roms_order[]
+  staff_refresh_token      staff_refresh_token[]
+  staff_request            staff_request[]
+  users                    StaffUser[]
+  table_qr_token           table_qr_token[]
 
   @@map("restaurant")
 }
 
 model RestaurantSettings {
-  id                       String   @id @db.Char(36)
-  restaurantId             String   @unique @map("restaurant_id") @db.Char(36)
-  defaultCurrency          String   @map("default_currency") @db.Char(3)
-  taxRateBps               Int      @default(0) @map("tax_rate_bps")
-  serviceChargeBps         Int      @default(0) @map("service_charge_bps")
-  sessionTokenTtlMinutes   Int      @default(480) @map("session_token_ttl_minutes")
-  allowQrOnReservedTable   Boolean  @default(false) @map("allow_qr_on_reserved_table")
-  paymentSoftLockEnabled   Boolean  @default(true) @map("payment_soft_lock_enabled")
-  createdAt                DateTime @default(now()) @map("created_at") @db.DateTime(3)
-  updatedAt                DateTime @updatedAt @map("updated_at") @db.DateTime(3)
-
-  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+  id                     String     @id @db.Char(36)
+  restaurantId           String     @unique(map: "uq_restaurant_settings_restaurant") @map("restaurant_id") @db.Char(36)
+  defaultCurrency        String     @map("default_currency") @db.Char(3)
+  taxRateBps             Int        @default(0) @map("tax_rate_bps")
+  serviceChargeBps       Int        @default(0) @map("service_charge_bps")
+  sessionTokenTtlMinutes Int        @default(480) @map("session_token_ttl_minutes")
+  allowQrOnReservedTable Boolean    @default(false) @map("allow_qr_on_reserved_table")
+  paymentSoftLockEnabled Boolean    @default(true) @map("payment_soft_lock_enabled")
+  createdAt              DateTime   @default(now()) @map("created_at")
+  updatedAt              DateTime   @default(now()) @updatedAt @map("updated_at")
+  restaurant             Restaurant @relation(fields: [restaurantId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_settings_restaurant")
 
   @@map("restaurant_settings")
 }
 
 model RestaurantTable {
-  id           String   @id @db.Char(36)
-  restaurantId String   @map("restaurant_id") @db.Char(36)
-  label        String   @db.VarChar(50)
-  capacity     Int      @default(4) @db.SmallInt
-  status       String   @default("available") @db.VarChar(20)
-  sortOrder    Int      @default(0) @map("sort_order")
-  isActive     Boolean  @default(true) @map("is_active")
-  createdAt    DateTime @default(now()) @map("created_at") @db.DateTime(3)
-  updatedAt    DateTime @updatedAt @map("updated_at") @db.DateTime(3)
-
-  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+  id              String            @id @db.Char(36)
+  restaurantId    String            @map("restaurant_id") @db.Char(36)
+  label           String            @db.VarChar(50)
+  capacity        Int               @default(4) @db.SmallInt
+  status          String            @default("available") @db.VarChar(20)
+  sortOrder       Int               @default(0) @map("sort_order")
+  isActive        Boolean           @default(true) @map("is_active")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @default(now()) @updatedAt @map("updated_at")
+  dine_in_session dine_in_session[]
+  restaurant      Restaurant        @relation(fields: [restaurantId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_table_restaurant")
+  table_qr_token  table_qr_token?
 
   @@unique([restaurantId, label], map: "uq_table_label")
   @@index([restaurantId, status], map: "idx_table_restaurant_status")
@@ -64,17 +71,27 @@ model RestaurantTable {
 }
 
 model StaffUser {
-  id           String    @id @db.Char(36)
-  restaurantId String    @map("restaurant_id") @db.Char(36)
-  email        String    @db.VarChar(255)
-  displayName  String    @map("display_name") @db.VarChar(100)
-  passwordHash String    @map("password_hash") @db.VarChar(255)
-  isActive     Boolean   @default(true) @map("is_active")
-  lastLoginAt  DateTime? @map("last_login_at") @db.DateTime(3)
-  createdAt    DateTime  @default(now()) @map("created_at") @db.DateTime(3)
-  updatedAt    DateTime  @updatedAt @map("updated_at") @db.DateTime(3)
-
-  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+  id                                                            String                           @id @db.Char(36)
+  restaurantId                                                  String                           @map("restaurant_id") @db.Char(36)
+  email                                                         String                           @db.VarChar(255)
+  displayName                                                   String                           @map("display_name") @db.VarChar(100)
+  passwordHash                                                  String                           @map("password_hash") @db.VarChar(255)
+  isActive                                                      Boolean                          @default(true) @map("is_active")
+  lastLoginAt                                                   DateTime?                        @map("last_login_at")
+  createdAt                                                     DateTime                         @default(now()) @map("created_at")
+  updatedAt                                                     DateTime                         @default(now()) @updatedAt @map("updated_at")
+  batch_item_status_history                                     batch_item_status_history[]
+  delivery_detail                                               delivery_detail[]
+  dine_in_session_dine_in_session_closed_by_user_idTostaff_user dine_in_session[]                @relation("dine_in_session_closed_by_user_idTostaff_user")
+  dine_in_session_dine_in_session_opened_by_user_idTostaff_user dine_in_session[]                @relation("dine_in_session_opened_by_user_idTostaff_user")
+  menu_item_availability_history                                menu_item_availability_history[]
+  order_payment                                                 order_payment[]
+  roms_order                                                    roms_order[]
+  session_payment                                               session_payment[]
+  staff_refresh_token                                           staff_refresh_token[]
+  staff_request                                                 staff_request[]
+  restaurant                                                    Restaurant                       @relation(fields: [restaurantId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_staff_restaurant")
+  user_role                                                     user_role[]
 
   @@unique([restaurantId, email], map: "uq_staff_email")
   @@index([restaurantId], map: "idx_staff_restaurant")
@@ -82,46 +99,541 @@ model StaffUser {
 }
 
 model Role {
-  id        String   @id @db.Char(36)
-  roleKey   String   @unique @map("role_key") @db.VarChar(32)
-  name      String   @db.VarChar(50)
-  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(3)
+  id        String      @id @db.Char(36)
+  roleKey   String      @unique(map: "uq_role_key") @map("role_key") @db.VarChar(32)
+  name      String      @db.VarChar(50)
+  createdAt DateTime    @default(now()) @map("created_at")
+  user_role user_role[]
 
   @@map("role")
 }
 
 model MenuCategory {
-  id           String   @id @db.Char(36)
-  restaurantId String   @map("restaurant_id") @db.Char(36)
-  name         String   @db.VarChar(100)
-  sortOrder    Int      @default(0) @map("sort_order")
-  isActive     Boolean  @default(true) @map("is_active")
-  createdAt    DateTime @default(now()) @map("created_at") @db.DateTime(3)
-  updatedAt    DateTime @updatedAt @map("updated_at") @db.DateTime(3)
-
-  items MenuItem[]
+  id           String     @id @db.Char(36)
+  restaurantId String     @map("restaurant_id") @db.Char(36)
+  name         String     @db.VarChar(100)
+  sortOrder    Int        @default(0) @map("sort_order")
+  isActive     Boolean    @default(true) @map("is_active")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @default(now()) @updatedAt @map("updated_at")
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_category_restaurant")
+  items        MenuItem[]
 
   @@index([restaurantId, isActive, sortOrder], map: "idx_category_restaurant")
   @@map("menu_category")
 }
 
 model MenuItem {
-  id             String   @id @db.Char(36)
-  restaurantId   String   @map("restaurant_id") @db.Char(36)
-  categoryId     String   @map("category_id") @db.Char(36)
-  name           String   @db.VarChar(200)
-  description    String?  @db.Text
-  basePriceMinor BigInt   @map("base_price_minor")
-  currencyCode   String   @map("currency_code") @db.Char(3)
-  availability   String   @default("available") @db.VarChar(32)
-  imageUrl       String?  @map("image_url") @db.VarChar(500)
-  sortOrder      Int      @default(0) @map("sort_order")
-  isActive       Boolean  @default(true) @map("is_active")
-  createdAt      DateTime @default(now()) @map("created_at") @db.DateTime(3)
-  updatedAt      DateTime @updatedAt @map("updated_at") @db.DateTime(3)
-
-  category MenuCategory @relation(fields: [categoryId], references: [id])
+  id                             String                           @id @db.Char(36)
+  restaurantId                   String                           @map("restaurant_id") @db.Char(36)
+  categoryId                     String                           @map("category_id") @db.Char(36)
+  name                           String                           @db.VarChar(200)
+  description                    String?                          @db.Text
+  basePriceMinor                 BigInt                           @map("base_price_minor")
+  currencyCode                   String                           @map("currency_code") @db.Char(3)
+  availability                   String                           @default("available") @db.VarChar(32)
+  imageUrl                       String?                          @map("image_url") @db.VarChar(500)
+  sortOrder                      Int                              @default(0) @map("sort_order")
+  isActive                       Boolean                          @default(true) @map("is_active")
+  createdAt                      DateTime                         @default(now()) @map("created_at")
+  updatedAt                      DateTime                         @default(now()) @updatedAt @map("updated_at")
+  batch_item                     batch_item[]
+  customization_group            customization_group[]
+  category                       MenuCategory                     @relation(fields: [categoryId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_menu_item_category")
+  restaurant                     Restaurant                       @relation(fields: [restaurantId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_menu_item_restaurant")
+  menu_item_availability_history menu_item_availability_history[]
+  order_line                     order_line[]
+  session_cart_item              session_cart_item[]
 
   @@index([restaurantId, availability, isActive], map: "idx_menu_item_catalog")
+  @@index([categoryId], map: "idx_menu_item_category")
   @@map("menu_item")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model audit_log {
+  id            String     @id @db.Char(36)
+  restaurant_id String     @db.Char(36)
+  actor_type    String     @db.VarChar(32)
+  actor_id      String?    @db.Char(36)
+  entity_type   String     @db.VarChar(64)
+  entity_id     String     @db.Char(36)
+  action        String     @db.VarChar(32)
+  before_json   Json?
+  after_json    Json?
+  metadata_json Json
+  occurred_at   DateTime
+  restaurant    Restaurant @relation(fields: [restaurant_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_audit_restaurant")
+
+  @@index([restaurant_id, entity_type, entity_id], map: "idx_audit_entity")
+  @@index([restaurant_id, occurred_at], map: "idx_audit_time")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model batch_item {
+  id                        String                      @id @db.Char(36)
+  batch_id                  String                      @db.Char(36)
+  restaurant_id             String                      @db.Char(36)
+  menu_item_id              String                      @db.Char(36)
+  menu_item_name_snapshot   String                      @db.VarChar(200)
+  unit_price_minor          BigInt
+  currency_code             String                      @db.Char(3)
+  quantity                  Int                         @db.SmallInt
+  line_total_minor          BigInt
+  kitchen_notes_rendered    String                      @db.Text
+  status                    String                      @default("preparing") @db.VarChar(32)
+  status_updated_at         DateTime
+  created_at                DateTime                    @default(now())
+  kitchen_batch             kitchen_batch               @relation(fields: [batch_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_batch_item_batch")
+  menu_item                 MenuItem                    @relation(fields: [menu_item_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_batch_item_menu")
+  restaurant                Restaurant                  @relation(fields: [restaurant_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_batch_item_restaurant")
+  batch_item_customization  batch_item_customization[]
+  batch_item_status_history batch_item_status_history[]
+  session_bill_line         session_bill_line[]
+
+  @@index([menu_item_id], map: "fk_batch_item_menu")
+  @@index([batch_id], map: "idx_batch_item_batch")
+  @@index([restaurant_id, status], map: "idx_batch_item_restaurant_status")
+}
+
+model batch_item_customization {
+  id                     String     @id @db.Char(36)
+  batch_item_id          String     @db.Char(36)
+  group_key              String     @db.VarChar(64)
+  group_name_snapshot    String     @db.VarChar(100)
+  option_key             String?    @db.VarChar(64)
+  option_name_snapshot   String?    @db.VarChar(100)
+  value_json             Json
+  price_delta_minor      BigInt     @default(0)
+  currency_code          String     @db.Char(3)
+  kitchen_label_rendered String     @db.VarChar(200)
+  created_at             DateTime   @default(now())
+  batch_item             batch_item @relation(fields: [batch_item_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_batch_custom_item")
+
+  @@index([batch_item_id], map: "idx_batch_custom_item")
+}
+
+model batch_item_status_history {
+  id                 String     @id @db.Char(36)
+  batch_item_id      String     @db.Char(36)
+  from_status        String?    @db.VarChar(32)
+  to_status          String     @db.VarChar(32)
+  changed_by_user_id String?    @db.Char(36)
+  occurred_at        DateTime
+  batch_item         batch_item @relation(fields: [batch_item_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_batch_status_item")
+  staff_user         StaffUser? @relation(fields: [changed_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_batch_status_user")
+
+  @@index([changed_by_user_id], map: "fk_batch_status_user")
+  @@index([batch_item_id, occurred_at], map: "idx_batch_status_hist")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model customization_group {
+  id                   String                 @id @db.Char(36)
+  menu_item_id         String                 @db.Char(36)
+  group_key            String                 @db.VarChar(64)
+  name                 String                 @db.VarChar(100)
+  selection_type       String                 @db.VarChar(32)
+  is_required          Boolean                @default(false)
+  min_selections       Int                    @default(0) @db.SmallInt
+  max_selections       Int                    @default(1) @db.SmallInt
+  sort_order           Int                    @default(0)
+  is_active            Boolean                @default(true)
+  created_at           DateTime               @default(now())
+  updated_at           DateTime               @default(now())
+  menu_item            MenuItem               @relation(fields: [menu_item_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_custom_group_item")
+  customization_option customization_option[]
+
+  @@unique([menu_item_id, group_key], map: "uq_custom_group_key")
+}
+
+model customization_option {
+  id                  String              @id @db.Char(36)
+  group_id            String              @db.Char(36)
+  option_key          String              @db.VarChar(64)
+  name                String              @db.VarChar(100)
+  kitchen_label       String              @db.VarChar(100)
+  price_delta_minor   BigInt              @default(0)
+  currency_code       String              @db.Char(3)
+  is_default          Boolean             @default(false)
+  sort_order          Int                 @default(0)
+  is_active           Boolean             @default(true)
+  created_at          DateTime            @default(now())
+  updated_at          DateTime            @default(now())
+  customization_group customization_group @relation(fields: [group_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_custom_option_group")
+
+  @@unique([group_id, option_key], map: "uq_custom_option_key")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model delivery_detail {
+  id               String     @id @db.Char(36)
+  order_id         String     @unique(map: "uq_delivery_order") @db.Char(36)
+  delivery_status  String     @default("pending") @db.VarChar(32)
+  delivery_address String     @db.Text
+  delivery_notes   String?    @db.VarChar(500)
+  shipper_user_id  String?    @db.Char(36)
+  ready_at         DateTime?
+  claimed_at       DateTime?
+  delivering_at    DateTime?
+  completed_at     DateTime?
+  created_at       DateTime   @default(now())
+  updated_at       DateTime   @default(now())
+  roms_order       roms_order @relation(fields: [order_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_delivery_order")
+  staff_user       StaffUser? @relation(fields: [shipper_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_delivery_shipper")
+
+  @@index([shipper_user_id, delivery_status], map: "idx_delivery_shipper")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model dine_in_session {
+  id                                                       String                   @id @db.Char(36)
+  restaurant_id                                            String                   @db.Char(36)
+  table_id                                                 String                   @db.Char(36)
+  session_number                                           BigInt
+  display_number                                           String                   @db.VarChar(32)
+  status                                                   String                   @default("open") @db.VarChar(32)
+  opened_via                                               String                   @db.VarChar(32)
+  opened_by_user_id                                        String?                  @db.Char(36)
+  closed_by_user_id                                        String?                  @db.Char(36)
+  payment_soft_lock                                        Boolean                  @default(false)
+  current_batch_number                                     Int                      @default(0)
+  payment_status                                           String                   @default("unpaid") @db.VarChar(32)
+  payment_subtotal_minor                                   BigInt                   @default(0)
+  payment_discount_minor                                   BigInt                   @default(0)
+  payment_tax_minor                                        BigInt                   @default(0)
+  payment_service_charge_minor                             BigInt                   @default(0)
+  payment_total_minor                                      BigInt                   @default(0)
+  active_table_guard                                       String?                  @unique(map: "uq_session_active_table") @db.Char(36)
+  opened_at                                                DateTime
+  closed_at                                                DateTime?
+  created_at                                               DateTime                 @default(now())
+  updated_at                                               DateTime                 @default(now())
+  staff_user_dine_in_session_closed_by_user_idTostaff_user StaffUser?               @relation("dine_in_session_closed_by_user_idTostaff_user", fields: [closed_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_session_closed_by")
+  staff_user_dine_in_session_opened_by_user_idTostaff_user StaffUser?               @relation("dine_in_session_opened_by_user_idTostaff_user", fields: [opened_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_session_opened_by")
+  restaurant                                               Restaurant               @relation(fields: [restaurant_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_session_restaurant")
+  restaurant_table                                         RestaurantTable          @relation(fields: [table_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_session_table")
+  kitchen_batch                                            kitchen_batch[]
+  session_auth_token                                       session_auth_token[]
+  session_cart                                             session_cart?
+  session_device                                           session_device[]
+  session_payment                                          session_payment?
+  session_timeline_event                                   session_timeline_event[]
+  staff_request                                            staff_request[]
+
+  @@unique([restaurant_id, display_number], map: "uq_session_display")
+  @@index([closed_by_user_id], map: "fk_session_closed_by")
+  @@index([opened_by_user_id], map: "fk_session_opened_by")
+  @@index([restaurant_id, status], map: "idx_session_restaurant_status")
+  @@index([table_id], map: "idx_session_table")
+}
+
+model domain_outbox {
+  id             String     @id @db.Char(36)
+  restaurant_id  String     @db.Char(36)
+  event_type     String     @db.VarChar(64)
+  aggregate_type String     @db.VarChar(64)
+  aggregate_id   String     @db.Char(36)
+  payload_json   Json
+  created_at     DateTime   @default(now())
+  published_at   DateTime?
+  restaurant     Restaurant @relation(fields: [restaurant_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_outbox_restaurant")
+
+  @@index([restaurant_id], map: "idx_outbox_restaurant")
+  @@index([published_at, created_at], map: "idx_outbox_unpublished")
+}
+
+model idempotency_record {
+  id              String     @id @db.Char(36)
+  restaurant_id   String     @db.Char(36)
+  idempotency_key String     @db.VarChar(128)
+  mutation_type   String     @db.VarChar(64)
+  response_json   Json
+  created_at      DateTime   @default(now())
+  expires_at      DateTime
+  restaurant      Restaurant @relation(fields: [restaurant_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_idempotency_restaurant")
+
+  @@unique([restaurant_id, idempotency_key], map: "uq_idempotency")
+  @@index([expires_at], map: "idx_idempotency_expires")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model kitchen_batch {
+  id                      String           @id @db.Char(36)
+  restaurant_id           String           @db.Char(36)
+  session_id              String?          @db.Char(36)
+  order_id                String?          @db.Char(36)
+  batch_number            Int
+  confirmed_at            DateTime
+  confirmed_by_actor_type String           @db.VarChar(32)
+  confirmed_by_actor_id   String?          @db.Char(36)
+  completed_at            DateTime?
+  created_at              DateTime         @default(now())
+  batch_item              batch_item[]
+  roms_order              roms_order?      @relation(fields: [order_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_batch_order")
+  restaurant              Restaurant       @relation(fields: [restaurant_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_batch_restaurant")
+  dine_in_session         dine_in_session? @relation(fields: [session_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_batch_session")
+
+  @@unique([order_id, batch_number], map: "uq_batch_order_number")
+  @@unique([session_id, batch_number], map: "uq_batch_session_number")
+  @@index([restaurant_id, confirmed_at], map: "idx_batch_kitchen_queue")
+}
+
+model menu_item_availability_history {
+  id                 String    @id @db.Char(36)
+  menu_item_id       String    @db.Char(36)
+  from_availability  String    @db.VarChar(32)
+  to_availability    String    @db.VarChar(32)
+  changed_by_user_id String    @db.Char(36)
+  occurred_at        DateTime
+  menu_item          MenuItem  @relation(fields: [menu_item_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_menu_avail_item")
+  staff_user         StaffUser @relation(fields: [changed_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_menu_avail_user")
+
+  @@index([changed_by_user_id], map: "fk_menu_avail_user")
+  @@index([menu_item_id, occurred_at], map: "idx_menu_avail_hist")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model order_line {
+  id               String     @id @db.Char(36)
+  order_id         String     @db.Char(36)
+  menu_item_id     String     @db.Char(36)
+  quantity         Int        @default(1) @db.SmallInt
+  selections_json  Json
+  unit_price_minor BigInt
+  currency_code    String     @db.Char(3)
+  created_at       DateTime   @default(now())
+  updated_at       DateTime   @default(now())
+  menu_item        MenuItem   @relation(fields: [menu_item_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_order_line_menu")
+  roms_order       roms_order @relation(fields: [order_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_order_line_order")
+
+  @@index([menu_item_id], map: "fk_order_line_menu")
+  @@index([order_id], map: "idx_order_line_order")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model order_payment {
+  id                   String     @id @db.Char(36)
+  order_id             String     @unique(map: "uq_order_payment") @db.Char(36)
+  payment_method       String     @db.VarChar(32)
+  subtotal_minor       BigInt
+  tax_amount_minor     BigInt     @default(0)
+  service_charge_minor BigInt     @default(0)
+  total_amount_minor   BigInt
+  currency_code        String     @db.Char(3)
+  paid_at              DateTime
+  recorded_by_user_id  String     @db.Char(36)
+  created_at           DateTime   @default(now())
+  roms_order           roms_order @relation(fields: [order_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_order_payment_order")
+  staff_user           StaffUser  @relation(fields: [recorded_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_order_payment_user")
+
+  @@index([recorded_by_user_id], map: "fk_order_payment_user")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model restaurant_daily_counter {
+  id            String     @id @db.Char(36)
+  restaurant_id String     @db.Char(36)
+  date_key      String     @db.Char(8)
+  counter_type  String     @db.VarChar(32)
+  current_value BigInt     @default(0)
+  updated_at    DateTime   @default(now())
+  restaurant    Restaurant @relation(fields: [restaurant_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_daily_counter_restaurant")
+
+  @@unique([restaurant_id, date_key, counter_type], map: "uq_daily_counter")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model roms_order {
+  id                 String           @id @db.Char(36)
+  restaurant_id      String           @db.Char(36)
+  order_number       BigInt
+  order_type         String           @db.VarChar(32)
+  status             String           @default("draft") @db.VarChar(32)
+  customer_name      String?          @db.VarChar(200)
+  customer_phone     String?          @db.VarChar(30)
+  notes              String?          @db.VarChar(500)
+  created_by_user_id String           @db.Char(36)
+  submitted_at       DateTime?
+  completed_at       DateTime?
+  created_at         DateTime         @default(now())
+  updated_at         DateTime         @default(now())
+  delivery_detail    delivery_detail?
+  kitchen_batch      kitchen_batch[]
+  order_line         order_line[]
+  order_payment      order_payment?
+  staff_user         StaffUser        @relation(fields: [created_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_order_creator")
+  restaurant         Restaurant       @relation(fields: [restaurant_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_order_restaurant")
+
+  @@unique([restaurant_id, order_number], map: "uq_order_number")
+  @@index([created_by_user_id], map: "fk_order_creator")
+  @@index([restaurant_id, order_type, status], map: "idx_order_type_status")
+}
+
+model session_auth_token {
+  id              String          @id @db.Char(36)
+  session_id      String          @db.Char(36)
+  token_hash      String          @unique(map: "uq_session_token_hash") @db.VarChar(128)
+  expires_at      DateTime
+  revoked_at      DateTime?
+  created_at      DateTime        @default(now())
+  dine_in_session dine_in_session @relation(fields: [session_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_session_token_session")
+
+  @@index([session_id], map: "idx_session_token_session")
+}
+
+model session_bill_line {
+  id                 String          @id @db.Char(36)
+  session_payment_id String          @db.Char(36)
+  batch_item_id      String          @db.Char(36)
+  description        String          @db.VarChar(300)
+  quantity           Int             @db.SmallInt
+  unit_price_minor   BigInt
+  line_total_minor   BigInt
+  currency_code      String          @db.Char(3)
+  created_at         DateTime        @default(now())
+  batch_item         batch_item      @relation(fields: [batch_item_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bill_line_batch_item")
+  session_payment    session_payment @relation(fields: [session_payment_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bill_line_payment")
+
+  @@index([batch_item_id], map: "fk_bill_line_batch_item")
+  @@index([session_payment_id], map: "idx_bill_line_payment")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model session_cart {
+  id                String              @id @db.Char(36)
+  session_id        String              @unique(map: "uq_session_cart") @db.Char(36)
+  version           Int                 @default(1)
+  updated_at        DateTime            @default(now())
+  created_at        DateTime            @default(now())
+  dine_in_session   dine_in_session     @relation(fields: [session_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_cart_session")
+  session_cart_item session_cart_item[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model session_cart_item {
+  id               String       @id @db.Char(36)
+  session_cart_id  String       @db.Char(36)
+  menu_item_id     String       @db.Char(36)
+  quantity         Int          @default(1) @db.SmallInt
+  selections_json  Json
+  unit_price_minor BigInt
+  currency_code    String       @db.Char(3)
+  created_at       DateTime     @default(now())
+  updated_at       DateTime     @default(now())
+  session_cart     session_cart @relation(fields: [session_cart_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_cart_item_cart")
+  menu_item        MenuItem     @relation(fields: [menu_item_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_cart_item_menu")
+
+  @@index([menu_item_id], map: "fk_cart_item_menu")
+  @@index([session_cart_id], map: "idx_cart_item_cart")
+}
+
+model session_device {
+  id                 String          @id @db.Char(36)
+  session_id         String          @db.Char(36)
+  device_fingerprint String          @db.VarChar(128)
+  last_seen_at       DateTime
+  created_at         DateTime        @default(now())
+  dine_in_session    dine_in_session @relation(fields: [session_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_session_device_session")
+
+  @@unique([session_id, device_fingerprint], map: "uq_session_device")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model session_payment {
+  id                   String              @id @db.Char(36)
+  session_id           String              @unique(map: "uq_session_payment") @db.Char(36)
+  payment_method       String              @db.VarChar(32)
+  close_type           String              @default("payment") @db.VarChar(32)
+  force_close_reason   String?             @db.VarChar(32)
+  force_close_note     String?             @db.VarChar(500)
+  subtotal_minor       BigInt
+  tax_amount_minor     BigInt              @default(0)
+  service_charge_minor BigInt              @default(0)
+  total_amount_minor   BigInt
+  currency_code        String              @db.Char(3)
+  closed_by_user_id    String              @db.Char(36)
+  paid_at              DateTime
+  created_at           DateTime            @default(now())
+  session_bill_line    session_bill_line[]
+  dine_in_session      dine_in_session     @relation(fields: [session_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_session_payment_session")
+  staff_user           StaffUser           @relation(fields: [closed_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_session_payment_user")
+
+  @@index([closed_by_user_id], map: "fk_session_payment_user")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model session_timeline_event {
+  id              String          @id @db.Char(36)
+  session_id      String          @db.Char(36)
+  event_type      String          @db.VarChar(64)
+  payload_json    Json
+  actor_type      String          @db.VarChar(32)
+  actor_id        String?         @db.Char(36)
+  occurred_at     DateTime
+  dine_in_session dine_in_session @relation(fields: [session_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_timeline_session")
+
+  @@index([session_id, occurred_at], map: "idx_timeline_session_time")
+}
+
+model staff_refresh_token {
+  id            String     @id @db.Char(36)
+  user_id       String     @db.Char(36)
+  restaurant_id String     @db.Char(36)
+  token_hash    String     @unique(map: "uq_refresh_token_hash") @db.VarChar(128)
+  expires_at    DateTime
+  revoked_at    DateTime?
+  created_at    DateTime   @default(now())
+  restaurant    Restaurant @relation(fields: [restaurant_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_refresh_restaurant")
+  staff_user    StaffUser  @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_refresh_user")
+
+  @@index([restaurant_id], map: "fk_refresh_restaurant")
+  @@index([user_id], map: "idx_refresh_user")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model staff_request {
+  id                 String          @id @db.Char(36)
+  restaurant_id      String          @db.Char(36)
+  session_id         String          @db.Char(36)
+  request_type       String          @db.VarChar(32)
+  status             String          @default("pending") @db.VarChar(32)
+  note               String?         @db.VarChar(500)
+  requested_at       DateTime
+  handled_at         DateTime?
+  handled_by_user_id String?         @db.Char(36)
+  created_at         DateTime        @default(now())
+  staff_user         StaffUser?      @relation(fields: [handled_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_request_handler")
+  restaurant         Restaurant      @relation(fields: [restaurant_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_request_restaurant")
+  dine_in_session    dine_in_session @relation(fields: [session_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_request_session")
+
+  @@index([handled_by_user_id], map: "fk_request_handler")
+  @@index([restaurant_id, status, requested_at], map: "idx_request_queue")
+  @@index([session_id], map: "idx_request_session")
+}
+
+model table_qr_token {
+  id               String          @id @db.Char(36)
+  restaurant_id    String          @db.Char(36)
+  table_id         String          @unique(map: "uq_qr_table") @db.Char(36)
+  token_hash       String          @unique(map: "uq_qr_token_hash") @db.VarChar(128)
+  is_active        Boolean         @default(true)
+  created_at       DateTime        @default(now())
+  restaurant       Restaurant      @relation(fields: [restaurant_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_qr_restaurant")
+  restaurant_table RestaurantTable @relation(fields: [table_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_qr_table")
+
+  @@index([restaurant_id], map: "idx_qr_restaurant")
+}
+
+model user_role {
+  id         String    @id @db.Char(36)
+  user_id    String    @db.Char(36)
+  role_id    String    @db.Char(36)
+  created_at DateTime  @default(now())
+  role       Role      @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_user_role_role")
+  staff_user StaffUser @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_user_role_user")
+
+  @@unique([user_id, role_id], map: "uq_user_role")
+  @@index([role_id], map: "fk_user_role_role")
 }

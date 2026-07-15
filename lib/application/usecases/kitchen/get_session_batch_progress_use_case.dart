@@ -1,5 +1,4 @@
 import '../../../core/result/result.dart';
-import '../../../data/datasources/ordering/ordering_store.dart';
 import '../../../domain/repositories/batch_repository.dart';
 import '../../../domain/services/kitchen_domain_service.dart';
 import '../../kitchen/kitchen_view_models.dart';
@@ -9,14 +8,11 @@ import '../use_case.dart';
 final class GetSessionBatchProgressUseCase
     implements UseCase<List<CustomerBatchProgressView>, GetSessionBatchProgressParams> {
   GetSessionBatchProgressUseCase({
-    required OrderingStore store,
     required BatchRepository batchRepository,
     KitchenDomainService? kitchenDomainService,
-  })  : _store = store,
-        _batchRepository = batchRepository,
+  })  : _batchRepository = batchRepository,
         _kitchenService = kitchenDomainService ?? const KitchenDomainService();
 
-  final OrderingStore _store;
   final BatchRepository _batchRepository;
   final KitchenDomainService _kitchenService;
 
@@ -24,7 +20,10 @@ final class GetSessionBatchProgressUseCase
   Future<Result<List<CustomerBatchProgressView>>> call(
     GetSessionBatchProgressParams params,
   ) async {
-    final batches = _store.batchesForSession(params.sessionId);
+    final batches = await _batchRepository.listBySession(
+      restaurantId: params.restaurantId,
+      sessionId: params.sessionId,
+    );
     final views = <CustomerBatchProgressView>[];
 
     for (final batch in batches) {
@@ -44,23 +43,24 @@ final class GetSessionBatchProgressUseCase
 }
 
 final class GetSessionBatchProgressParams {
-  const GetSessionBatchProgressParams({required this.sessionId});
+  const GetSessionBatchProgressParams({
+    required this.sessionId,
+    required this.restaurantId,
+  });
 
   final String sessionId;
+  final String restaurantId;
 }
 
 /// Cashier read-only batch summaries for active session.
 final class GetCashierBatchSummariesUseCase
     implements UseCase<List<CashierBatchSummaryView>, GetCashierBatchSummariesParams> {
   GetCashierBatchSummariesUseCase({
-    required OrderingStore store,
     required BatchRepository batchRepository,
     KitchenDomainService? kitchenDomainService,
-  })  : _store = store,
-        _batchRepository = batchRepository,
+  })  : _batchRepository = batchRepository,
         _kitchenService = kitchenDomainService ?? const KitchenDomainService();
 
-  final OrderingStore _store;
   final BatchRepository _batchRepository;
   final KitchenDomainService _kitchenService;
 
@@ -68,7 +68,10 @@ final class GetCashierBatchSummariesUseCase
   Future<Result<List<CashierBatchSummaryView>>> call(
     GetCashierBatchSummariesParams params,
   ) async {
-    final batches = _store.batchesForSession(params.sessionId);
+    final batches = await _batchRepository.listBySession(
+      restaurantId: params.restaurantId,
+      sessionId: params.sessionId,
+    );
     final views = <CashierBatchSummaryView>[];
 
     for (final batch in batches) {
@@ -90,7 +93,11 @@ final class GetCashierBatchSummariesUseCase
 }
 
 final class GetCashierBatchSummariesParams {
-  const GetCashierBatchSummariesParams({required this.sessionId});
+  const GetCashierBatchSummariesParams({
+    required this.sessionId,
+    required this.restaurantId,
+  });
 
   final String sessionId;
+  final String restaurantId;
 }

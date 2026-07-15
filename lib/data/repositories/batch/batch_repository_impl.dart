@@ -44,6 +44,17 @@ final class BatchRepositoryImpl implements BatchRepository {
   }
 
   @override
+  Future<List<KitchenBatch>> listBySession({
+    required String restaurantId,
+    required String sessionId,
+  }) async {
+    return _store.batchesForSession(sessionId)
+        .where((b) => b.restaurantId == restaurantId)
+        .toList()
+      ..sort((a, b) => a.batchNumber.compareTo(b.batchNumber));
+  }
+
+  @override
   Future<List<BatchItem>> getItemsByBatchId(String batchId) async {
     return List.unmodifiable(_store.batchItemsByBatchId[batchId] ?? []);
   }

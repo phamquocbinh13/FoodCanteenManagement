@@ -1,7 +1,6 @@
 import 'package:get_it/get_it.dart';
 
 import '../../../core/id/id_generator.dart';
-import '../../../core/storage/local_storage.dart';
 import '../../../application/usecases/request/create_staff_request_use_case.dart';
 import '../../../application/usecases/request/list_session_staff_requests_use_case.dart';
 import '../../../application/usecases/session/join_session_use_case.dart';
@@ -11,10 +10,6 @@ import '../../../features/customer/presentation/controllers/customer_session_con
 
 abstract final class CustomerModule {
   static void register(GetIt sl) {
-    sl.registerLazySingleton<CustomerSessionLocalDataSource>(
-      () => CustomerSessionLocalDataSourceImpl(sl<LocalStorage>()),
-    );
-
     sl.registerLazySingleton(
       () => CustomerSessionController(
         joinSession: sl<JoinSessionUseCase>(),

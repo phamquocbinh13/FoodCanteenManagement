@@ -31,12 +31,6 @@ final class _CollectingDomainEventPublisher implements DomainEventPublisher {
   Future<void> publish(DomainEvent event) async => events.add(event);
 }
 
-final class _Sequence implements SessionEngineDataSourceDailySequence {
-  _Sequence(this._dataSource);
-  final InMemorySessionEngineDataSource _dataSource;
-  @override
-  int nextDailySequence(String dateKey) => _dataSource.nextDailySequence(dateKey);
-}
 
 CustomerSessionController _buildCustomerController({
   required SessionEngineRepositoryImpl repository,
@@ -64,7 +58,7 @@ CustomerSessionController _buildCustomerController({
     ),
     createStaffRequest: CreateStaffRequestUseCase(
       requestRepository: requestRepo,
-      sessionDataSource: dataSource,
+      sessionEngineRepository: repository,
       timelineRecorder: timeline,
       markWaitingPayment: MarkWaitingPaymentUseCase(
         repository: repository,
@@ -120,7 +114,6 @@ void main() {
       clock: clock,
       idGenerator: ids,
       eventPublisher: events,
-      sequenceProvider: _Sequence(dataSource),
     );
 
     final created = await create(

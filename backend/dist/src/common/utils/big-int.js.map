@@ -1,0 +1,1 @@
+{"version":3,"file":"big-int.js","sourceRoot":"","sources":["../../../../src/common/utils/big-int.ts"],"names":[],"mappings":";;AACA,4BAIC;AAJD,SAAgB,QAAQ,CAAC,KAAyC;IAChE,IAAI,KAAK,IAAI,IAAI;QAAE,OAAO,CAAC,CAAC;IAC5B,IAAI,OAAO,KAAK,KAAK,QAAQ;QAAE,OAAO,MAAM,CAAC,KAAK,CAAC,CAAC;IACpD,OAAO,KAAK,CAAC;AACf,CAAC"}

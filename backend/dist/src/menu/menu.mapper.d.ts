@@ -1,0 +1,30 @@
+import { MenuCategory, MenuItem } from '@prisma/client';
+import { type MoneyDto } from '../common/menu/customization-pricing';
+export type MenuCategoryDto = {
+    id: string;
+    restaurantId: string;
+    name: string;
+    sortOrder: number;
+    isActive: boolean;
+    createdAt: string;
+    updatedAt: string;
+};
+export type MenuItemDto = {
+    id: string;
+    restaurantId: string;
+    categoryId: string;
+    name: string;
+    description: string | null;
+    basePrice: MoneyDto;
+    availability: string;
+    imageUrl: string | null;
+    sortOrder: number;
+    isActive: boolean;
+    createdAt: string;
+    updatedAt: string;
+};
+export declare function mapCategory(row: MenuCategory): MenuCategoryDto;
+export declare function mapMenuItem(row: MenuItem): MenuItemDto;
+export declare function menuVersionFromDates(updatedAts: Date[]): number;
+export declare function menuVersionFromItems(items: MenuItem[]): number;
+export declare function asNumber(value: bigint | number): number;

@@ -8,12 +8,16 @@ import '../../../application/usecases/request/list_session_staff_requests_use_ca
 import '../../../application/usecases/session/mark_waiting_payment_use_case.dart';
 import '../../../core/clock/clock.dart';
 import '../../../core/id/id_generator.dart';
+import '../../../core/network/api_client.dart';
+import '../../../data/datasources/customer/customer_session_local_datasource.dart';
 import '../../../data/datasources/ordering/ordering_store.dart';
-import '../../../data/datasources/session/session_engine_datasource.dart';
+import '../../../data/repositories/request/remote_request_repository.dart';
 import '../../../data/repositories/request/request_repository_impl.dart';
 import '../../../domain/events/domain_events.dart';
 import '../../../domain/repositories/request_repository.dart';
+import '../../../domain/repositories/session_engine_repository.dart';
 import '../../../domain/services/request_domain_service.dart';
+import '../../config/app_config.dart';
 
 /// Request queue module — customer call-staff + cashier handling.
 abstract final class RequestModule {
@@ -21,13 +25,18 @@ abstract final class RequestModule {
     sl.registerLazySingleton(() => const RequestDomainService());
 
     sl.registerLazySingleton<RequestRepository>(
-      () => RequestRepositoryImpl(store: sl<OrderingStore>()),
+      () => sl<AppConfig>().useRemoteBackend
+          ? RemoteRequestRepository(
+              apiClient: sl<ApiClient>(),
+              localSession: sl<CustomerSessionLocalDataSource>(),
+            )
+          : RequestRepositoryImpl(store: sl<OrderingStore>()),
     );
 
     sl.registerLazySingleton(
       () => CreateStaffRequestUseCase(
         requestRepository: sl<RequestRepository>(),
-        sessionDataSource: sl<SessionEngineDataSource>(),
+        sessionEngineRepository: sl<SessionEngineRepository>(),
         timelineRecorder: sl<SessionTimelineRecorder>(),
         markWaitingPayment: sl<MarkWaitingPaymentUseCase>(),
         domainService: sl<RequestDomainService>(),
@@ -40,7 +49,7 @@ abstract final class RequestModule {
     sl.registerLazySingleton(
       () => HandleStaffRequestUseCase(
         requestRepository: sl<RequestRepository>(),
-        sessionDataSource: sl<SessionEngineDataSource>(),
+        sessionEngineRepository: sl<SessionEngineRepository>(),
         timelineRecorder: sl<SessionTimelineRecorder>(),
         domainService: sl<RequestDomainService>(),
         idGenerator: sl<IdGenerator>(),
@@ -52,7 +61,7 @@ abstract final class RequestModule {
     sl.registerLazySingleton(
       () => ListPendingStaffRequestsUseCase(
         requestRepository: sl<RequestRepository>(),
-        sessionDataSource: sl<SessionEngineDataSource>(),
+        sessionEngineRepository: sl<SessionEngineRepository>(),
       ),
     );
 

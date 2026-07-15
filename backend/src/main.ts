@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { ApiExceptionFilter } from './common/errors/api-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -11,6 +12,7 @@ async function bootstrap() {
   const prefix = config.get<string>('API_PREFIX', 'api/v1');
   app.setGlobalPrefix(prefix);
 
+  app.useGlobalFilters(new ApiExceptionFilter());
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -27,7 +29,7 @@ async function bootstrap() {
   const swagger = new DocumentBuilder()
     .setTitle('ROMS API')
     .setDescription(
-      'Restaurant Operating Management System — Phase B0 bootstrap. ' +
+      'Restaurant Operating Management System — B0/B1/B2. ' +
         'Schema source: docs/backend/sprint-0/04_schema_mysql8.sql',
     )
     .setVersion('0.1.0')

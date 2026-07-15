@@ -17,6 +17,11 @@ abstract interface class BatchRepository {
     DateTime? since,
   });
 
+  Future<List<KitchenBatch>> listBySession({
+    required String restaurantId,
+    required String sessionId,
+  });
+
   Future<List<BatchItem>> getItemsByBatchId(String batchId);
 
   Future<BatchItem> createItem(BatchItem item);

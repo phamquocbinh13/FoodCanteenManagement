@@ -1,6 +1,7 @@
 import '../../core/result/result.dart';
 import '../entities/dine_in_session.dart';
 import '../entities/session_engine_snapshot.dart';
+import '../entities/session_timeline_event.dart';
 import '../enums/domain_enums.dart';
 
 /// Session Engine persistence contract. All methods return [Result].
@@ -45,6 +46,11 @@ abstract interface class SessionEngineRepository {
 
   Future<Result<SessionEngineSnapshot>> findByToken(String sessionTokenValue);
 
+  Future<Result<SessionEngineSnapshot>> findById({
+    required String sessionId,
+    required String restaurantId,
+  });
+
   Future<Result<SessionEngineSnapshot?>> findActiveByTable({
     required String restaurantId,
     required String tableId,
@@ -59,6 +65,16 @@ abstract interface class SessionEngineRepository {
   Future<Result<int>> nextBatchNumber({
     required String sessionId,
     required String restaurantId,
+  });
+
+  Future<Result<int>> nextDailySequence({
+    required String restaurantId,
+    required String dateKey,
+  });
+
+  Future<Result<void>> appendTimeline(
+    SessionTimelineEvent event, {
+    String? restaurantId,
   });
 
   Future<Result<SessionEngineSnapshot>> validateToken(String sessionTokenValue);

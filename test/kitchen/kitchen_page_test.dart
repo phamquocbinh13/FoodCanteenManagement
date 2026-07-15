@@ -15,7 +15,7 @@ import 'package:food_canteen_management/application/usecases/kitchen/get_kitchen
 import 'package:food_canteen_management/application/usecases/kitchen/get_kitchen_queue_use_case.dart';
 import 'package:food_canteen_management/application/usecases/kitchen/toggle_menu_availability_use_case.dart';
 import 'package:food_canteen_management/application/usecases/session/create_session_use_case.dart'
-    show CreateSessionParams, CreateSessionUseCase, SessionEngineDataSourceDailySequence;
+    show CreateSessionParams, CreateSessionUseCase;
 import 'package:food_canteen_management/application/validators/customization_validator.dart';
 import 'package:food_canteen_management/core/result/result.dart';
 import 'package:food_canteen_management/data/datasources/cart/cart_local_datasource.dart';
@@ -40,12 +40,6 @@ final class _NoOpEvents implements DomainEventPublisher {
   Future<void> publish(DomainEvent event) async {}
 }
 
-final class _Sequence implements SessionEngineDataSourceDailySequence {
-  _Sequence(this._ds);
-  final InMemorySessionEngineDataSource _ds;
-  @override
-  int nextDailySequence(String dateKey) => _ds.nextDailySequence(dateKey);
-}
 
 Map<String, dynamic> defaultSelections() => {
       'groups': {
@@ -79,7 +73,6 @@ Future<KitchenController> buildKitchenController() async {
     clock: clock,
     idGenerator: ids,
     eventPublisher: _NoOpEvents(),
-    sequenceProvider: _Sequence(sessionDs),
   );
   final sessionId = ((await create(
     const CreateSessionParams(
@@ -100,7 +93,7 @@ Future<KitchenController> buildKitchenController() async {
     customizationValidator: const CustomizationValidator(),
     customizationRenderer: const CustomizationRenderer(),
     timelineRecorder: timeline,
-    sessionDataSource: sessionDs,
+    sessionEngineRepository: sessionRepo,
     idGenerator: ids,
     clock: clock,
   );
@@ -109,13 +102,11 @@ Future<KitchenController> buildKitchenController() async {
     batchRepository: batchRepo,
     menuRepository: menuRepo,
     sessionEngineRepository: sessionRepo,
-    sessionDataSource: sessionDs,
     customizationRenderer: const CustomizationRenderer(),
     timelineRecorder: timeline,
     idGenerator: ids,
     eventPublisher: _NoOpEvents(),
     clock: clock,
-    orderingStore: store,
   );
 
   await addToCart(
@@ -146,13 +137,13 @@ Future<KitchenController> buildKitchenController() async {
   final controller = KitchenController(
     getKitchenQueue: GetKitchenQueueUseCase(
       batchRepository: batchRepo,
-      sessionDataSource: sessionDs,
+      sessionEngineRepository: sessionRepo,
       kitchenDomainService: const KitchenDomainService(),
       clock: clock,
     ),
     completeBatchItem: CompleteBatchItemUseCase(
       batchRepository: batchRepo,
-      sessionDataSource: sessionDs,
+      sessionEngineRepository: sessionRepo,
       timelineRecorder: timeline,
       eventPublisher: _NoOpEvents(),
       idGenerator: ids,
@@ -160,7 +151,6 @@ Future<KitchenController> buildKitchenController() async {
     ),
     toggleMenuAvailability: ToggleMenuAvailabilityUseCase(
       menuRepository: menuRepo,
-      store: store,
       eventPublisher: _NoOpEvents(),
       idGenerator: ids,
       clock: clock,

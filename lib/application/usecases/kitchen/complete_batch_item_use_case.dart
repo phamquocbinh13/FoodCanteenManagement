@@ -8,8 +8,8 @@ import '../../../domain/enums/domain_enums.dart';
 import '../../../domain/events/domain_events.dart';
 import '../../../domain/exceptions/domain_exception.dart';
 import '../../../domain/repositories/batch_repository.dart';
+import '../../../domain/repositories/session_engine_repository.dart';
 import '../../../domain/services/kitchen_domain_service.dart';
-import '../../../data/datasources/session/session_engine_datasource.dart';
 import '../../session/session_timeline_recorder.dart';
 import '../use_case.dart';
 
@@ -18,14 +18,14 @@ final class CompleteBatchItemUseCase
     implements UseCase<void, CompleteBatchItemParams> {
   CompleteBatchItemUseCase({
     required BatchRepository batchRepository,
-    required SessionEngineDataSource sessionDataSource,
+    required SessionEngineRepository sessionEngineRepository,
     required SessionTimelineRecorder timelineRecorder,
     required DomainEventPublisher eventPublisher,
     required IdGenerator idGenerator,
     required Clock clock,
     KitchenDomainService? kitchenDomainService,
   })  : _batchRepository = batchRepository,
-        _sessionDataSource = sessionDataSource,
+        _sessionEngine = sessionEngineRepository,
         _timeline = timelineRecorder,
         _eventPublisher = eventPublisher,
         _idGenerator = idGenerator,
@@ -33,7 +33,7 @@ final class CompleteBatchItemUseCase
         _kitchenService = kitchenDomainService ?? const KitchenDomainService();
 
   final BatchRepository _batchRepository;
-  final SessionEngineDataSource _sessionDataSource;
+  final SessionEngineRepository _sessionEngine;
   final SessionTimelineRecorder _timeline;
   final DomainEventPublisher _eventPublisher;
   final IdGenerator _idGenerator;
@@ -96,13 +96,14 @@ final class CompleteBatchItemUseCase
     );
 
     if (batch.sessionId != null) {
-      _sessionDataSource.appendTimeline(
+      await _sessionEngine.appendTimeline(
         _timeline.batchItemCompleted(
           sessionId: batch.sessionId!,
           batchNumber: batch.batchNumber,
           menuItemName: updated.menuItemNameSnapshot,
           actorId: params.actorId,
         ),
+        restaurantId: params.restaurantId,
       );
     }
 
@@ -116,12 +117,13 @@ final class CompleteBatchItemUseCase
         );
 
         if (batch.sessionId != null) {
-          _sessionDataSource.appendTimeline(
+          await _sessionEngine.appendTimeline(
             _timeline.batchCompleted(
               sessionId: batch.sessionId!,
               batchNumber: batch.batchNumber,
               actorId: params.actorId,
             ),
+            restaurantId: params.restaurantId,
           );
         }
 

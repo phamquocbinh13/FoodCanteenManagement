@@ -20,11 +20,14 @@ import '../../../application/usecases/session/get_session_bill_use_case.dart';
 import '../../../application/validators/customization_validator.dart';
 import '../../../core/clock/clock.dart';
 import '../../../core/id/id_generator.dart';
+import '../../../core/network/api_client.dart';
 import '../../../core/storage/local_storage.dart';
 import '../../../data/datasources/cart/cart_local_datasource.dart';
+import '../../../data/datasources/customer/customer_session_local_datasource.dart';
 import '../../../data/datasources/ordering/ordering_store.dart';
-import '../../../data/datasources/session/session_engine_datasource.dart';
 import '../../../data/repositories/batch/batch_repository_impl.dart';
+import '../../../data/repositories/batch/remote_batch_repository.dart';
+import '../../../data/repositories/cart/remote_session_cart_repository.dart';
 import '../../../data/repositories/cart/session_cart_repository_impl.dart';
 import '../../../domain/events/domain_events.dart';
 import '../../../domain/repositories/batch_repository.dart';
@@ -33,6 +36,7 @@ import '../../../domain/repositories/session_engine_repository.dart';
 import '../../../domain/services/batch_domain_service.dart';
 import '../../../domain/services/kitchen_domain_service.dart';
 import '../../../domain/services/menu_domain_service.dart';
+import '../../config/app_config.dart';
 
 abstract final class KitchenModule {
   static void register(GetIt sl) {
@@ -41,14 +45,21 @@ abstract final class KitchenModule {
     );
 
     sl.registerLazySingleton<SessionCartRepository>(
-      () => SessionCartRepositoryImpl(
-        store: sl<OrderingStore>(),
-        localDataSource: sl<CartLocalDataSource>(),
-      ),
+      () => sl<AppConfig>().useRemoteBackend
+          ? RemoteSessionCartRepository(
+              apiClient: sl<ApiClient>(),
+              localSession: sl<CustomerSessionLocalDataSource>(),
+            )
+          : SessionCartRepositoryImpl(
+              store: sl<OrderingStore>(),
+              localDataSource: sl<CartLocalDataSource>(),
+            ),
     );
 
     sl.registerLazySingleton<BatchRepository>(
-      () => BatchRepositoryImpl(store: sl<OrderingStore>()),
+      () => sl<AppConfig>().useRemoteBackend
+          ? RemoteBatchRepository(apiClient: sl<ApiClient>())
+          : BatchRepositoryImpl(store: sl<OrderingStore>()),
     );
 
     sl.registerLazySingleton(() => const BatchDomainService());
@@ -70,7 +81,7 @@ abstract final class KitchenModule {
         customizationValidator: sl<CustomizationValidator>(),
         customizationRenderer: sl<CustomizationRenderer>(),
         timelineRecorder: sl<SessionTimelineRecorder>(),
-        sessionDataSource: sl<SessionEngineDataSource>(),
+        sessionEngineRepository: sl<SessionEngineRepository>(),
         idGenerator: sl<IdGenerator>(),
         clock: sl<Clock>(),
         menuDomainService: sl<MenuDomainService>(),
@@ -110,13 +121,11 @@ abstract final class KitchenModule {
         batchRepository: sl<BatchRepository>(),
         menuRepository: sl<MenuRepository>(),
         sessionEngineRepository: sl<SessionEngineRepository>(),
-        sessionDataSource: sl<SessionEngineDataSource>(),
         customizationRenderer: sl<CustomizationRenderer>(),
         timelineRecorder: sl<SessionTimelineRecorder>(),
         idGenerator: sl<IdGenerator>(),
         eventPublisher: sl<DomainEventPublisher>(),
         clock: sl<Clock>(),
-        orderingStore: sl<OrderingStore>(),
         batchDomainService: sl<BatchDomainService>(),
         menuDomainService: sl<MenuDomainService>(),
       ),
@@ -128,8 +137,8 @@ abstract final class KitchenModule {
 
     sl.registerLazySingleton(
       () => GetSessionBillUseCase(
-        store: sl<OrderingStore>(),
-        sessionDataSource: sl<SessionEngineDataSource>(),
+        sessionRepository: sl<SessionEngineRepository>(),
+        batchRepository: sl<BatchRepository>(),
         getSessionCart: sl<GetSessionCartUseCase>(),
       ),
     );
@@ -137,7 +146,7 @@ abstract final class KitchenModule {
     sl.registerLazySingleton(
       () => GetKitchenQueueUseCase(
         batchRepository: sl<BatchRepository>(),
-        sessionDataSource: sl<SessionEngineDataSource>(),
+        sessionEngineRepository: sl<SessionEngineRepository>(),
         kitchenDomainService: sl<KitchenDomainService>(),
         clock: sl<Clock>(),
       ),
@@ -146,7 +155,7 @@ abstract final class KitchenModule {
     sl.registerLazySingleton(
       () => CompleteBatchItemUseCase(
         batchRepository: sl<BatchRepository>(),
-        sessionDataSource: sl<SessionEngineDataSource>(),
+        sessionEngineRepository: sl<SessionEngineRepository>(),
         timelineRecorder: sl<SessionTimelineRecorder>(),
         eventPublisher: sl<DomainEventPublisher>(),
         idGenerator: sl<IdGenerator>(),
@@ -158,7 +167,6 @@ abstract final class KitchenModule {
     sl.registerLazySingleton(
       () => ToggleMenuAvailabilityUseCase(
         menuRepository: sl<MenuRepository>(),
-        store: sl<OrderingStore>(),
         eventPublisher: sl<DomainEventPublisher>(),
         idGenerator: sl<IdGenerator>(),
         clock: sl<Clock>(),
@@ -174,7 +182,6 @@ abstract final class KitchenModule {
 
     sl.registerLazySingleton(
       () => GetSessionBatchProgressUseCase(
-        store: sl<OrderingStore>(),
         batchRepository: sl<BatchRepository>(),
         kitchenDomainService: sl<KitchenDomainService>(),
       ),
@@ -182,7 +189,6 @@ abstract final class KitchenModule {
 
     sl.registerLazySingleton(
       () => GetCashierBatchSummariesUseCase(
-        store: sl<OrderingStore>(),
         batchRepository: sl<BatchRepository>(),
         kitchenDomainService: sl<KitchenDomainService>(),
       ),

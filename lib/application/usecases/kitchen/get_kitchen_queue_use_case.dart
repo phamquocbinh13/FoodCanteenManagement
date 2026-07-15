@@ -1,7 +1,8 @@
 import '../../../core/clock/clock.dart';
 import '../../../core/result/result.dart';
-import '../../../data/datasources/session/session_engine_datasource.dart';
+import '../../../domain/entities/session_engine_snapshot.dart';
 import '../../../domain/repositories/batch_repository.dart';
+import '../../../domain/repositories/session_engine_repository.dart';
 import '../../../domain/services/kitchen_domain_service.dart';
 import '../../kitchen/kitchen_view_models.dart';
 import '../use_case.dart';
@@ -11,16 +12,16 @@ final class GetKitchenQueueUseCase
     implements UseCase<KitchenQueueView, GetKitchenQueueParams> {
   GetKitchenQueueUseCase({
     required BatchRepository batchRepository,
-    required SessionEngineDataSource sessionDataSource,
+    required SessionEngineRepository sessionEngineRepository,
     required KitchenDomainService kitchenDomainService,
     required Clock clock,
   })  : _batchRepository = batchRepository,
-        _sessionDataSource = sessionDataSource,
+        _sessionEngine = sessionEngineRepository,
         _kitchenService = kitchenDomainService,
         _clock = clock;
 
   final BatchRepository _batchRepository;
-  final SessionEngineDataSource _sessionDataSource;
+  final SessionEngineRepository _sessionEngine;
   final KitchenDomainService _kitchenService;
   final Clock _clock;
 
@@ -40,23 +41,25 @@ final class GetKitchenQueueUseCase
 
       if (!params.showCompleted && isComplete) continue;
 
-      final session = batch.sessionId == null
-          ? null
-          : _sessionDataSource.getSession(batch.sessionId!);
-      final table = session == null
-          ? null
-          : _sessionDataSource.getTable(session.tableId);
+      var displayNumber = '—';
+      var tableLabel = '—';
+      if (batch.sessionId != null) {
+        final sessionResult = await _sessionEngine.findById(
+          sessionId: batch.sessionId!,
+          restaurantId: params.restaurantId,
+        );
+        if (sessionResult is Success<SessionEngineSnapshot>) {
+          displayNumber = sessionResult.value.session.displayNumber;
+          tableLabel = sessionResult.value.tableLabel;
+        }
+      }
 
       views.add(
         KitchenBatchViewModel(
           batchId: batch.id,
           batchNumber: batch.batchNumber,
-          sessionDisplayNumber: session?.displayNumber ?? '—',
-          tableLabel: _kitchenService.resolveTableLabel(
-                batch: batch,
-                table: table,
-              ) ??
-              '—',
+          sessionDisplayNumber: displayNumber,
+          tableLabel: tableLabel,
           createdAt: batch.confirmedAt,
           completedAt: completedAt,
           status: isComplete

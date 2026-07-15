@@ -13,7 +13,7 @@ import 'package:food_canteen_management/application/usecases/cart/update_cart_it
 import 'package:food_canteen_management/application/usecases/menu/get_menu_catalog_use_case.dart';
 import 'package:food_canteen_management/application/usecases/menu/lock_menu_item_use_case.dart';
 import 'package:food_canteen_management/application/usecases/session/create_session_use_case.dart'
-    show CreateSessionParams, CreateSessionUseCase, SessionEngineDataSourceDailySequence;
+    show CreateSessionParams, CreateSessionUseCase;
 import 'package:food_canteen_management/application/usecases/session/get_session_bill_use_case.dart';
 import 'package:food_canteen_management/application/validators/customization_validator.dart';
 import 'package:food_canteen_management/core/result/result.dart';
@@ -36,12 +36,6 @@ final class _NoOpEvents implements DomainEventPublisher {
   Future<void> publish(DomainEvent event) async {}
 }
 
-final class _Sequence implements SessionEngineDataSourceDailySequence {
-  _Sequence(this._ds);
-  final InMemorySessionEngineDataSource _ds;
-  @override
-  int nextDailySequence(String dateKey) => _ds.nextDailySequence(dateKey);
-}
 
 void main() {
   late FakeClock clock;
@@ -93,7 +87,6 @@ void main() {
       clock: clock,
       idGenerator: ids,
       eventPublisher: _NoOpEvents(),
-      sequenceProvider: _Sequence(sessionDs),
     );
     final created = await create(
       const CreateSessionParams(
@@ -158,7 +151,6 @@ void main() {
     test('returns cached catalog on same menu version', () async {
       final useCase = GetMenuCatalogUseCase(
         menuRepository: menuRepo,
-        store: store,
         clock: clock,
       );
       final first = await useCase(
@@ -183,7 +175,6 @@ void main() {
     test('invalidates cache when menu version bumps', () async {
       final useCase = GetMenuCatalogUseCase(
         menuRepository: menuRepo,
-        store: store,
         clock: clock,
       );
       final first = await useCase(
@@ -221,7 +212,7 @@ void main() {
         customizationValidator: const CustomizationValidator(),
         customizationRenderer: const CustomizationRenderer(),
         timelineRecorder: timeline,
-        sessionDataSource: sessionDs,
+        sessionEngineRepository: sessionRepo,
         idGenerator: ids,
         clock: clock,
       );
@@ -249,17 +240,15 @@ void main() {
         batchRepository: batchRepo,
         menuRepository: menuRepo,
         sessionEngineRepository: sessionRepo,
-        sessionDataSource: sessionDs,
         customizationRenderer: const CustomizationRenderer(),
         timelineRecorder: timeline,
         idGenerator: ids,
         eventPublisher: _NoOpEvents(),
         clock: clock,
-        orderingStore: store,
       );
       getBill = GetSessionBillUseCase(
-        store: store,
-        sessionDataSource: sessionDs,
+        sessionRepository: sessionRepo,
+        batchRepository: batchRepo,
         getSessionCart: getCart,
       );
     });
@@ -487,7 +476,6 @@ void main() {
         clock: clock,
         idGenerator: ids,
         eventPublisher: _NoOpEvents(),
-        sequenceProvider: _Sequence(sessionDs),
       );
       final secondSession = (await create(
         const CreateSessionParams(
@@ -617,7 +605,7 @@ void main() {
       );
 
       final bill = (await getBill(
-        GetSessionBillParams(sessionId: sessionId),
+        GetSessionBillParams(sessionId: sessionId, restaurantId: SessionEngineConstants.demoRestaurantId),
       ) as Success)
           .value;
 
@@ -647,7 +635,6 @@ void main() {
     test('blocks add when item locked', () async {
       final lock = LockMenuItemUseCase(
         menuRepository: menuRepo,
-        store: store,
       );
       await lock(
         const LockMenuItemParams(
@@ -717,7 +704,7 @@ void main() {
       expect(batch2.batch.batchNumber, 2);
 
       final bill = (await getBill(
-        GetSessionBillParams(sessionId: sessionId),
+        GetSessionBillParams(sessionId: sessionId, restaurantId: SessionEngineConstants.demoRestaurantId),
       ) as Success)
           .value;
       expect(bill.subtotalMinor, greaterThan(0));

@@ -4,7 +4,6 @@ import '../../../domain/entities/menu_item.dart';
 import '../../../domain/enums/domain_enums.dart';
 import '../../../domain/repositories/menu_repository.dart';
 import '../../../domain/services/menu_domain_service.dart';
-import '../../../data/datasources/ordering/ordering_store.dart';
 import '../use_case.dart';
 
 /// Kitchen locks a menu item (out of stock) — hides from customers.
@@ -12,14 +11,11 @@ final class LockMenuItemUseCase
     implements UseCase<MenuItem, LockMenuItemParams> {
   LockMenuItemUseCase({
     required MenuRepository menuRepository,
-    required OrderingStore store,
     MenuDomainService? menuDomainService,
   })  : _menuRepository = menuRepository,
-        _store = store,
         _menuService = menuDomainService ?? const MenuDomainService();
 
   final MenuRepository _menuRepository;
-  final OrderingStore _store;
   final MenuDomainService _menuService;
 
   @override
@@ -37,7 +33,6 @@ final class LockMenuItemUseCase
       availability: MenuAvailability.outOfStock,
     );
     final saved = await _menuRepository.updateAvailability(locked);
-    _store.bumpMenuVersion();
     return Success(saved);
   }
 }

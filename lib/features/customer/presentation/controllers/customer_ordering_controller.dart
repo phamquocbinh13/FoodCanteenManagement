@@ -293,7 +293,11 @@ final class CustomerOrderingController extends ChangeNotifier {
 
   Future<void> refreshBill(String sessionId) async {
     final result = await _getSessionBill(
-      GetSessionBillParams(sessionId: sessionId, includeOpenCart: true),
+      GetSessionBillParams(
+        sessionId: sessionId,
+        restaurantId: SessionEngineConstants.demoRestaurantId,
+        includeOpenCart: true,
+      ),
     );
     if (result is Success<SessionPaymentSummary>) {
       _bill = result.value;
@@ -303,7 +307,10 @@ final class CustomerOrderingController extends ChangeNotifier {
 
   Future<void> refreshBatchProgress(String sessionId) async {
     final result = await _getSessionBatchProgress(
-      GetSessionBatchProgressParams(sessionId: sessionId),
+      GetSessionBatchProgressParams(
+        sessionId: sessionId,
+        restaurantId: SessionEngineConstants.demoRestaurantId,
+      ),
     );
     if (result is Success<List<CustomerBatchProgressView>>) {
       _batchProgress = result.value;

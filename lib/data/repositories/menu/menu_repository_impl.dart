@@ -64,7 +64,13 @@ final class MenuRepositoryImpl implements MenuRepository {
     );
     _store.menuItems[item.id] = updated;
     _store.menuCachedAt = null;
+    _store.bumpMenuVersion();
     return updated;
+  }
+
+  @override
+  Future<int> getCatalogVersion(String restaurantId) async {
+    return _store.menuVersion;
   }
 
   @override

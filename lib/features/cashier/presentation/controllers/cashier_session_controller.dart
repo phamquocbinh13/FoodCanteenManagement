@@ -149,7 +149,10 @@ final class CashierSessionController extends ChangeNotifier {
       return;
     }
     final result = await _getCashierBatchSummaries(
-      GetCashierBatchSummariesParams(sessionId: sessionId),
+      GetCashierBatchSummariesParams(
+        sessionId: sessionId,
+        restaurantId: SessionEngineConstants.demoRestaurantId,
+      ),
     );
     if (result is Success<List<CashierBatchSummaryView>>) {
       _batchSummaries = result.value;

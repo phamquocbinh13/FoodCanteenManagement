@@ -5,7 +5,6 @@ import '../../../domain/enums/domain_enums.dart';
 import '../../../domain/events/domain_events.dart';
 import '../../../domain/repositories/menu_repository.dart';
 import '../../../domain/services/menu_domain_service.dart';
-import '../../../data/datasources/ordering/ordering_store.dart';
 import '../../../core/id/id_generator.dart';
 import '../../../core/clock/clock.dart';
 import '../use_case.dart';
@@ -15,20 +14,17 @@ final class ToggleMenuAvailabilityUseCase
     implements UseCase<MenuItem, ToggleMenuAvailabilityParams> {
   ToggleMenuAvailabilityUseCase({
     required MenuRepository menuRepository,
-    required OrderingStore store,
     required DomainEventPublisher eventPublisher,
     required IdGenerator idGenerator,
     required Clock clock,
     MenuDomainService? menuDomainService,
   })  : _menuRepository = menuRepository,
-        _store = store,
         _eventPublisher = eventPublisher,
         _idGenerator = idGenerator,
         _clock = clock,
         _menuService = menuDomainService ?? const MenuDomainService();
 
   final MenuRepository _menuRepository;
-  final OrderingStore _store;
   final DomainEventPublisher _eventPublisher;
   final IdGenerator _idGenerator;
   final Clock _clock;
@@ -53,7 +49,6 @@ final class ToggleMenuAvailabilityUseCase
       availability: nextAvailability,
     );
     final saved = await _menuRepository.updateAvailability(updated);
-    _store.bumpMenuVersion();
 
     final now = _clock.now();
     if (nextAvailability == MenuAvailability.outOfStock) {

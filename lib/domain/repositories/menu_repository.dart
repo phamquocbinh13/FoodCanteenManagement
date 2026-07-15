@@ -27,4 +27,7 @@ abstract interface class MenuRepository {
   Future<MenuItemAvailabilityHistory> recordAvailabilityHistory(
     MenuItemAvailabilityHistory history,
   );
+
+  /// Monotonic catalog version for client cache invalidation.
+  Future<int> getCatalogVersion(String restaurantId);
 }

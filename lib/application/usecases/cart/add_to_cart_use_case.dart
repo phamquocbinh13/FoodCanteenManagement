@@ -6,11 +6,11 @@ import '../../../domain/entities/session_cart.dart';
 import '../../../domain/entities/session_cart_item.dart';
 import '../../../domain/exceptions/domain_exception.dart';
 import '../../../domain/repositories/menu_repository.dart';
+import '../../../domain/repositories/session_engine_repository.dart';
 import '../../../domain/services/menu_domain_service.dart';
 import '../../../domain/value_objects/quantity.dart';
 import '../../../data/repositories/cart/session_cart_repository_impl.dart';
 import '../../menu/customization_renderer.dart';
-import '../../../data/datasources/session/session_engine_datasource.dart';
 import '../../session/session_timeline_recorder.dart';
 import '../../validators/customization_validator.dart';
 import '../use_case.dart';
@@ -23,7 +23,7 @@ final class AddToCartUseCase implements UseCase<SessionCartItem, AddToCartParams
     required CustomizationValidator customizationValidator,
     required CustomizationRenderer customizationRenderer,
     required SessionTimelineRecorder timelineRecorder,
-    required SessionEngineDataSource sessionDataSource,
+    required SessionEngineRepository sessionEngineRepository,
     required IdGenerator idGenerator,
     required Clock clock,
     MenuDomainService? menuDomainService,
@@ -32,7 +32,7 @@ final class AddToCartUseCase implements UseCase<SessionCartItem, AddToCartParams
         _customizationValidator = customizationValidator,
         _customizationRenderer = customizationRenderer,
         _timeline = timelineRecorder,
-        _sessionDataSource = sessionDataSource,
+        _sessionEngine = sessionEngineRepository,
         _idGenerator = idGenerator,
         _clock = clock,
         _menuService = menuDomainService ?? const MenuDomainService();
@@ -42,7 +42,7 @@ final class AddToCartUseCase implements UseCase<SessionCartItem, AddToCartParams
   final CustomizationValidator _customizationValidator;
   final CustomizationRenderer _customizationRenderer;
   final SessionTimelineRecorder _timeline;
-  final SessionEngineDataSource _sessionDataSource;
+  final SessionEngineRepository _sessionEngine;
   final IdGenerator _idGenerator;
   final Clock _clock;
   final MenuDomainService _menuService;
@@ -115,13 +115,14 @@ final class AddToCartUseCase implements UseCase<SessionCartItem, AddToCartParams
     final saveResult = await _cartRepository.saveCartItem(cartItem);
     if (saveResult is Err<SessionCartItem>) return Err(saveResult.failure);
 
-    _sessionDataSource.appendTimeline(
+    await _sessionEngine.appendTimeline(
       _timeline.cartItemAdded(
         sessionId: params.sessionId,
         menuItemId: item.id,
         quantity: params.quantity,
         actorId: params.actorId,
       ),
+      restaurantId: params.restaurantId,
     );
 
     return saveResult;

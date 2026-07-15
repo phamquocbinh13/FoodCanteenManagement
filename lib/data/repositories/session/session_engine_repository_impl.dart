@@ -8,6 +8,7 @@ import '../../../domain/entities/dine_in_session.dart';
 import '../../../domain/entities/session_auth_token.dart';
 import '../../../domain/entities/session_engine_snapshot.dart';
 import '../../../domain/entities/session_payment_summary.dart';
+import '../../../domain/entities/session_timeline_event.dart';
 import '../../../domain/enums/domain_enums.dart';
 import '../../../domain/repositories/session_engine_repository.dart';
 import '../../../domain/services/session_state_machine.dart';
@@ -294,6 +295,31 @@ final class SessionEngineRepositoryImpl implements SessionEngineRepository {
   }
 
   @override
+  Future<Result<SessionEngineSnapshot>> findById({
+    required String sessionId,
+    required String restaurantId,
+  }) async {
+    final session = _dataSource.getSession(sessionId);
+    if (session == null || session.restaurantId != restaurantId) {
+      return Err(
+        NotFoundFailure(
+          SessionErrorMessages.sessionNotFound,
+          code: SessionErrorCodes.sessionNotFound,
+        ),
+      );
+    }
+
+    final table = _dataSource.getTable(session.tableId);
+    return Success(
+      _snapshot(
+        session,
+        _dataSource.getActiveToken(sessionId),
+        table?.label ?? session.tableId,
+      ),
+    );
+  }
+
+  @override
   Future<Result<SessionEngineSnapshot?>> findActiveByTable({
     required String restaurantId,
     required String tableId,
@@ -341,6 +367,28 @@ final class SessionEngineRepositoryImpl implements SessionEngineRepository {
         table?.label ?? session.tableId,
       ),
     );
+  }
+
+  @override
+  Future<Result<int>> nextDailySequence({
+    required String restaurantId,
+    required String dateKey,
+  }) async {
+    // In-memory counter is process-local; restaurantId reserved for remote parity.
+    // ignore: unused_local_variable
+    final _ = restaurantId;
+    return Success(_dataSource.nextDailySequence(dateKey));
+  }
+
+  @override
+  Future<Result<void>> appendTimeline(
+    SessionTimelineEvent event, {
+    String? restaurantId,
+  }) async {
+    // restaurantId reserved for remote parity.
+    final _ = restaurantId;
+    _dataSource.appendTimeline(event);
+    return const Success(null);
   }
 
   @override

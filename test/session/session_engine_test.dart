@@ -140,7 +140,6 @@ void main() {
         clock: clock,
         idGenerator: ids,
         eventPublisher: events,
-        sequenceProvider: _Sequence(dataSource),
       );
 
       final result = await useCase(
@@ -167,7 +166,6 @@ void main() {
         clock: clock,
         idGenerator: ids,
         eventPublisher: events,
-        sequenceProvider: _Sequence(dataSource),
       );
 
       await useCase(
@@ -200,7 +198,6 @@ void main() {
         clock: clock,
         idGenerator: ids,
         eventPublisher: events,
-        sequenceProvider: _Sequence(dataSource),
       );
       final created = await create(
         const CreateSessionParams(
@@ -232,7 +229,6 @@ void main() {
         clock: clock,
         idGenerator: ids,
         eventPublisher: events,
-        sequenceProvider: _Sequence(dataSource),
       );
       final created = await create(
         const CreateSessionParams(
@@ -264,7 +260,6 @@ void main() {
         clock: clock,
         idGenerator: ids,
         eventPublisher: events,
-        sequenceProvider: _Sequence(dataSource),
       );
       final created = await create(
         const CreateSessionParams(
@@ -307,7 +302,6 @@ void main() {
         clock: clock,
         idGenerator: ids,
         eventPublisher: events,
-        sequenceProvider: _Sequence(dataSource),
       );
       final created = await create(
         const CreateSessionParams(
@@ -347,13 +341,3 @@ void main() {
   });
 }
 
-final class _Sequence implements SessionEngineDataSourceDailySequence {
-  _Sequence(this._dataSource);
-
-  final InMemorySessionEngineDataSource _dataSource;
-
-  @override
-  int nextDailySequence(String dateKey) {
-    return _dataSource.nextDailySequence(dateKey);
-  }
-}

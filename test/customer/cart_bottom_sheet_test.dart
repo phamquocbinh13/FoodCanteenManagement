@@ -17,7 +17,7 @@ import 'package:food_canteen_management/application/usecases/kitchen/get_session
 import 'package:food_canteen_management/application/usecases/menu/get_menu_catalog_use_case.dart';
 import 'package:food_canteen_management/application/usecases/menu/get_menu_item_detail_use_case.dart';
 import 'package:food_canteen_management/application/usecases/session/create_session_use_case.dart'
-    show CreateSessionParams, CreateSessionUseCase, SessionEngineDataSourceDailySequence;
+    show CreateSessionParams, CreateSessionUseCase;
 import 'package:food_canteen_management/application/usecases/session/get_session_bill_use_case.dart';
 import 'package:food_canteen_management/application/validators/customization_validator.dart';
 import 'package:food_canteen_management/core/result/result.dart';
@@ -41,12 +41,6 @@ final class _NoOpEvents implements DomainEventPublisher {
   Future<void> publish(DomainEvent event) async {}
 }
 
-final class _Sequence implements SessionEngineDataSourceDailySequence {
-  _Sequence(this._ds);
-  final InMemorySessionEngineDataSource _ds;
-  @override
-  int nextDailySequence(String dateKey) => _ds.nextDailySequence(dateKey);
-}
 
 Map<String, dynamic> defaultSelections() => {
       'groups': {
@@ -81,7 +75,6 @@ Future<({CustomerOrderingController controller, String sessionId})>
     clock: clock,
     idGenerator: ids,
     eventPublisher: _NoOpEvents(),
-    sequenceProvider: _Sequence(sessionDs),
   );
   final created = await createSession(
     const CreateSessionParams(
@@ -103,7 +96,6 @@ Future<({CustomerOrderingController controller, String sessionId})>
   final controller = CustomerOrderingController(
     getMenuCatalog: GetMenuCatalogUseCase(
       menuRepository: menuRepo,
-      store: store,
       clock: clock,
     ),
     getMenuItemDetail: GetMenuItemDetailUseCase(menuRepository: menuRepo),
@@ -113,7 +105,7 @@ Future<({CustomerOrderingController controller, String sessionId})>
       customizationValidator: const CustomizationValidator(),
       customizationRenderer: const CustomizationRenderer(),
       timelineRecorder: timeline,
-      sessionDataSource: sessionDs,
+      sessionEngineRepository: sessionRepo,
       idGenerator: ids,
       clock: clock,
     ),
@@ -137,21 +129,18 @@ Future<({CustomerOrderingController controller, String sessionId})>
       batchRepository: batchRepo,
       menuRepository: menuRepo,
       sessionEngineRepository: sessionRepo,
-      sessionDataSource: sessionDs,
       customizationRenderer: const CustomizationRenderer(),
       timelineRecorder: timeline,
       idGenerator: ids,
       eventPublisher: _NoOpEvents(),
       clock: clock,
-      orderingStore: store,
     ),
     getSessionBill: GetSessionBillUseCase(
-      store: store,
-      sessionDataSource: sessionDs,
+      sessionRepository: sessionRepo,
+      batchRepository: BatchRepositoryImpl(store: store),
       getSessionCart: getCart,
     ),
     getSessionBatchProgress: GetSessionBatchProgressUseCase(
-      store: store,
       batchRepository: batchRepo,
     ),
   );

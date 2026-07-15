@@ -1,0 +1,90 @@
+import { Prisma } from '@prisma/client';
+export type MoneyDto = {
+    amountMinor: number;
+    currencyCode: string;
+};
+export type CatalogGroup = {
+    id: string;
+    menuItemId: string;
+    key: string;
+    name: string;
+    selectionType: string;
+    isRequired: boolean;
+    minSelections: number;
+    maxSelections: number;
+    sortOrder: number;
+    isActive: boolean;
+    createdAt: string;
+    updatedAt: string;
+    options: CatalogOption[];
+};
+export type CatalogOption = {
+    id: string;
+    groupId: string;
+    key: string;
+    name: string;
+    kitchenLabel: string;
+    priceDelta: MoneyDto;
+    isDefault: boolean;
+    sortOrder: number;
+    isActive: boolean;
+    createdAt: string;
+    updatedAt: string;
+};
+type GroupRow = {
+    id: string;
+    menu_item_id: string;
+    group_key: string;
+    name: string;
+    selection_type: string;
+    is_required: boolean;
+    min_selections: number;
+    max_selections: number;
+    sort_order: number;
+    is_active: boolean;
+    created_at: Date;
+    updated_at: Date;
+    customization_option: OptionRow[];
+};
+type OptionRow = {
+    id: string;
+    group_id: string;
+    option_key: string;
+    name: string;
+    kitchen_label: string;
+    price_delta_minor: bigint;
+    currency_code: string;
+    is_default: boolean;
+    sort_order: number;
+    is_active: boolean;
+    created_at: Date;
+    updated_at: Date;
+};
+export declare function mapMoney(amountMinor: bigint | number, currencyCode: string): MoneyDto;
+export declare function mapGroup(row: GroupRow): CatalogGroup;
+export declare function mapOption(row: OptionRow): CatalogOption;
+export declare function readSelectionGroups(selectionsJson: Record<string, unknown> | null | undefined): Map<string, string[]>;
+export declare function readCartNote(selectionsJson: Record<string, unknown> | null | undefined): string | null;
+export type RenderedCustomization = {
+    groupKey: string;
+    groupNameSnapshot: string;
+    optionKey: string | null;
+    optionNameSnapshot: string | null;
+    valueJson: Prisma.InputJsonValue;
+    priceDeltaMinor: bigint;
+    currencyCode: string;
+    kitchenLabelRendered: string;
+};
+export type PriceRenderResult = {
+    unitPriceMinor: bigint;
+    currencyCode: string;
+    kitchenNotes: string;
+    customizations: RenderedCustomization[];
+};
+export declare function validateAndPrice(params: {
+    basePriceMinor: bigint;
+    currencyCode: string;
+    groups: GroupRow[];
+    selectionsJson: Record<string, unknown>;
+}): PriceRenderResult;
+export {};

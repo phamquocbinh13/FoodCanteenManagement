@@ -2,11 +2,11 @@ import '../../../core/clock/clock.dart';
 import '../../../core/errors/failures.dart';
 import '../../../core/id/id_generator.dart';
 import '../../../core/result/result.dart';
-import '../../../data/datasources/session/session_engine_datasource.dart';
 import '../../../domain/entities/staff_request.dart';
 import '../../../domain/events/domain_events.dart';
 import '../../../domain/exceptions/domain_exception.dart';
 import '../../../domain/repositories/request_repository.dart';
+import '../../../domain/repositories/session_engine_repository.dart';
 import '../../../domain/services/request_domain_service.dart';
 import '../../session/session_timeline_recorder.dart';
 import '../use_case.dart';
@@ -16,14 +16,14 @@ final class HandleStaffRequestUseCase
     implements UseCase<StaffRequest, HandleStaffRequestParams> {
   HandleStaffRequestUseCase({
     required RequestRepository requestRepository,
-    required SessionEngineDataSource sessionDataSource,
+    required SessionEngineRepository sessionEngineRepository,
     required SessionTimelineRecorder timelineRecorder,
     required RequestDomainService domainService,
     required IdGenerator idGenerator,
     required DomainEventPublisher eventPublisher,
     required Clock clock,
   })  : _requestRepository = requestRepository,
-        _sessionDataSource = sessionDataSource,
+        _sessionEngine = sessionEngineRepository,
         _timeline = timelineRecorder,
         _domain = domainService,
         _idGenerator = idGenerator,
@@ -31,7 +31,7 @@ final class HandleStaffRequestUseCase
         _clock = clock;
 
   final RequestRepository _requestRepository;
-  final SessionEngineDataSource _sessionDataSource;
+  final SessionEngineRepository _sessionEngine;
   final SessionTimelineRecorder _timeline;
   final RequestDomainService _domain;
   final IdGenerator _idGenerator;
@@ -66,13 +66,14 @@ final class HandleStaffRequestUseCase
 
     final saved = await _requestRepository.update(handled);
 
-    _sessionDataSource.appendTimeline(
+    await _sessionEngine.appendTimeline(
       _timeline.staffRequestHandled(
         sessionId: saved.sessionId,
         requestId: saved.id,
         requestType: saved.requestType,
         actorId: params.handledByUserId,
       ),
+      restaurantId: params.restaurantId,
     );
 
     await _eventPublisher.publish(

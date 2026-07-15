@@ -2,12 +2,13 @@ import '../../../core/clock/clock.dart';
 import '../../../core/errors/failures.dart';
 import '../../../core/id/id_generator.dart';
 import '../../../core/result/result.dart';
-import '../../../data/datasources/session/session_engine_datasource.dart';
+import '../../../domain/entities/session_engine_snapshot.dart';
 import '../../../domain/entities/staff_request.dart';
-import '../../../domain/enums/domain_enums.dart';
+import '../../../domain/enums/domain_enums.dart'; // SessionStatus, RequestType
 import '../../../domain/events/domain_events.dart';
 import '../../../domain/exceptions/domain_exception.dart';
 import '../../../domain/repositories/request_repository.dart';
+import '../../../domain/repositories/session_engine_repository.dart';
 import '../../../domain/services/request_domain_service.dart';
 import '../../session/session_timeline_recorder.dart';
 import '../session/mark_waiting_payment_use_case.dart';
@@ -20,7 +21,7 @@ final class CreateStaffRequestUseCase
     implements UseCase<StaffRequest, CreateStaffRequestParams> {
   CreateStaffRequestUseCase({
     required RequestRepository requestRepository,
-    required SessionEngineDataSource sessionDataSource,
+    required SessionEngineRepository sessionEngineRepository,
     required SessionTimelineRecorder timelineRecorder,
     required MarkWaitingPaymentUseCase markWaitingPayment,
     required RequestDomainService domainService,
@@ -28,7 +29,7 @@ final class CreateStaffRequestUseCase
     required DomainEventPublisher eventPublisher,
     required Clock clock,
   })  : _requestRepository = requestRepository,
-        _sessionDataSource = sessionDataSource,
+        _sessionEngine = sessionEngineRepository,
         _timeline = timelineRecorder,
         _markWaitingPayment = markWaitingPayment,
         _domain = domainService,
@@ -37,7 +38,7 @@ final class CreateStaffRequestUseCase
         _clock = clock;
 
   final RequestRepository _requestRepository;
-  final SessionEngineDataSource _sessionDataSource;
+  final SessionEngineRepository _sessionEngine;
   final SessionTimelineRecorder _timeline;
   final MarkWaitingPaymentUseCase _markWaitingPayment;
   final RequestDomainService _domain;
@@ -47,17 +48,19 @@ final class CreateStaffRequestUseCase
 
   @override
   Future<Result<StaffRequest>> call(CreateStaffRequestParams params) async {
-    final session = _sessionDataSource.getSession(params.sessionId);
-    if (session == null) {
+    final sessionResult = await _sessionEngine.findById(
+      sessionId: params.sessionId,
+      restaurantId: params.restaurantId,
+    );
+    if (sessionResult is Err<SessionEngineSnapshot>) {
+      return Err(sessionResult.failure);
+    }
+    if (sessionResult is! Success<SessionEngineSnapshot>) {
       return const Err(
         NotFoundFailure('Session not found', code: 'SESSION_NOT_FOUND'),
       );
     }
-    if (session.restaurantId != params.restaurantId) {
-      return const Err(
-        ValidationFailure('Session restaurant mismatch', code: 'RESTAURANT_MISMATCH'),
-      );
-    }
+    final session = sessionResult.value.session;
 
     final existing = await _requestRepository.listBySessionId(params.sessionId);
 
@@ -86,13 +89,14 @@ final class CreateStaffRequestUseCase
 
     final saved = await _requestRepository.create(request);
 
-    _sessionDataSource.appendTimeline(
+    await _sessionEngine.appendTimeline(
       _timeline.staffRequestCreated(
         sessionId: params.sessionId,
         requestId: saved.id,
         requestType: saved.requestType,
         actorId: params.deviceId,
       ),
+      restaurantId: params.restaurantId,
     );
 
     await _eventPublisher.publish(

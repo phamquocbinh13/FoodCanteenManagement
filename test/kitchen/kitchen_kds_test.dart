@@ -11,7 +11,7 @@ import 'package:food_canteen_management/application/usecases/kitchen/get_kitchen
 import 'package:food_canteen_management/application/usecases/kitchen/get_session_batch_progress_use_case.dart';
 import 'package:food_canteen_management/application/usecases/kitchen/toggle_menu_availability_use_case.dart';
 import 'package:food_canteen_management/application/usecases/session/create_session_use_case.dart'
-    show CreateSessionParams, CreateSessionUseCase, SessionEngineDataSourceDailySequence;
+    show CreateSessionParams, CreateSessionUseCase;
 import 'package:food_canteen_management/application/validators/customization_validator.dart';
 import 'package:food_canteen_management/core/result/result.dart';
 import 'package:food_canteen_management/data/datasources/cart/cart_local_datasource.dart';
@@ -47,12 +47,6 @@ final class _RecordingEvents implements DomainEventPublisher {
   }
 }
 
-final class _Sequence implements SessionEngineDataSourceDailySequence {
-  _Sequence(this._ds);
-  final InMemorySessionEngineDataSource _ds;
-  @override
-  int nextDailySequence(String dateKey) => _ds.nextDailySequence(dateKey);
-}
 
 void main() {
   late FakeClock clock;
@@ -91,7 +85,6 @@ void main() {
       clock: clock,
       idGenerator: ids,
       eventPublisher: events,
-      sequenceProvider: _Sequence(sessionDs),
     );
     sessionId = ((await create(
       const CreateSessionParams(
@@ -115,7 +108,7 @@ void main() {
       customizationValidator: const CustomizationValidator(),
       customizationRenderer: const CustomizationRenderer(),
       timelineRecorder: timeline,
-      sessionDataSource: sessionDs,
+      sessionEngineRepository: sessionRepo,
       idGenerator: ids,
       clock: clock,
     );
@@ -124,13 +117,11 @@ void main() {
       batchRepository: batchRepo,
       menuRepository: menuRepo,
       sessionEngineRepository: sessionRepo,
-      sessionDataSource: sessionDs,
       customizationRenderer: const CustomizationRenderer(),
       timelineRecorder: timeline,
       idGenerator: ids,
       eventPublisher: events,
       clock: clock,
-      orderingStore: store,
     );
 
     await addToCart(
@@ -164,7 +155,7 @@ void main() {
       await confirmCurryAndTea();
       final useCase = GetKitchenQueueUseCase(
         batchRepository: batchRepo,
-        sessionDataSource: sessionDs,
+        sessionEngineRepository: sessionRepo,
         kitchenDomainService: const KitchenDomainService(),
         clock: clock,
       );
@@ -185,7 +176,7 @@ void main() {
       await confirmCurryAndTea();
       final completeItem = CompleteBatchItemUseCase(
         batchRepository: batchRepo,
-        sessionDataSource: sessionDs,
+        sessionEngineRepository: sessionRepo,
         timelineRecorder: SessionTimelineRecorder(idGenerator: ids, clock: clock),
         eventPublisher: events,
         idGenerator: ids,
@@ -204,7 +195,7 @@ void main() {
 
       final useCase = GetKitchenQueueUseCase(
         batchRepository: batchRepo,
-        sessionDataSource: sessionDs,
+        sessionEngineRepository: sessionRepo,
         kitchenDomainService: const KitchenDomainService(),
         clock: clock,
       );
@@ -232,7 +223,7 @@ void main() {
       final items = store.batchItemsByBatchId[batch.id]!;
       final useCase = CompleteBatchItemUseCase(
         batchRepository: batchRepo,
-        sessionDataSource: sessionDs,
+        sessionEngineRepository: sessionRepo,
         timelineRecorder: SessionTimelineRecorder(idGenerator: ids, clock: clock),
         eventPublisher: events,
         idGenerator: ids,
@@ -266,7 +257,6 @@ void main() {
     test('toggles availability and bumps menu version', () async {
       final useCase = ToggleMenuAvailabilityUseCase(
         menuRepository: menuRepo,
-        store: store,
         eventPublisher: events,
         idGenerator: ids,
         clock: clock,
@@ -297,11 +287,13 @@ void main() {
     test('customer sees batch-level status only', () async {
       await confirmCurryAndTea();
       final progress = GetSessionBatchProgressUseCase(
-        store: store,
         batchRepository: batchRepo,
       );
       final result = await progress(
-        GetSessionBatchProgressParams(sessionId: sessionId),
+        GetSessionBatchProgressParams(
+          sessionId: sessionId,
+          restaurantId: SessionEngineConstants.demoRestaurantId,
+        ),
       );
       expect(result, isA<Success>());
       final views = (result as Success).value;
@@ -321,7 +313,7 @@ void main() {
         customizationValidator: const CustomizationValidator(),
         customizationRenderer: const CustomizationRenderer(),
         timelineRecorder: timeline,
-        sessionDataSource: sessionDs,
+        sessionEngineRepository: sessionRepo,
         idGenerator: ids,
         clock: clock,
       );
@@ -330,17 +322,15 @@ void main() {
         batchRepository: batchRepo,
         menuRepository: menuRepo,
         sessionEngineRepository: sessionRepo,
-        sessionDataSource: sessionDs,
         customizationRenderer: const CustomizationRenderer(),
         timelineRecorder: timeline,
         idGenerator: ids,
         eventPublisher: events,
         clock: clock,
-        orderingStore: store,
       );
       final completeItem = CompleteBatchItemUseCase(
         batchRepository: batchRepo,
-        sessionDataSource: sessionDs,
+        sessionEngineRepository: sessionRepo,
         timelineRecorder: SessionTimelineRecorder(idGenerator: ids, clock: clock),
         eventPublisher: events,
         idGenerator: ids,
@@ -348,7 +338,7 @@ void main() {
       );
       final queueUseCase = GetKitchenQueueUseCase(
         batchRepository: batchRepo,
-        sessionDataSource: sessionDs,
+        sessionEngineRepository: sessionRepo,
         kitchenDomainService: const KitchenDomainService(),
         clock: clock,
       );

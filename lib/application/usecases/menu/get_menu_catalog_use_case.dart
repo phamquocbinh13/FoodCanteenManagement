@@ -1,7 +1,6 @@
 import '../../../core/clock/clock.dart';
 import '../../../core/result/result.dart';
 import '../../../domain/repositories/menu_repository.dart';
-import '../../../data/datasources/ordering/ordering_store.dart';
 import '../../menu/menu_catalog_view.dart';
 import '../use_case.dart';
 
@@ -10,14 +9,11 @@ final class GetMenuCatalogUseCase
     implements UseCase<MenuCatalogView, GetMenuCatalogParams> {
   GetMenuCatalogUseCase({
     required MenuRepository menuRepository,
-    required OrderingStore store,
     required Clock clock,
   })  : _menuRepository = menuRepository,
-        _store = store,
         _clock = clock;
 
   final MenuRepository _menuRepository;
-  final OrderingStore _store;
   final Clock _clock;
 
   MenuCatalogView? _cache;
@@ -26,9 +22,10 @@ final class GetMenuCatalogUseCase
 
   @override
   Future<Result<MenuCatalogView>> call(GetMenuCatalogParams params) async {
+    final version = await _menuRepository.getCatalogVersion(params.restaurantId);
     if (_cache != null &&
         _cacheRestaurantId == params.restaurantId &&
-        _cacheVersion == _store.menuVersion) {
+        _cacheVersion == version) {
       return Success(_cache!);
     }
 
@@ -47,14 +44,12 @@ final class GetMenuCatalogUseCase
           entry.key: entry.value.cast(),
       },
       cachedAt: _clock.now(),
-      menuVersion: _store.menuVersion,
+      menuVersion: version,
     );
 
     _cache = view;
     _cacheRestaurantId = params.restaurantId;
-    _cacheVersion = _store.menuVersion;
-    _store.cacheVersion = _store.menuVersion;
-    _store.menuCachedAt = view.cachedAt;
+    _cacheVersion = version;
 
     return Success(view);
   }
@@ -63,8 +58,6 @@ final class GetMenuCatalogUseCase
     _cache = null;
     _cacheRestaurantId = null;
     _cacheVersion = null;
-    _store.menuCachedAt = null;
-    _store.cacheVersion = null;
   }
 }
 

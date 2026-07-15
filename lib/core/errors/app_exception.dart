@@ -33,6 +33,14 @@ final class NotFoundException extends AppException {
   const NotFoundException(super.message, {super.code, super.cause});
 }
 
+final class ForbiddenException extends AppException {
+  const ForbiddenException(super.message, {super.code, super.cause});
+}
+
+final class ConflictException extends AppException {
+  const ConflictException(super.message, {super.code, super.cause});
+}
+
 final class UnknownAppException extends AppException {
   const UnknownAppException(super.message, {super.code, super.cause});
 }
