@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 
 import '../../../../application/session/customer_session_messages.dart';
 import '../../../../application/session/session_token_parser.dart';
+import '../../../../application/usecases/request/create_staff_request_use_case.dart';
+import '../../../../application/usecases/request/list_session_staff_requests_use_case.dart';
 import '../../../../application/usecases/session/join_session_use_case.dart';
 import '../../../../application/usecases/session/validate_session_use_case.dart';
 import '../../../../core/errors/failures.dart';
@@ -9,8 +11,8 @@ import '../../../../core/id/id_generator.dart';
 import '../../../../core/result/result.dart';
 import '../../../../data/datasources/customer/customer_session_local_datasource.dart';
 import '../../../../domain/entities/session_engine_snapshot.dart';
+import '../../../../domain/entities/staff_request.dart';
 import '../../../../domain/enums/domain_enums.dart';
-import '../../../../domain/events/domain_events.dart';
 import '../../../../domain/services/session_state_machine.dart';
 
 /// Customer-side session state. All joins go through [JoinSessionUseCase].
@@ -18,29 +20,30 @@ final class CustomerSessionController extends ChangeNotifier {
   CustomerSessionController({
     required JoinSessionUseCase joinSession,
     required ValidateSessionUseCase validateSession,
+    required CreateStaffRequestUseCase createStaffRequest,
+    required ListSessionStaffRequestsUseCase listSessionStaffRequests,
     required CustomerSessionLocalDataSource local,
     required IdGenerator idGenerator,
-    required DomainEventPublisher eventPublisher,
-    required DateTime Function() now,
   })  : _joinSession = joinSession,
         _validateSession = validateSession,
+        _createStaffRequest = createStaffRequest,
+        _listSessionStaffRequests = listSessionStaffRequests,
         _local = local,
-        _idGenerator = idGenerator,
-        _eventPublisher = eventPublisher,
-        _now = now;
+        _idGenerator = idGenerator;
 
   final JoinSessionUseCase _joinSession;
   final ValidateSessionUseCase _validateSession;
+  final CreateStaffRequestUseCase _createStaffRequest;
+  final ListSessionStaffRequestsUseCase _listSessionStaffRequests;
   final CustomerSessionLocalDataSource _local;
   final IdGenerator _idGenerator;
-  final DomainEventPublisher _eventPublisher;
-  final DateTime Function() _now;
 
   SessionEngineSnapshot? _snapshot;
   String? _sessionToken;
   String? _errorMessage;
   bool _isLoading = false;
   bool _paymentRequested = false;
+  List<StaffRequest> _sessionRequests = const [];
 
   SessionEngineSnapshot? get snapshot => _snapshot;
   String? get sessionToken => _sessionToken;
@@ -48,6 +51,7 @@ final class CustomerSessionController extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isJoined => _snapshot != null;
   bool get paymentRequested => _paymentRequested;
+  List<StaffRequest> get sessionRequests => _sessionRequests;
 
   SessionLifecyclePhase get lifecyclePhase {
     final status = _snapshot?.session.status;
@@ -123,23 +127,74 @@ final class CustomerSessionController extends ChangeNotifier {
 
     _setLoading(true);
     final ok = await _validateAndBind(token);
+    if (ok) {
+      await refreshSessionRequests();
+    }
     _setLoading(false);
     return ok;
   }
 
-  Future<void> requestPayment() async {
+  /// Creates a call-staff request. Payment type soft-locks the session.
+  Future<bool> createStaffRequest(RequestType type, {String? note}) async {
     final snapshot = _snapshot;
-    if (snapshot == null) return;
+    if (snapshot == null) return false;
 
-    await _eventPublisher.publish(
-      PaymentRequested(
-        eventId: _idGenerator.nextId(),
-        occurredAt: _now(),
-        aggregateId: snapshot.session.id,
+    _setLoading(true);
+    _errorMessage = null;
+
+    final deviceResult = await _local.getOrCreateDeviceId(_idGenerator);
+    final deviceId = deviceResult.valueOrNull;
+
+    final result = await _createStaffRequest(
+      CreateStaffRequestParams(
+        restaurantId: snapshot.session.restaurantId,
+        sessionId: snapshot.session.id,
+        requestType: type,
+        note: note,
+        deviceId: deviceId,
       ),
     );
-    _paymentRequested = true;
-    notifyListeners();
+
+    switch (result) {
+      case Success():
+        if (type == RequestType.payment) {
+          _paymentRequested = true;
+        }
+        final token = _sessionToken;
+        if (token != null) {
+          await _validateAndBind(token);
+        }
+        await refreshSessionRequests();
+        _setLoading(false);
+        return true;
+      case Err(:final failure):
+        _setError(failure.message);
+        _setLoading(false);
+        return false;
+    }
+  }
+
+  Future<bool> requestPayment() =>
+      createStaffRequest(RequestType.payment);
+
+  Future<void> refreshSessionRequests() async {
+    final sessionId = _snapshot?.session.id;
+    if (sessionId == null) {
+      _sessionRequests = const [];
+      return;
+    }
+    final result = await _listSessionStaffRequests(
+      ListSessionStaffRequestsParams(sessionId: sessionId),
+    );
+    if (result is Success<List<StaffRequest>>) {
+      _sessionRequests = result.value;
+      _paymentRequested = result.value.any(
+        (r) =>
+            r.requestType == RequestType.payment &&
+            r.status == RequestStatus.pending,
+      );
+      notifyListeners();
+    }
   }
 
   Future<void> leaveSession() async {
@@ -147,6 +202,7 @@ final class CustomerSessionController extends ChangeNotifier {
     _snapshot = null;
     _sessionToken = null;
     _paymentRequested = false;
+    _sessionRequests = const [];
     _errorMessage = null;
     notifyListeners();
   }
@@ -175,10 +231,11 @@ final class CustomerSessionController extends ChangeNotifier {
     _snapshot = snapshot;
     _sessionToken = token;
     _errorMessage = null;
-    _paymentRequested = false;
     if (persist) {
       _local.saveSessionToken(token);
     }
+    // Fire-and-forget refresh of request history for dashboard/call-staff.
+    refreshSessionRequests();
     notifyListeners();
     return true;
   }

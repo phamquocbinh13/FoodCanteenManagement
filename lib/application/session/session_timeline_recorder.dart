@@ -132,6 +132,42 @@ final class SessionTimelineRecorder {
     );
   }
 
+  SessionTimelineEvent staffRequestCreated({
+    required String sessionId,
+    required String requestId,
+    required RequestType requestType,
+    String? actorId,
+  }) {
+    return _event(
+      sessionId: sessionId,
+      eventType: SessionTimelineEventType.staffRequestCreated,
+      actorType: ActorType.customerSession,
+      actorId: actorId,
+      payload: {
+        'requestId': requestId,
+        'requestType': requestType.name,
+      },
+    );
+  }
+
+  SessionTimelineEvent staffRequestHandled({
+    required String sessionId,
+    required String requestId,
+    required RequestType requestType,
+    String? actorId,
+  }) {
+    return _event(
+      sessionId: sessionId,
+      eventType: SessionTimelineEventType.staffRequestHandled,
+      actorType: ActorType.user,
+      actorId: actorId,
+      payload: {
+        'requestId': requestId,
+        'requestType': requestType.name,
+      },
+    );
+  }
+
   SessionTimelineEvent _event({
     required String sessionId,
     required SessionTimelineEventType eventType,

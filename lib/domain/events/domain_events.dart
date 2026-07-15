@@ -173,6 +173,34 @@ final class MenuUnlocked extends DomainEventBase {
   final String restaurantId;
 }
 
+/// Emitted when a customer creates a call-staff request.
+final class StaffRequestCreated extends DomainEventBase {
+  const StaffRequestCreated({
+    required super.eventId,
+    required super.occurredAt,
+    required super.aggregateId,
+    required this.sessionId,
+    required this.requestType,
+  }) : super(aggregateType: 'staff_request');
+
+  final String sessionId;
+  final String requestType;
+}
+
+/// Emitted when cashier marks a staff request handled.
+final class StaffRequestHandled extends DomainEventBase {
+  const StaffRequestHandled({
+    required super.eventId,
+    required super.occurredAt,
+    required super.aggregateId,
+    required this.sessionId,
+    required this.handledByUserId,
+  }) : super(aggregateType: 'staff_request');
+
+  final String sessionId;
+  final String handledByUserId;
+}
+
 /// Future publisher contract. No bus implementation in this sprint.
 abstract interface class DomainEventPublisher {
   Future<void> publish(DomainEvent event);

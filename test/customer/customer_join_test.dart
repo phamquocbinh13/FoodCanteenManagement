@@ -3,18 +3,23 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:food_canteen_management/application/session/customer_session_messages.dart';
 import 'package:food_canteen_management/application/session/session_constants.dart';
 import 'package:food_canteen_management/application/session/session_token_parser.dart';
+import 'package:food_canteen_management/application/usecases/request/create_staff_request_use_case.dart';
+import 'package:food_canteen_management/application/usecases/request/list_session_staff_requests_use_case.dart';
 import 'package:food_canteen_management/application/usecases/session/create_session_use_case.dart';
 import 'package:food_canteen_management/application/usecases/session/join_session_use_case.dart';
+import 'package:food_canteen_management/application/usecases/session/mark_waiting_payment_use_case.dart';
 import 'package:food_canteen_management/application/usecases/session/validate_session_use_case.dart';
 import 'package:food_canteen_management/core/result/result.dart';
 import 'package:food_canteen_management/data/datasources/customer/customer_session_local_datasource.dart';
 import 'package:food_canteen_management/data/datasources/ordering/ordering_store.dart';
 import 'package:food_canteen_management/data/datasources/session/in_memory_session_engine_datasource.dart';
+import 'package:food_canteen_management/data/repositories/request/request_repository_impl.dart';
 import 'package:food_canteen_management/data/repositories/session/session_engine_repository_impl.dart';
 import 'package:food_canteen_management/application/session/session_timeline_recorder.dart';
 import 'package:food_canteen_management/application/policies/session_policy.dart';
 import 'package:food_canteen_management/domain/enums/domain_enums.dart';
 import 'package:food_canteen_management/domain/events/domain_events.dart';
+import 'package:food_canteen_management/domain/services/request_domain_service.dart';
 import 'package:food_canteen_management/features/customer/presentation/controllers/customer_session_controller.dart';
 
 import '../helpers/test_helpers.dart';
@@ -33,9 +38,58 @@ final class _Sequence implements SessionEngineDataSourceDailySequence {
   int nextDailySequence(String dateKey) => _dataSource.nextDailySequence(dateKey);
 }
 
+CustomerSessionController _buildCustomerController({
+  required SessionEngineRepositoryImpl repository,
+  required InMemorySessionEngineDataSource dataSource,
+  required OrderingStore store,
+  required InMemoryCustomerSessionLocalDataSource customerLocal,
+  required FakeClock clock,
+  required FakeIdGenerator ids,
+  required DomainEventPublisher events,
+}) {
+  final timeline = SessionTimelineRecorder(idGenerator: ids, clock: clock);
+  final requestRepo = RequestRepositoryImpl(store: store);
+  return CustomerSessionController(
+    joinSession: JoinSessionUseCase(
+      repository: repository,
+      policy: const SessionPolicy(),
+      clock: clock,
+      idGenerator: ids,
+      eventPublisher: events,
+    ),
+    validateSession: ValidateSessionUseCase(
+      repository: repository,
+      policy: const SessionPolicy(),
+      clock: clock,
+    ),
+    createStaffRequest: CreateStaffRequestUseCase(
+      requestRepository: requestRepo,
+      sessionDataSource: dataSource,
+      timelineRecorder: timeline,
+      markWaitingPayment: MarkWaitingPaymentUseCase(
+        repository: repository,
+        policy: const SessionPolicy(),
+        clock: clock,
+        idGenerator: ids,
+        eventPublisher: events,
+      ),
+      domainService: const RequestDomainService(),
+      idGenerator: ids,
+      eventPublisher: events,
+      clock: clock,
+    ),
+    listSessionStaffRequests: ListSessionStaffRequestsUseCase(
+      requestRepository: requestRepo,
+    ),
+    local: customerLocal,
+    idGenerator: ids,
+  );
+}
+
 void main() {
   late FakeClock clock;
   late FakeIdGenerator ids;
+  late OrderingStore store;
   late InMemorySessionEngineDataSource dataSource;
   late SessionEngineRepositoryImpl repository;
   late InMemoryCustomerSessionLocalDataSource customerLocal;
@@ -46,9 +100,10 @@ void main() {
   setUp(() async {
     clock = FakeClock(DateTime.utc(2025, 6, 15, 10));
     ids = FakeIdGenerator(prefix: 'id');
+    store = OrderingStore();
     dataSource = InMemorySessionEngineDataSource(
       clock: clock,
-      store: OrderingStore(),
+      store: store,
     );
     repository = SessionEngineRepositoryImpl(
       dataSource: dataSource,
@@ -78,23 +133,14 @@ void main() {
     );
     sessionToken = (created as Success).value.sessionTokenValue;
 
-    controller = CustomerSessionController(
-      joinSession: JoinSessionUseCase(
-        repository: repository,
-        policy: const SessionPolicy(),
-        clock: clock,
-        idGenerator: ids,
-        eventPublisher: events,
-      ),
-      validateSession: ValidateSessionUseCase(
-        repository: repository,
-        policy: const SessionPolicy(),
-        clock: clock,
-      ),
-      local: customerLocal,
-      idGenerator: ids,
-      eventPublisher: events,
-      now: clock.now,
+    controller = _buildCustomerController(
+      repository: repository,
+      dataSource: dataSource,
+      store: store,
+      customerLocal: customerLocal,
+      clock: clock,
+      ids: ids,
+      events: events,
     );
   });
 
@@ -165,23 +211,14 @@ void main() {
     test('persists and restores customer context', () async {
       await controller.join(sessionToken);
 
-      final restored = CustomerSessionController(
-        joinSession: JoinSessionUseCase(
-          repository: repository,
-          policy: const SessionPolicy(),
-          clock: clock,
-          idGenerator: ids,
-          eventPublisher: events,
-        ),
-        validateSession: ValidateSessionUseCase(
-          repository: repository,
-          policy: const SessionPolicy(),
-          clock: clock,
-        ),
-        local: customerLocal,
-        idGenerator: ids,
-        eventPublisher: events,
-        now: clock.now,
+      final restored = _buildCustomerController(
+        repository: repository,
+        dataSource: dataSource,
+        store: store,
+        customerLocal: customerLocal,
+        clock: clock,
+        ids: ids,
+        events: events,
       );
 
       final ok = await restored.tryRestore();
@@ -196,11 +233,20 @@ void main() {
       expect(ok, isTrue);
     });
 
-    test('request payment does not close session', () async {
+    test('request payment queues staff request and waits for payment', () async {
       await controller.join(sessionToken);
-      await controller.requestPayment();
+      final ok = await controller.requestPayment();
+      expect(ok, isTrue);
       expect(controller.paymentRequested, isTrue);
-      expect(controller.snapshot?.session.status, SessionStatus.open);
+      expect(
+        controller.snapshot?.session.status,
+        SessionStatus.paymentPending,
+      );
+      expect(controller.sessionRequests, isNotEmpty);
+      expect(
+        events.events.whereType<StaffRequestCreated>(),
+        isNotEmpty,
+      );
     });
 
     test('leaveSession clears persisted token for demo role switch', () async {

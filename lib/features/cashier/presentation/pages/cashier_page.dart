@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../app/router/route_paths.dart';
+import '../../../../application/request/staff_request_view_models.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../domain/enums/domain_enums.dart';
 import '../../../../shared/presentation/staff_scaffold.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../request_queue/presentation/providers/request_queue_provider.dart';
+import '../../../request_queue/presentation/widgets/staff_request_tile.dart';
 import '../providers/cashier_session_provider.dart';
 import '../widgets/session_qr_display.dart';
 
@@ -15,95 +20,128 @@ class CashierPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final role = ref.watch(currentRoleProvider);
     final session = ref.watch(cashierSessionControllerProvider);
+    final queue = ref.watch(requestQueueControllerProvider);
+    final user = ref.watch(currentUserProvider);
     final theme = Theme.of(context);
 
     return StaffScaffold(
       title: 'Cashier',
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 520),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (role != null) Center(child: StaffRoleBadge(role: role)),
-                const SizedBox(height: AppSpacing.lg),
-                Text(
-                  'Session Engine Demo',
-                  style: theme.textTheme.headlineSmall,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: AppSpacing.md),
-                _StatusCard(session: session),
-                if (session.hasActiveSession && session.batchSummaries.isNotEmpty) ...[
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await session.restore();
+          await queue.refresh();
+          if (session.hasActiveSession) {
+            await session.refreshBatchSummaries();
+          }
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 520),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (role != null) Center(child: StaffRoleBadge(role: role)),
                   const SizedBox(height: AppSpacing.lg),
-                  Text('Kitchen Batches (read-only)', style: theme.textTheme.titleMedium),
-                  const SizedBox(height: AppSpacing.sm),
-                  ...session.batchSummaries.map(
-                    (batch) => Card(
-                      child: ListTile(
-                        title: Text('Batch #${batch.batchNumber}'),
-                        subtitle: Text(
-                          'Created ${_formatTime(batch.createdAt)}'
-                          '${batch.completedAt != null ? ' • Done ${_formatTime(batch.completedAt!)}' : ''}',
+                  Text(
+                    'Floor Session',
+                    style: theme.textTheme.headlineSmall,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  _StatusCard(session: session),
+                  const SizedBox(height: AppSpacing.lg),
+                  _RequestQueuePreview(
+                    pendingCount: queue.pendingCount,
+                    previewItems: queue.items.take(3).toList(),
+                    isHandlingId: queue.handlingRequestId,
+                    onOpenQueue: () => context.push(RoutePaths.request),
+                    onHandle: user == null
+                        ? null
+                        : (requestId) async {
+                            final ok = await queue.handle(
+                              requestId: requestId,
+                              handledByUserId: user.id,
+                            );
+                            if (!context.mounted) return;
+                            if (ok) await session.restore();
+                          },
+                  ),
+                  if (session.hasActiveSession &&
+                      session.batchSummaries.isNotEmpty) ...[
+                    const SizedBox(height: AppSpacing.lg),
+                    Text(
+                      'Kitchen Batches (read-only)',
+                      style: theme.textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    ...session.batchSummaries.map(
+                      (batch) => Card(
+                        child: ListTile(
+                          title: Text('Batch #${batch.batchNumber}'),
+                          subtitle: Text(
+                            'Created ${_formatTime(batch.createdAt)}'
+                            '${batch.completedAt != null ? ' • Done ${_formatTime(batch.completedAt!)}' : ''}',
+                          ),
+                          trailing: Text(batch.statusLabel),
                         ),
-                        trailing: Text(batch.statusLabel),
                       ),
                     ),
-                  ),
-                ],
-                if (session.hasActiveSession &&
-                    session.sessionToken != null) ...[
+                  ],
+                  if (session.hasActiveSession &&
+                      session.sessionToken != null) ...[
+                    const SizedBox(height: AppSpacing.lg),
+                    _CustomerShareCard(
+                      tableLabel: session.activeSnapshot?.tableLabel ?? 'Table',
+                      displayNumber:
+                          session.activeSnapshot?.session.displayNumber ?? '',
+                      sessionToken: session.sessionToken!,
+                    ),
+                  ],
                   const SizedBox(height: AppSpacing.lg),
-                  _CustomerShareCard(
-                    tableLabel: session.activeSnapshot?.tableLabel ?? 'Table',
-                    displayNumber:
-                        session.activeSnapshot?.session.displayNumber ?? '',
-                    sessionToken: session.sessionToken!,
-                  ),
-                ],
-                const SizedBox(height: AppSpacing.lg),
-                if (session.errorMessage != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                    child: Text(
-                      session.errorMessage!,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.error,
+                  if (session.errorMessage != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                      child: Text(
+                        session.errorMessage!,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.error,
+                        ),
                       ),
                     ),
-                  ),
-                if (!session.hasActiveSession)
-                  FilledButton(
-                    onPressed: session.isLoading
-                        ? null
-                        : () => session.createOnTable1(),
-                    child: const Text('Create Session — Table 1'),
-                  ),
-                if (session.hasActiveSession) ...[
-                  OutlinedButton(
-                    onPressed: session.isLoading ||
-                            session.lifecyclePhase ==
-                                SessionLifecyclePhase.waitingPayment
-                        ? null
-                        : () => session.markWaitingPayment(),
-                    child: const Text('Mark Waiting Payment'),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  FilledButton.tonal(
-                    onPressed: session.isLoading
-                        ? null
-                        : () => session.closeSession(),
-                    child: const Text('Close Session'),
-                  ),
+                  if (!session.hasActiveSession)
+                    FilledButton(
+                      onPressed: session.isLoading
+                          ? null
+                          : () => session.createOnTable1(),
+                      child: const Text('Create Session — Table 1'),
+                    ),
+                  if (session.hasActiveSession) ...[
+                    OutlinedButton(
+                      onPressed: session.isLoading ||
+                              session.lifecyclePhase ==
+                                  SessionLifecyclePhase.waitingPayment
+                          ? null
+                          : () => session.markWaitingPayment(),
+                      child: const Text('Mark Waiting Payment'),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    FilledButton.tonal(
+                      onPressed: session.isLoading
+                          ? null
+                          : () => session.closeSession(),
+                      child: const Text('Close Session'),
+                    ),
+                  ],
+                  if (session.isLoading)
+                    const Padding(
+                      padding: EdgeInsets.only(top: AppSpacing.lg),
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
                 ],
-                if (session.isLoading)
-                  const Padding(
-                    padding: EdgeInsets.only(top: AppSpacing.lg),
-                    child: Center(child: CircularProgressIndicator()),
-                  ),
-              ],
+              ),
             ),
           ),
         ),
@@ -115,6 +153,75 @@ class CashierPage extends ConsumerWidget {
 String _formatTime(DateTime dt) {
   final local = dt.toLocal();
   return '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
+}
+
+class _RequestQueuePreview extends StatelessWidget {
+  const _RequestQueuePreview({
+    required this.pendingCount,
+    required this.previewItems,
+    required this.onOpenQueue,
+    required this.onHandle,
+    this.isHandlingId,
+  });
+
+  final int pendingCount;
+  final List<StaffRequestQueueItemView> previewItems;
+  final VoidCallback onOpenQueue;
+  final Future<void> Function(String requestId)? onHandle;
+  final String? isHandlingId;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Request Queue',
+                style: theme.textTheme.titleMedium,
+              ),
+            ),
+            TextButton(
+              onPressed: onOpenQueue,
+              child: Text(
+                pendingCount == 0 ? 'Open queue' : 'View all ($pendingCount)',
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        if (previewItems.isEmpty)
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: Text(
+                'No pending call-staff requests.',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          )
+        else
+          ...previewItems.map(
+            (item) => Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+              child: StaffRequestTile(
+                item: item,
+                isHandling: isHandlingId == item.request.id,
+                onHandle: onHandle == null
+                    ? null
+                    : () => onHandle!(item.request.id),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
 }
 
 class _StatusCard extends StatelessWidget {

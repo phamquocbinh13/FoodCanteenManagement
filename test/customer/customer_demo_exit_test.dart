@@ -18,10 +18,13 @@ import 'package:food_canteen_management/application/usecases/cart/update_cart_it
 import 'package:food_canteen_management/application/usecases/kitchen/get_session_batch_progress_use_case.dart';
 import 'package:food_canteen_management/application/usecases/menu/get_menu_catalog_use_case.dart';
 import 'package:food_canteen_management/application/usecases/menu/get_menu_item_detail_use_case.dart';
+import 'package:food_canteen_management/application/usecases/request/create_staff_request_use_case.dart';
+import 'package:food_canteen_management/application/usecases/request/list_session_staff_requests_use_case.dart';
 import 'package:food_canteen_management/application/usecases/session/create_session_use_case.dart'
     show CreateSessionParams, CreateSessionUseCase, SessionEngineDataSourceDailySequence;
 import 'package:food_canteen_management/application/usecases/session/get_session_bill_use_case.dart';
 import 'package:food_canteen_management/application/usecases/session/join_session_use_case.dart';
+import 'package:food_canteen_management/application/usecases/session/mark_waiting_payment_use_case.dart';
 import 'package:food_canteen_management/application/usecases/session/validate_session_use_case.dart';
 import 'package:food_canteen_management/application/validators/customization_validator.dart';
 import 'package:food_canteen_management/core/result/result.dart';
@@ -32,9 +35,11 @@ import 'package:food_canteen_management/data/datasources/session/in_memory_sessi
 import 'package:food_canteen_management/data/repositories/batch/batch_repository_impl.dart';
 import 'package:food_canteen_management/data/repositories/cart/session_cart_repository_impl.dart';
 import 'package:food_canteen_management/data/repositories/menu/menu_repository_impl.dart';
+import 'package:food_canteen_management/data/repositories/request/request_repository_impl.dart';
 import 'package:food_canteen_management/data/repositories/session/session_engine_repository_impl.dart';
 import 'package:food_canteen_management/domain/enums/domain_enums.dart';
 import 'package:food_canteen_management/domain/events/domain_events.dart';
+import 'package:food_canteen_management/domain/services/request_domain_service.dart';
 import 'package:food_canteen_management/features/customer/presentation/controllers/customer_ordering_controller.dart';
 import 'package:food_canteen_management/features/customer/presentation/providers/customer_ordering_provider.dart';
 import 'package:food_canteen_management/features/customer/presentation/providers/customer_session_provider.dart';
@@ -98,6 +103,7 @@ Future<
   );
   final sessionToken = (created as Success).value.sessionTokenValue;
 
+  final requestRepo = RequestRepositoryImpl(store: store);
   final session = CustomerSessionController(
     joinSession: JoinSessionUseCase(
       repository: sessionRepo,
@@ -111,10 +117,27 @@ Future<
       policy: const SessionPolicy(),
       clock: clock,
     ),
+    createStaffRequest: CreateStaffRequestUseCase(
+      requestRepository: requestRepo,
+      sessionDataSource: sessionDs,
+      timelineRecorder: timeline,
+      markWaitingPayment: MarkWaitingPaymentUseCase(
+        repository: sessionRepo,
+        policy: const SessionPolicy(),
+        clock: clock,
+        idGenerator: ids,
+        eventPublisher: _NoOpEvents(),
+      ),
+      domainService: const RequestDomainService(),
+      idGenerator: ids,
+      eventPublisher: _NoOpEvents(),
+      clock: clock,
+    ),
+    listSessionStaffRequests: ListSessionStaffRequestsUseCase(
+      requestRepository: requestRepo,
+    ),
     local: local,
     idGenerator: ids,
-    eventPublisher: _NoOpEvents(),
-    now: clock.now,
   );
   await session.join(sessionToken);
 

@@ -34,9 +34,9 @@ abstract final class Injection {
     AuthModule.register(sl);
     MenuModule.register(sl);
     SessionModule.register(sl);
-    CustomerModule.register(sl);
     KitchenModule.register(sl);
     RequestModule.register(sl);
+    CustomerModule.register(sl);
     DeliveryModule.register(sl);
     AdminModule.register(sl);
 

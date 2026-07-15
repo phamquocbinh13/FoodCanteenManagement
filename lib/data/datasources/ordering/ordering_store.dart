@@ -12,6 +12,8 @@ import '../../../domain/entities/session_auth_token.dart';
 import '../../../domain/entities/session_cart.dart';
 import '../../../domain/entities/session_cart_item.dart';
 import '../../../domain/entities/session_timeline_event.dart';
+import '../../../domain/entities/staff_request.dart';
+import '../../../domain/enums/domain_enums.dart';
 
 /// Shared in-memory store for session engine, menu, cart, and batch data.
 final class OrderingStore {
@@ -23,6 +25,9 @@ final class OrderingStore {
   final List<SessionTimelineEvent> timeline = [];
   int dailySessionSequence = 0;
   String? lastDateKey;
+
+  /// Call-staff request queue (session-scoped).
+  final Map<String, StaffRequest> staffRequests = {};
 
   // Menu catalog
   final Map<String, MenuCategory> categories = {};
@@ -57,6 +62,24 @@ final class OrderingStore {
         .where((b) => b.sessionId == sessionId)
         .map((b) => b.id)
         .toList();
+  }
+
+  List<String> requestIdsForSession(String sessionId) {
+    return staffRequests.values
+        .where((r) => r.sessionId == sessionId)
+        .map((r) => r.id)
+        .toList();
+  }
+
+  List<StaffRequest> pendingRequestsForRestaurant(String restaurantId) {
+    return staffRequests.values
+        .where(
+          (r) =>
+              r.restaurantId == restaurantId &&
+              r.status == RequestStatus.pending,
+        )
+        .toList()
+      ..sort((a, b) => a.requestedAt.compareTo(b.requestedAt));
   }
 
   List<KitchenBatch> batchesForSession(String sessionId) {

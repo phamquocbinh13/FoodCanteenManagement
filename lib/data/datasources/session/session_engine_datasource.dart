@@ -36,4 +36,6 @@ abstract interface class SessionEngineDataSource implements MemoryDataSource {
   int nextDailySequence(String dateKey);
 
   List<String> batchIdsForSession(String sessionId);
+
+  List<String> requestIdsForSession(String sessionId);
 }

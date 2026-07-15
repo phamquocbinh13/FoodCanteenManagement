@@ -57,6 +57,7 @@ final class InMemorySessionEngineDataSource implements SessionEngineDataSource {
     _store.customizationsByBatchItemId.clear();
     _store.batchCompletedAtById.clear();
     _store.batchItemStatusHistory.clear();
+    _store.staffRequests.clear();
     _store.tables[SessionEngineConstants.demoTable1Id] = RestaurantTable(
       id: SessionEngineConstants.demoTable1Id,
       restaurantId: SessionEngineConstants.demoRestaurantId,
@@ -158,5 +159,10 @@ final class InMemorySessionEngineDataSource implements SessionEngineDataSource {
   @override
   List<String> batchIdsForSession(String sessionId) {
     return _store.batchIdsForSession(sessionId);
+  }
+
+  @override
+  List<String> requestIdsForSession(String sessionId) {
+    return _store.requestIdsForSession(sessionId);
   }
 }

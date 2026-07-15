@@ -9,7 +9,7 @@ import '../exceptions/domain_exception.dart';
 class RequestDomainService {
   const RequestDomainService();
 
-  /// Customer can create requests only on open sessions.
+  /// Customer can create requests only on open / payment-pending sessions.
   void validateCanCreateRequest({
     required DineInSession session,
     required RequestType requestType,
@@ -22,12 +22,32 @@ class RequestDomainService {
     }
   }
 
+  /// Rejects a second pending payment request for the same session.
+  void validateNoDuplicatePendingPayment({
+    required RequestType requestType,
+    required Iterable<StaffRequest> existingForSession,
+  }) {
+    if (requestType != RequestType.payment) return;
+    final hasPendingPayment = existingForSession.any(
+      (r) =>
+          r.requestType == RequestType.payment &&
+          r.status == RequestStatus.pending,
+    );
+    if (hasPendingPayment) {
+      throw const RequestRuleException(
+        'Payment already requested. Staff will assist shortly.',
+        code: 'PAYMENT_REQUEST_PENDING',
+      );
+    }
+  }
+
   /// Builds a new pending staff request.
   StaffRequest createRequest({
     required String id,
     required String restaurantId,
     required String sessionId,
     required RequestType requestType,
+    required DateTime now,
     String? note,
   }) {
     return StaffRequest(
@@ -37,8 +57,8 @@ class RequestDomainService {
       requestType: requestType,
       status: RequestStatus.pending,
       note: note,
-      requestedAt: DateTime.now().toUtc(),
-      createdAt: DateTime.now().toUtc(),
+      requestedAt: now,
+      createdAt: now,
     );
   }
 
@@ -46,6 +66,7 @@ class RequestDomainService {
   StaffRequest markHandled({
     required StaffRequest request,
     required String handledByUserId,
+    required DateTime now,
   }) {
     if (request.status != RequestStatus.pending) {
       throw const RequestRuleException(
@@ -53,7 +74,6 @@ class RequestDomainService {
         code: 'REQUEST_NOT_PENDING',
       );
     }
-    final now = DateTime.now().toUtc();
     return request.copyWith(
       status: RequestStatus.handled,
       handledAt: now,

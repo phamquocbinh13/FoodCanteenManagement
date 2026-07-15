@@ -6,6 +6,8 @@ abstract interface class RequestRepository {
 
   Future<StaffRequest> update(StaffRequest request);
 
+  Future<StaffRequest?> findById(String requestId);
+
   Future<List<StaffRequest>> listPendingByRestaurant(String restaurantId);
 
   Future<List<StaffRequest>> listBySessionId(String sessionId);
