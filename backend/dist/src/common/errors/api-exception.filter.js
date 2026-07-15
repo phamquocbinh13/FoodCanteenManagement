@@ -34,13 +34,14 @@ let ApiExceptionFilter = class ApiExceptionFilter {
                         : exception.message;
             const body = {
                 error: {
-                    code: status === common_1.HttpStatus.BAD_REQUEST ? 'VALIDATION_ERROR' : 'HTTP_ERROR',
+                    code: defaultErrorCode(status),
                     message,
                 },
             };
             res.status(status).json(body);
             return;
         }
+        console.error('[ApiExceptionFilter]', exception);
         const body = {
             error: {
                 code: 'INTERNAL_ERROR',
@@ -54,4 +55,22 @@ exports.ApiExceptionFilter = ApiExceptionFilter;
 exports.ApiExceptionFilter = ApiExceptionFilter = __decorate([
     (0, common_1.Catch)()
 ], ApiExceptionFilter);
+function defaultErrorCode(status) {
+    switch (status) {
+        case common_1.HttpStatus.BAD_REQUEST:
+            return 'VALIDATION_ERROR';
+        case common_1.HttpStatus.UNAUTHORIZED:
+            return 'UNAUTHORIZED';
+        case common_1.HttpStatus.FORBIDDEN:
+            return 'FORBIDDEN';
+        case common_1.HttpStatus.NOT_FOUND:
+            return 'NOT_FOUND';
+        case common_1.HttpStatus.CONFLICT:
+            return 'CONFLICT';
+        case common_1.HttpStatus.UNPROCESSABLE_ENTITY:
+            return 'UNPROCESSABLE_ENTITY';
+        default:
+            return 'HTTP_ERROR';
+    }
+}
 //# sourceMappingURL=api-exception.filter.js.map

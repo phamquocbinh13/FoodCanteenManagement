@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RestaurantScopeGuard } from '../auth/guards/restaurant-scope.guard';
 import { BatchesService } from './batches.service';
 import {
   BulkCustomizationsDto,
@@ -20,7 +21,7 @@ import {
 
 @ApiTags('batches-staff')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RestaurantScopeGuard)
 @Controller('restaurants/:restaurantId')
 export class BatchesStaffController {
   constructor(private readonly batches: BatchesService) {}

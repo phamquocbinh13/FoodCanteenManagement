@@ -16,6 +16,7 @@ exports.BatchesStaffController = void 0;
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
+const restaurant_scope_guard_1 = require("../auth/guards/restaurant-scope.guard");
 const batches_service_1 = require("./batches.service");
 const batches_dto_1 = require("./dto/batches.dto");
 let BatchesStaffController = class BatchesStaffController {
@@ -111,7 +112,7 @@ __decorate([
 exports.BatchesStaffController = BatchesStaffController = __decorate([
     (0, swagger_1.ApiTags)('batches-staff'),
     (0, swagger_1.ApiBearerAuth)(),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, restaurant_scope_guard_1.RestaurantScopeGuard),
     (0, common_1.Controller)('restaurants/:restaurantId'),
     __metadata("design:paramtypes", [batches_service_1.BatchesService])
 ], BatchesStaffController);

@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const current_user_decorator_1 = require("../auth/decorators/current-user.decorator");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
+const restaurant_scope_guard_1 = require("../auth/guards/restaurant-scope.guard");
 const menu_dto_1 = require("./dto/menu.dto");
 const menu_service_1 = require("./menu.service");
 let MenuController = class MenuController {
@@ -58,7 +59,7 @@ __decorate([
 __decorate([
     (0, common_1.Get)('kitchen/menu'),
     (0, swagger_1.ApiBearerAuth)(),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, restaurant_scope_guard_1.RestaurantScopeGuard),
     (0, swagger_1.ApiOperation)({ summary: 'Kitchen menu panel — all active items' }),
     __param(0, (0, common_1.Param)('restaurantId')),
     __metadata("design:type", Function),
@@ -69,7 +70,7 @@ __decorate([
     (0, common_1.Post)('menu/items/:itemId/toggle-availability'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     (0, swagger_1.ApiBearerAuth)(),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, restaurant_scope_guard_1.RestaurantScopeGuard),
     (0, swagger_1.ApiOperation)({ summary: 'Toggle available ↔ out_of_stock' }),
     __param(0, (0, common_1.Param)('restaurantId')),
     __param(1, (0, common_1.Param)('itemId')),

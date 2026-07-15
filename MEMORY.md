@@ -1,84 +1,123 @@
 # ROMS Iteration Memory
 
-## Backend Migration Report — 2026-07-15
+## Production Hardening Report — 2026-07-15
 
-### Completed Modules
+### Backend Architecture Score — **9 / 10**
 
-| Module | Flutter remote | Nest API | MySQL | Notes |
-|--------|----------------|----------|-------|-------|
-| Auth | RemoteAuthRemoteDataSource | B1 `/auth/*` | staff_user, refresh | Alias login `cashier`/`cashier123` |
-| Session | RemoteSessionEngineRepository | B2 sessions | dine_in_session, tokens, timeline | Stage A |
-| Menu | RemoteMenuRepository | `/restaurants/:rid/menu*` | menu_* + customizations | Demo seed aligned to Flutter rice menu |
-| Cart | RemoteSessionCartRepository | `/sessions/me/cart*` | session_cart(_item) | Session-token auth |
-| Batch | RemoteBatchRepository | batches + confirm | kitchen_batch, batch_item | Chatty CRUD + confirm endpoint |
-| Kitchen | via BatchRepository | `/kitchen/queue`, complete | same + history | Queue FIFO |
-| Staff Request | RemoteRequestRepository | `/requests*` | staff_request | |
-| Bill read | via Session + GetSessionBill | `GET .../bill` | payment_*_minor columns | Projection |
+Dine-in production path is NestJS + MySQL end-to-end. ConfirmBatch and Payment Close are server-owned transactions. Flutter remotes no longer orchestrate multi-step batch/payment writes. OrderingStore remains demo/test-only.
 
-### Intentionally deferred (no production Flutter workflow yet)
+### Security Score — **8.5 / 10**
 
-| Module | Why |
-|--------|-----|
-| **Payment write** | `PaymentRepository` still stub; cashier close uses engine close (B2). Atomic payment-close UC not wired in UI. |
-| **Admin** | No backend-critical admin CRUD in active dine-in path |
-| **Reporting** | Not implemented in Flutter product path |
-| **Delivery / Orders** | Roadmap Phase 5; out of current dine-in scope |
+- JWT staff auth + session-token customer auth
+- `RestaurantScopeGuard` enforces JWT `rid` == `:restaurantId` on staff restaurant routes
+- Session ownership via hashed session tokens
+- Customers cannot hit staff payment/kitchen write routes without JWT
+- Staff cannot cross-restaurant with a valid token for another `rid`
 
-### Remaining Local Implementations
+Remaining: fine-grained role permissions (cashier vs kitchen) are coarse (any authenticated staff of the restaurant).
 
-Kept **only** for `USE_REMOTE_BACKEND=false` (demo/tests):
+### Performance Score — **8 / 10**
 
-- `MenuRepositoryImpl`, `SessionCartRepositoryImpl`, `BatchRepositoryImpl`, `RequestRepositoryImpl`, `SessionEngineRepositoryImpl`, `MockAuthRemoteDataSource`, `OrderingStore`
+- Kitchen queue returns ticket + items + table/session labels in one payload (removed Flutter N+1)
+- ConfirmBatch preloads menu items + customization groups before the write transaction
+- Indexes already cover kitchen queue, session status, cart, payments
 
-When `USE_REMOTE_BACKEND=true`, **OrderingStore is not registered**.
+Avoided premature caching layers.
 
-### Remaining OrderingStore References
+### Transaction Safety Score — **9 / 10**
 
-- Local repository implementations + tests only
-- **Production mode (`USE_REMOTE_BACKEND=true`): OrderingStore is not required and not registered**
+| Operation | Atomicity |
+|-----------|-----------|
+| ConfirmBatch | Prisma `$transaction`: batch + items + mods + cart clear + session bill + timeline |
+| Payment close | Prisma `$transaction`: payment + bill lines + session close + table free + token revoke + timeline; unique `session_id` + optimistic `updateMany` status guard |
 
-### Remaining SessionEngineDataSource References
+Partial client failure after commit is safe (idempotent 409 on re-pay).
 
-- Registered only when `useRemoteBackend=false`
-- **Zero UseCase imports** (application layer purified)
+### API Consistency Score — **8.5 / 10**
 
-### Backend Endpoint Coverage (dine-in)
+- Envelope errors `{ error: { code, message } }` via `ApiExceptionFilter`
+- Status mapping: 400 validation, 401/403 authz, 404, 409 conflict, 422 business, 500 internal
+- Success shapes unchanged for existing modules; payment returns `{ payment, billLines, snapshot }`
 
-Auth, restaurants/tables, sessions, menu, cart, batches, kitchen queue/complete, staff requests, session bill.
+### Technical Debt Remaining
 
-### Database Coverage
+1. `PaymentRepository` / stub datasource still present (unused in production close path — cashier uses `CloseSessionWithPaymentUseCase`)
+2. Role-based permission matrix (cashier-only payment, kitchen-only complete) not enforced beyond restaurant scope
+3. Admin / Reporting / Delivery modules still out of dine-in scope
+4. Some staff batch CRUD endpoints remain for legacy/debug; production customer path uses `POST /sessions/me/batches`
+5. `ServerConfirmBatchUseCase` / `CloseSessionWithPaymentUseCase` call `ApiClient` directly (acceptable hardening shortcut; could later move behind repository ports)
 
-Demo restaurant + 10 tables + Flutter-aligned menu (9 items) + session/cart/batch/request/payment summary columns.
+### Known Limitations
 
-### Test Results
+- No split bill / multiple payments per session (by design: UNIQUE session payment)
+- Tax/service from restaurant settings; demo defaults may be 0 bps
+- Multi-tenant beyond single demo restaurant not productized
+- Real-time kitchen push not implemented (polling remains)
+- Flutter UI payment method picker not redesigned (controller accepts params; default cash)
 
-- `flutter test test/session test/menu_batch test/kitchen test/customer` → **61 passed**
-- API smoke: menu → cart → confirm batch → kitchen queue → staff request → close → **OK**
-- Session restart survival previously verified
+### Production Readiness Score — **9 / 10**
 
-### Build / Analyzer
+Dine-in backend is stable for UI/UX-focused work. Further backend changes should be bugfixes or feature-driven expansions only.
 
-- `npm run build` (backend) → pass
-- `flutter analyze` on application/repositories/di → infos only (no errors)
+### Files Changed (this iteration)
 
-### Production Readiness Score
+**Backend**
+- `backend/src/payments/**` — atomic payment module
+- `backend/src/kitchen/kitchen.service.ts` — enriched queue
+- `backend/src/batches/batches.service.ts` — confirm preload
+- `backend/src/auth/guards/restaurant-scope.guard.ts` — restaurant isolation
+- Staff controllers — `RestaurantScopeGuard`
+- `backend/src/common/errors/api-exception.filter.ts` — status code labels + logging
 
-| Area | Score |
-|------|------:|
-| Architecture | 8 |
-| Backend dine-in coverage | 8 |
-| Repository purity | 9 |
-| Persistence | 9 |
-| Multi-client | 8 |
-| Payment close path | 4 (engine close only) |
-| Overall dine-in prod | **7.5** |
+**Flutter**
+- `lib/application/usecases/batch/server_confirm_batch_use_case.dart`
+- `lib/application/usecases/payment/close_session_with_payment_use_case.dart`
+- `lib/app/di/modules/kitchen_module.dart` / `payment_module.dart` / `request_module.dart`
+- `lib/features/cashier/.../cashier_session_controller.dart` + provider
+- `lib/features/customer/.../customer_ordering_controller.dart` + provider
+- `lib/data/repositories/batch/remote_batch_repository.dart`
+- `lib/application/usecases/kitchen/get_kitchen_queue_use_case.dart`
+- `lib/application/usecases/request/create_staff_request_use_case.dart` (`serverOwnsSideEffects`)
 
-### Technical Debt
+### Endpoints Added or Updated
 
-1. ConfirmBatch still client-orchestrated remote CRUD (prefer `POST /sessions/me/batches` single call)
-2. CreateStaffRequest may double-write timeline/payment when remote API already does so
-3. PaymentRepository unimplemented — force-close / paid close incomplete
-4. Chatty kitchen queue (N+1 batch detail fetches)
+| Method | Path | Notes |
+|--------|------|-------|
+| **POST** | `/api/v1/restaurants/:rid/sessions/:sid/payments` | **New** — atomic pay + close |
+| POST | `/api/v1/sessions/me/batches` | Production ConfirmBatch (already existed; now sole Flutter path) |
+| GET | `/api/v1/restaurants/:rid/kitchen/queue` | Enriched ticket payload |
+
+### Database Changes
+
+None required this iteration. Uses existing `session_payment`, `session_bill_line`, kitchen/batch/cart tables and indexes.
+
+### Risks
+
+- Cashier demo close now requires remote payment when `USE_REMOTE_BACKEND=true`; empty-bill force-close needs `closeType=force_closed` + reason
+- Orphan occupied tables possible if sessions closed outside payment path (engine-only close); prefer payment close in production
+- Generic `UseCase` DI registration for ConfirmBatch — ensure app always initializes via `Injection.init`
+
+### Verification
+
+| Check | Result |
+|-------|--------|
+| `npm run build` | pass |
+| `npm test` | 4 passed |
+| `flutter test` session/menu_batch/kitchen/customer | **61 passed** |
+| Changed-file `flutter analyze` | no issues |
+| API smoke | auth → session → cart → confirm → kitchen → request → bill → payment → 409/403 | **PASS** |
+| MySQL persistence | payment + closed session survive | **PASS** |
+| Table freed after payment | **PASS** |
+
+### Is the backend stable enough that future work can focus almost entirely on UI/UX and product evolution?
+
+**Yes.** Backend development for the dine-in vertical has entered **maintenance mode**. Recommend beginning the UI/UX refinement phase. Treat further backend work as bugfixes or explicit product expansions (admin, reporting, delivery, role matrix, realtime).
+
+---
+
+## Prior: Backend Migration Report (superseded for payment/confirm)
+
+See git history for Session vertical-slice and full dine-in migration notes.
 
 ### How to run production-backed app
 
@@ -91,14 +130,4 @@ npm run start:dev
 flutter run --dart-define=USE_REMOTE_BACKEND=true --dart-define=API_BASE_URL=http://localhost:3000/api/v1
 ```
 
-### Recommended Next Phase
-
-**UI/UX and product refinement** may begin for dine-in flows that are backend-backed.
-
-**Before paid café launch:** implement Payment close UseCase + `POST .../payments` (atomic bill + session close), then harden ConfirmBatch to atomic server confirm.
-
----
-
-## Prior iterations
-
-See git history for Session vertical-slice and B0 bootstrap notes.
+Staff: `cashier` / `cashier123`. Restaurant: `demo-restaurant`.

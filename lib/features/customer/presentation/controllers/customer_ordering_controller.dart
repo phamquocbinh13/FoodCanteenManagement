@@ -7,6 +7,7 @@ import '../../../../application/menu/menu_item_detail_view.dart';
 import '../../../../application/session/session_constants.dart';
 import '../../../../application/usecases/batch/confirm_batch_use_case.dart';
 import '../../../../application/usecases/cart/add_to_cart_use_case.dart';
+import '../../../../application/usecases/use_case.dart';
 import '../../../../application/usecases/cart/clear_session_cart_use_case.dart';
 import '../../../../application/usecases/cart/edit_cart_item_use_case.dart';
 import '../../../../application/usecases/cart/get_session_cart_use_case.dart';
@@ -32,7 +33,7 @@ final class CustomerOrderingController extends ChangeNotifier {
     required RemoveCartItemUseCase removeCartItem,
     required EditCartItemUseCase editCartItem,
     required ClearSessionCartUseCase clearSessionCart,
-    required ConfirmBatchUseCase confirmBatch,
+    required UseCase<KitchenBatchTicket, ConfirmBatchParams> confirmBatch,
     required GetSessionBillUseCase getSessionBill,
     required GetSessionBatchProgressUseCase getSessionBatchProgress,
   })  : _getMenuCatalog = getMenuCatalog,
@@ -55,7 +56,7 @@ final class CustomerOrderingController extends ChangeNotifier {
   final RemoveCartItemUseCase _removeCartItem;
   final EditCartItemUseCase _editCartItem;
   final ClearSessionCartUseCase _clearSessionCart;
-  final ConfirmBatchUseCase _confirmBatch;
+  final UseCase<KitchenBatchTicket, ConfirmBatchParams> _confirmBatch;
   final GetSessionBillUseCase _getSessionBill;
   final GetSessionBatchProgressUseCase _getSessionBatchProgress;
 

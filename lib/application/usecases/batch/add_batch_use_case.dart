@@ -6,13 +6,14 @@ import '../use_case.dart';
 
 export 'confirm_batch_use_case.dart';
 
-/// Confirms cart and creates immutable batch. Delegates to [ConfirmBatchUseCase].
+/// Confirms cart and creates immutable batch. Delegates to ConfirmBatch.
 final class AddBatchUseCase
     implements UseCase<KitchenBatchTicket, AddBatchParams> {
-  AddBatchUseCase({required ConfirmBatchUseCase confirmBatch})
-      : _confirmBatch = confirmBatch;
+  AddBatchUseCase({
+    required UseCase<KitchenBatchTicket, ConfirmBatchParams> confirmBatch,
+  }) : _confirmBatch = confirmBatch;
 
-  final ConfirmBatchUseCase _confirmBatch;
+  final UseCase<KitchenBatchTicket, ConfirmBatchParams> _confirmBatch;
 
   @override
   Future<Result<KitchenBatchTicket>> call(AddBatchParams params) {

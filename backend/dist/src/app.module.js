@@ -15,6 +15,7 @@ const cart_module_1 = require("./cart/cart.module");
 const health_module_1 = require("./health/health.module");
 const kitchen_module_1 = require("./kitchen/kitchen.module");
 const menu_module_1 = require("./menu/menu.module");
+const payments_module_1 = require("./payments/payments.module");
 const prisma_module_1 = require("./prisma/prisma.module");
 const requests_module_1 = require("./requests/requests.module");
 const restaurants_module_1 = require("./restaurants/restaurants.module");
@@ -39,6 +40,7 @@ exports.AppModule = AppModule = __decorate([
             batches_module_1.BatchesModule,
             kitchen_module_1.KitchenModule,
             requests_module_1.RequestsModule,
+            payments_module_1.PaymentsModule,
         ],
     })
 ], AppModule);

@@ -39,6 +39,29 @@ let BatchesService = class BatchesService {
         const actorType = dto.actorType ?? 'customer_session';
         const actorId = dto.actorId ?? null;
         const now = new Date();
+        const menuItemIds = [
+            ...new Set(cart.session_cart_item.map((l) => l.menu_item_id)),
+        ];
+        const menuItems = await this.prisma.menuItem.findMany({
+            where: { id: { in: menuItemIds }, restaurantId },
+        });
+        const menuById = new Map(menuItems.map((m) => [m.id, m]));
+        const groups = await this.prisma.customization_group.findMany({
+            where: { menu_item_id: { in: menuItemIds }, is_active: true },
+            include: {
+                customization_option: {
+                    where: { is_active: true },
+                    orderBy: { sort_order: 'asc' },
+                },
+            },
+            orderBy: { sort_order: 'asc' },
+        });
+        const groupsByMenuId = new Map();
+        for (const g of groups) {
+            const list = groupsByMenuId.get(g.menu_item_id) ?? [];
+            list.push(g);
+            groupsByMenuId.set(g.menu_item_id, list);
+        }
         const ticket = await this.prisma.$transaction(async (tx) => {
             const nextBatchNumber = session.current_batch_number + 1;
             const batchId = (0, uuid_1.v4)();
@@ -57,32 +80,21 @@ let BatchesService = class BatchesService {
             });
             const createdItems = [];
             for (const line of cart.session_cart_item) {
-                const menuItem = await tx.menuItem.findFirst({
-                    where: { id: line.menu_item_id, restaurantId },
-                });
+                const menuItem = menuById.get(line.menu_item_id);
                 if (!menuItem || !menuItem.isActive) {
                     throw (0, api_exception_1.unprocessable)('MENU_ITEM_NOT_FOUND', 'Menu item no longer exists');
                 }
                 if (menuItem.availability !== 'available') {
                     throw (0, api_exception_1.unprocessable)('MENU_ITEM_UNAVAILABLE', `Menu item unavailable: ${menuItem.name}`);
                 }
-                const groups = await tx.customization_group.findMany({
-                    where: { menu_item_id: menuItem.id, is_active: true },
-                    include: {
-                        customization_option: {
-                            where: { is_active: true },
-                            orderBy: { sort_order: 'asc' },
-                        },
-                    },
-                    orderBy: { sort_order: 'asc' },
-                });
+                const itemGroups = groupsByMenuId.get(menuItem.id) ?? [];
                 const selectionsJson = (line.selections_json ?? {});
                 let priced;
                 try {
                     priced = (0, customization_pricing_1.validateAndPrice)({
                         basePriceMinor: menuItem.basePriceMinor,
                         currencyCode: menuItem.currencyCode,
-                        groups,
+                        groups: itemGroups,
                         selectionsJson,
                     });
                 }

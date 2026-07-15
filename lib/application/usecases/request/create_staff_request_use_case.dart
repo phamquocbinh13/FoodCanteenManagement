@@ -28,6 +28,8 @@ final class CreateStaffRequestUseCase
     required IdGenerator idGenerator,
     required DomainEventPublisher eventPublisher,
     required Clock clock,
+    /// When true, server create already wrote timeline + payment transition.
+    this.serverOwnsSideEffects = false,
   })  : _requestRepository = requestRepository,
         _sessionEngine = sessionEngineRepository,
         _timeline = timelineRecorder,
@@ -45,6 +47,7 @@ final class CreateStaffRequestUseCase
   final IdGenerator _idGenerator;
   final DomainEventPublisher _eventPublisher;
   final Clock _clock;
+  final bool serverOwnsSideEffects;
 
   @override
   Future<Result<StaffRequest>> call(CreateStaffRequestParams params) async {
@@ -89,15 +92,17 @@ final class CreateStaffRequestUseCase
 
     final saved = await _requestRepository.create(request);
 
-    await _sessionEngine.appendTimeline(
-      _timeline.staffRequestCreated(
-        sessionId: params.sessionId,
-        requestId: saved.id,
-        requestType: saved.requestType,
-        actorId: params.deviceId,
-      ),
-      restaurantId: params.restaurantId,
-    );
+    if (!serverOwnsSideEffects) {
+      await _sessionEngine.appendTimeline(
+        _timeline.staffRequestCreated(
+          sessionId: params.sessionId,
+          requestId: saved.id,
+          requestType: saved.requestType,
+          actorId: params.deviceId,
+        ),
+        restaurantId: params.restaurantId,
+      );
+    }
 
     await _eventPublisher.publish(
       StaffRequestCreated(
@@ -109,7 +114,8 @@ final class CreateStaffRequestUseCase
       ),
     );
 
-    if (_domain.triggersPaymentPending(params.requestType) &&
+    if (!serverOwnsSideEffects &&
+        _domain.triggersPaymentPending(params.requestType) &&
         session.status != SessionStatus.paymentPending) {
       final paymentResult = await _markWaitingPayment(
         MarkWaitingPaymentParams(

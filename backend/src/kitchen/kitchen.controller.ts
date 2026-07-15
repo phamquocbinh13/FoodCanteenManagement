@@ -11,11 +11,12 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { JwtPayload } from '../auth/auth.types';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RestaurantScopeGuard } from '../auth/guards/restaurant-scope.guard';
 import { KitchenService } from './kitchen.service';
 
 @ApiTags('kitchen')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RestaurantScopeGuard)
 @Controller('restaurants/:restaurantId/kitchen')
 export class KitchenController {
   constructor(private readonly kitchen: KitchenService) {}

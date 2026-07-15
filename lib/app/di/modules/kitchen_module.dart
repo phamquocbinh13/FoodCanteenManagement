@@ -1,10 +1,12 @@
 import 'package:get_it/get_it.dart';
 
 import '../../../application/menu/customization_renderer.dart';
+import '../../../application/menu/kitchen_batch_ticket.dart';
 import '../../../application/policies/kitchen_policy.dart';
 import '../../../application/session/session_timeline_recorder.dart';
 import '../../../application/usecases/batch/add_batch_use_case.dart';
 import '../../../application/usecases/batch/complete_batch_use_case.dart';
+import '../../../application/usecases/batch/server_confirm_batch_use_case.dart';
 import '../../../application/usecases/cart/add_to_cart_use_case.dart';
 import '../../../application/usecases/cart/clear_session_cart_use_case.dart';
 import '../../../application/usecases/cart/edit_cart_item_use_case.dart';
@@ -17,6 +19,7 @@ import '../../../application/usecases/kitchen/get_kitchen_queue_use_case.dart';
 import '../../../application/usecases/kitchen/get_session_batch_progress_use_case.dart';
 import '../../../application/usecases/kitchen/toggle_menu_availability_use_case.dart';
 import '../../../application/usecases/session/get_session_bill_use_case.dart';
+import '../../../application/usecases/use_case.dart';
 import '../../../application/validators/customization_validator.dart';
 import '../../../core/clock/clock.dart';
 import '../../../core/id/id_generator.dart';
@@ -115,24 +118,45 @@ abstract final class KitchenModule {
       () => ClearSessionCartUseCase(cartRepository: sl<SessionCartRepository>()),
     );
 
-    sl.registerLazySingleton(
-      () => ConfirmBatchUseCase(
-        cartRepository: sl<SessionCartRepository>(),
-        batchRepository: sl<BatchRepository>(),
-        menuRepository: sl<MenuRepository>(),
-        sessionEngineRepository: sl<SessionEngineRepository>(),
-        customizationRenderer: sl<CustomizationRenderer>(),
-        timelineRecorder: sl<SessionTimelineRecorder>(),
-        idGenerator: sl<IdGenerator>(),
-        eventPublisher: sl<DomainEventPublisher>(),
-        clock: sl<Clock>(),
-        batchDomainService: sl<BatchDomainService>(),
-        menuDomainService: sl<MenuDomainService>(),
-      ),
+    if (sl<AppConfig>().useRemoteBackend) {
+      sl.registerLazySingleton(
+        () => ServerConfirmBatchUseCase(
+          apiClient: sl<ApiClient>(),
+          localSession: sl<CustomerSessionLocalDataSource>(),
+          eventPublisher: sl<DomainEventPublisher>(),
+          idGenerator: sl<IdGenerator>(),
+          clock: sl<Clock>(),
+        ),
+      );
+    } else {
+      sl.registerLazySingleton(
+        () => ConfirmBatchUseCase(
+          cartRepository: sl<SessionCartRepository>(),
+          batchRepository: sl<BatchRepository>(),
+          menuRepository: sl<MenuRepository>(),
+          sessionEngineRepository: sl<SessionEngineRepository>(),
+          customizationRenderer: sl<CustomizationRenderer>(),
+          timelineRecorder: sl<SessionTimelineRecorder>(),
+          idGenerator: sl<IdGenerator>(),
+          eventPublisher: sl<DomainEventPublisher>(),
+          clock: sl<Clock>(),
+          batchDomainService: sl<BatchDomainService>(),
+          menuDomainService: sl<MenuDomainService>(),
+        ),
+      );
+    }
+
+    sl.registerLazySingleton<
+        UseCase<KitchenBatchTicket, ConfirmBatchParams>>(
+      () => sl<AppConfig>().useRemoteBackend
+          ? sl<ServerConfirmBatchUseCase>()
+          : sl<ConfirmBatchUseCase>(),
     );
 
     sl.registerLazySingleton(
-      () => AddBatchUseCase(confirmBatch: sl<ConfirmBatchUseCase>()),
+      () => AddBatchUseCase(
+        confirmBatch: sl<UseCase<KitchenBatchTicket, ConfirmBatchParams>>(),
+      ),
     );
 
     sl.registerLazySingleton(

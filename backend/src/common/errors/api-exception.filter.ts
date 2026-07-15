@@ -40,7 +40,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
 
       const body: ApiErrorBody = {
         error: {
-          code: status === HttpStatus.BAD_REQUEST ? 'VALIDATION_ERROR' : 'HTTP_ERROR',
+          code: defaultErrorCode(status),
           message,
         },
       };
@@ -48,6 +48,9 @@ export class ApiExceptionFilter implements ExceptionFilter {
       return;
     }
 
+    // Unexpected errors — never leak internals to clients.
+    // eslint-disable-next-line no-console
+    console.error('[ApiExceptionFilter]', exception);
     const body: ApiErrorBody = {
       error: {
         code: 'INTERNAL_ERROR',
@@ -55,5 +58,24 @@ export class ApiExceptionFilter implements ExceptionFilter {
       },
     };
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(body);
+  }
+}
+
+function defaultErrorCode(status: number): string {
+  switch (status) {
+    case HttpStatus.BAD_REQUEST:
+      return 'VALIDATION_ERROR';
+    case HttpStatus.UNAUTHORIZED:
+      return 'UNAUTHORIZED';
+    case HttpStatus.FORBIDDEN:
+      return 'FORBIDDEN';
+    case HttpStatus.NOT_FOUND:
+      return 'NOT_FOUND';
+    case HttpStatus.CONFLICT:
+      return 'CONFLICT';
+    case HttpStatus.UNPROCESSABLE_ENTITY:
+      return 'UNPROCESSABLE_ENTITY';
+    default:
+      return 'HTTP_ERROR';
   }
 }

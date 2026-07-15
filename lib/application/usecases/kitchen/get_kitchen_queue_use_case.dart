@@ -1,5 +1,6 @@
 import '../../../core/clock/clock.dart';
 import '../../../core/result/result.dart';
+import '../../../data/repositories/batch/remote_batch_repository.dart';
 import '../../../domain/entities/session_engine_snapshot.dart';
 import '../../../domain/repositories/batch_repository.dart';
 import '../../../domain/repositories/session_engine_repository.dart';
@@ -31,6 +32,10 @@ final class GetKitchenQueueUseCase
       restaurantId: params.restaurantId,
     );
 
+    final remote = _batchRepository is RemoteBatchRepository
+        ? _batchRepository
+        : null;
+
     final views = <KitchenBatchViewModel>[];
     for (final batch in batches) {
       if (!_kitchenService.isKitchenSafeBatch(batch)) continue;
@@ -43,7 +48,11 @@ final class GetKitchenQueueUseCase
 
       var displayNumber = '—';
       var tableLabel = '—';
-      if (batch.sessionId != null) {
+      final hints = remote?.queuePresentation(batch.id);
+      if (hints != null) {
+        displayNumber = hints.sessionDisplayNumber;
+        tableLabel = hints.tableLabel;
+      } else if (batch.sessionId != null) {
         final sessionResult = await _sessionEngine.findById(
           sessionId: batch.sessionId!,
           restaurantId: params.restaurantId,

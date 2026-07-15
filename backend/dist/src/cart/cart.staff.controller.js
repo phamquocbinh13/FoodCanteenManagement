@@ -16,6 +16,7 @@ exports.CartStaffController = void 0;
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
+const restaurant_scope_guard_1 = require("../auth/guards/restaurant-scope.guard");
 const cart_service_1 = require("./cart.service");
 const cart_dto_1 = require("./dto/cart.dto");
 let CartStaffController = class CartStaffController {
@@ -107,7 +108,7 @@ __decorate([
 exports.CartStaffController = CartStaffController = __decorate([
     (0, swagger_1.ApiTags)('cart-staff'),
     (0, swagger_1.ApiBearerAuth)(),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, restaurant_scope_guard_1.RestaurantScopeGuard),
     (0, common_1.Controller)('restaurants/:restaurantId/sessions/:sessionId/cart'),
     __metadata("design:paramtypes", [cart_service_1.CartService])
 ], CartStaffController);

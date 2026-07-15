@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const current_user_decorator_1 = require("../auth/decorators/current-user.decorator");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
+const restaurant_scope_guard_1 = require("../auth/guards/restaurant-scope.guard");
 const sessions_dto_1 = require("./dto/sessions.dto");
 const sessions_service_1 = require("./sessions.service");
 let RestaurantSessionsController = class RestaurantSessionsController {
@@ -184,7 +185,7 @@ __decorate([
 exports.RestaurantSessionsController = RestaurantSessionsController = __decorate([
     (0, swagger_1.ApiTags)('restaurant-sessions'),
     (0, swagger_1.ApiBearerAuth)(),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, restaurant_scope_guard_1.RestaurantScopeGuard),
     (0, common_1.Controller)('restaurants/:restaurantId'),
     __metadata("design:paramtypes", [sessions_service_1.SessionsService])
 ], RestaurantSessionsController);

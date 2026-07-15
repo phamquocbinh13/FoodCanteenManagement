@@ -43,6 +43,7 @@ abstract final class RequestModule {
         idGenerator: sl<IdGenerator>(),
         eventPublisher: sl<DomainEventPublisher>(),
         clock: sl<Clock>(),
+        serverOwnsSideEffects: sl<AppConfig>().useRemoteBackend,
       ),
     );
 

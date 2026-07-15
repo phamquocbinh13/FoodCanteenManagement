@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../../../../application/kitchen/kitchen_view_models.dart';
 import '../../../../application/session/session_constants.dart';
 import '../../../../application/usecases/kitchen/get_session_batch_progress_use_case.dart';
+import '../../../../application/usecases/payment/close_session_with_payment_use_case.dart';
 import '../../../../application/usecases/session/close_session_use_case.dart';
 import '../../../../application/usecases/session/create_session_use_case.dart';
 import '../../../../application/usecases/session/mark_waiting_payment_use_case.dart';
@@ -20,17 +21,20 @@ final class CashierSessionController extends ChangeNotifier {
     required MarkWaitingPaymentUseCase markWaitingPayment,
     required RestoreSessionUseCase restoreSession,
     required GetCashierBatchSummariesUseCase getCashierBatchSummaries,
+    CloseSessionWithPaymentUseCase? closeWithPayment,
   })  : _createSession = createSession,
         _closeSession = closeSession,
         _markWaitingPayment = markWaitingPayment,
         _restoreSession = restoreSession,
-        _getCashierBatchSummaries = getCashierBatchSummaries;
+        _getCashierBatchSummaries = getCashierBatchSummaries,
+        _closeWithPayment = closeWithPayment;
 
   final CreateSessionUseCase _createSession;
   final CloseSessionUseCase _closeSession;
   final MarkWaitingPaymentUseCase _markWaitingPayment;
   final RestoreSessionUseCase _restoreSession;
   final GetCashierBatchSummariesUseCase _getCashierBatchSummaries;
+  final CloseSessionWithPaymentUseCase? _closeWithPayment;
 
   SessionEngineSnapshot? _activeSnapshot;
   String? _sessionToken;
@@ -117,18 +121,39 @@ final class CashierSessionController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> closeSession({String? closedByUserId}) async {
+  Future<void> closeSession({
+    String? closedByUserId,
+    PaymentMethod paymentMethod = PaymentMethod.cash,
+    SessionCloseType closeType = SessionCloseType.payment,
+    ForceCloseReason? forceCloseReason,
+    String? forceCloseNote,
+  }) async {
     final snapshot = _activeSnapshot;
     if (snapshot == null) return;
 
     _setLoading(true);
-    final result = await _closeSession(
-      CloseSessionParams(
-        sessionId: snapshot.session.id,
-        restaurantId: snapshot.session.restaurantId,
-        closedByUserId: closedByUserId,
-      ),
-    );
+    final Result<Object?> result;
+    final paymentClose = _closeWithPayment;
+    if (paymentClose != null) {
+      result = await paymentClose(
+        CloseSessionWithPaymentParams(
+          restaurantId: snapshot.session.restaurantId,
+          sessionId: snapshot.session.id,
+          paymentMethod: paymentMethod,
+          closeType: closeType,
+          forceCloseReason: forceCloseReason,
+          forceCloseNote: forceCloseNote,
+        ),
+      );
+    } else {
+      result = await _closeSession(
+        CloseSessionParams(
+          sessionId: snapshot.session.id,
+          restaurantId: snapshot.session.restaurantId,
+          closedByUserId: closedByUserId,
+        ),
+      );
+    }
     _setLoading(false);
 
     switch (result) {

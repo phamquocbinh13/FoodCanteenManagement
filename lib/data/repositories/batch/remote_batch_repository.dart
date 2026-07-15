@@ -31,6 +31,10 @@ final class RemoteBatchRepository implements BatchRepository {
   final Map<String, DateTime?> _completedAtByBatchId = {};
   final Map<String, String> _restaurantIdByBatchId = {};
 
+  /// Presentation labels from last [listKitchenQueue] (single payload).
+  final Map<String, ({String tableLabel, String sessionDisplayNumber})>
+      _queuePresentation = {};
+
   String _serverBatchId(String id) => _clientToServerBatchId[id] ?? id;
 
   String _serverItemId(String id) => _clientToServerItemId[id] ?? id;
@@ -158,6 +162,11 @@ final class RemoteBatchRepository implements BatchRepository {
     }
   }
 
+  ({String tableLabel, String sessionDisplayNumber})? queuePresentation(
+    String batchId,
+  ) =>
+      _queuePresentation[batchId];
+
   @override
   Future<List<KitchenBatch>> listKitchenQueue({
     required String restaurantId,
@@ -171,22 +180,27 @@ final class RemoteBatchRepository implements BatchRepository {
           .cast<Map<String, dynamic>>();
 
       final result = <KitchenBatch>[];
+      _queuePresentation.clear();
       for (final view in views) {
-        final batchId = view['batchId'] as String;
-        final ticket = await _api.send<Map<String, dynamic>>(
-          ApiRequest(path: '/restaurants/$restaurantId/batches/$batchId'),
-        );
+        final batchJson = view['batch'] as Map<String, dynamic>?;
+        if (batchJson == null) continue;
         _cacheTicket(
-          batchJson: ticket.data['batch'] as Map<String, dynamic>,
-          itemsJson: ticket.data['items'] as List<dynamic>? ?? const [],
+          batchJson: batchJson,
+          itemsJson: view['items'] as List<dynamic>? ?? const [],
         );
+        final batchId = batchJson['id'] as String? ??
+            camelCaseKeysToSnake(batchJson)['id'] as String;
         final batch = _batches[batchId];
         if (batch == null) continue;
         if (since != null && batch.confirmedAt.isBefore(since)) continue;
-        if (view['completedAt'] is String) {
-          _completedAtByBatchId[batchId] =
-              DateTime.parse(view['completedAt'] as String);
+        final completedAt = batchJson['completedAt'] ?? view['completedAt'];
+        if (completedAt is String) {
+          _completedAtByBatchId[batchId] = DateTime.parse(completedAt);
         }
+        _queuePresentation[batchId] = (
+          tableLabel: view['tableLabel'] as String? ?? '—',
+          sessionDisplayNumber: view['sessionDisplayNumber'] as String? ?? '—',
+        );
         result.add(batch);
       }
       result.sort((a, b) => a.confirmedAt.compareTo(b.confirmedAt));

@@ -7,5 +7,7 @@ export declare class KitchenController {
         batches: import("./kitchen.service").KitchenQueueBatchDto[];
         loadedAt: string;
     }>;
-    complete(restaurantId: string, batchItemId: string, user: JwtPayload): Promise<import("../batches/batches.mapper").BatchItemDto>;
+    complete(restaurantId: string, batchItemId: string, user: JwtPayload): Promise<{
+        ok: boolean;
+    }>;
 }

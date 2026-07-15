@@ -52,6 +52,30 @@ export class BatchesService {
     const actorId = dto.actorId ?? null;
     const now = new Date();
 
+    const menuItemIds = [
+      ...new Set(cart.session_cart_item.map((l) => l.menu_item_id)),
+    ];
+    const menuItems = await this.prisma.menuItem.findMany({
+      where: { id: { in: menuItemIds }, restaurantId },
+    });
+    const menuById = new Map(menuItems.map((m) => [m.id, m]));
+    const groups = await this.prisma.customization_group.findMany({
+      where: { menu_item_id: { in: menuItemIds }, is_active: true },
+      include: {
+        customization_option: {
+          where: { is_active: true },
+          orderBy: { sort_order: 'asc' },
+        },
+      },
+      orderBy: { sort_order: 'asc' },
+    });
+    const groupsByMenuId = new Map<string, typeof groups>();
+    for (const g of groups) {
+      const list = groupsByMenuId.get(g.menu_item_id) ?? [];
+      list.push(g);
+      groupsByMenuId.set(g.menu_item_id, list);
+    }
+
     const ticket = await this.prisma.$transaction(async (tx) => {
       const nextBatchNumber = session.current_batch_number + 1;
       const batchId = uuidv4();
@@ -73,9 +97,7 @@ export class BatchesService {
       const createdItems: ReturnType<typeof mapBatchItem>[] = [];
 
       for (const line of cart.session_cart_item) {
-        const menuItem = await tx.menuItem.findFirst({
-          where: { id: line.menu_item_id, restaurantId },
-        });
+        const menuItem = menuById.get(line.menu_item_id);
         if (!menuItem || !menuItem.isActive) {
           throw unprocessable(
             'MENU_ITEM_NOT_FOUND',
@@ -89,16 +111,7 @@ export class BatchesService {
           );
         }
 
-        const groups = await tx.customization_group.findMany({
-          where: { menu_item_id: menuItem.id, is_active: true },
-          include: {
-            customization_option: {
-              where: { is_active: true },
-              orderBy: { sort_order: 'asc' },
-            },
-          },
-          orderBy: { sort_order: 'asc' },
-        });
+        const itemGroups = groupsByMenuId.get(menuItem.id) ?? [];
 
         const selectionsJson = (line.selections_json ?? {}) as Record<
           string,
@@ -109,7 +122,7 @@ export class BatchesService {
           priced = validateAndPrice({
             basePriceMinor: menuItem.basePriceMinor,
             currencyCode: menuItem.currencyCode,
-            groups,
+            groups: itemGroups,
             selectionsJson,
           });
         } catch (e) {

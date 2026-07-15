@@ -13,6 +13,7 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RestaurantScopeGuard } from '../auth/guards/restaurant-scope.guard';
 import type { JwtPayload } from '../auth/auth.types';
 import {
   AppendTimelineDto,
@@ -25,7 +26,7 @@ import { SessionsService } from './sessions.service';
 
 @ApiTags('restaurant-sessions')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RestaurantScopeGuard)
 @Controller('restaurants/:restaurantId')
 export class RestaurantSessionsController {
   constructor(private readonly sessions: SessionsService) {}

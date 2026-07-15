@@ -6,6 +6,7 @@ import { CartModule } from './cart/cart.module';
 import { HealthModule } from './health/health.module';
 import { KitchenModule } from './kitchen/kitchen.module';
 import { MenuModule } from './menu/menu.module';
+import { PaymentsModule } from './payments/payments.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RequestsModule } from './requests/requests.module';
 import { RestaurantsModule } from './restaurants/restaurants.module';
@@ -27,6 +28,7 @@ import { SessionsModule } from './sessions/sessions.module';
     BatchesModule,
     KitchenModule,
     RequestsModule,
+    PaymentsModule,
   ],
 })
 export class AppModule {}

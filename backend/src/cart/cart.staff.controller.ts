@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RestaurantScopeGuard } from '../auth/guards/restaurant-scope.guard';
 import { CartService } from './cart.service';
 import {
   AddCartItemDto,
@@ -22,7 +23,7 @@ import {
 
 @ApiTags('cart-staff')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RestaurantScopeGuard)
 @Controller('restaurants/:restaurantId/sessions/:sessionId/cart')
 export class CartStaffController {
   constructor(private readonly cart: CartService) {}

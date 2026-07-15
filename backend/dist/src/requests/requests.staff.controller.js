@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const current_user_decorator_1 = require("../auth/decorators/current-user.decorator");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
+const restaurant_scope_guard_1 = require("../auth/guards/restaurant-scope.guard");
 const requests_dto_1 = require("./dto/requests.dto");
 const requests_service_1 = require("./requests.service");
 let RequestsStaffController = class RequestsStaffController {
@@ -67,7 +68,7 @@ __decorate([
 exports.RequestsStaffController = RequestsStaffController = __decorate([
     (0, swagger_1.ApiTags)('requests-staff'),
     (0, swagger_1.ApiBearerAuth)(),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, restaurant_scope_guard_1.RestaurantScopeGuard),
     (0, common_1.Controller)('restaurants/:restaurantId'),
     __metadata("design:paramtypes", [requests_service_1.RequestsService])
 ], RequestsStaffController);

@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const current_user_decorator_1 = require("../auth/decorators/current-user.decorator");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
+const restaurant_scope_guard_1 = require("../auth/guards/restaurant-scope.guard");
 const kitchen_service_1 = require("./kitchen.service");
 let KitchenController = class KitchenController {
     kitchen;
@@ -55,7 +56,7 @@ __decorate([
 exports.KitchenController = KitchenController = __decorate([
     (0, swagger_1.ApiTags)('kitchen'),
     (0, swagger_1.ApiBearerAuth)(),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, restaurant_scope_guard_1.RestaurantScopeGuard),
     (0, common_1.Controller)('restaurants/:restaurantId/kitchen'),
     __metadata("design:paramtypes", [kitchen_service_1.KitchenService])
 ], KitchenController);
