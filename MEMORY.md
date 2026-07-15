@@ -131,3 +131,80 @@ flutter run --dart-define=USE_REMOTE_BACKEND=true --dart-define=API_BASE_URL=htt
 ```
 
 Staff: `cashier` / `cashier123`. Restaurant: `demo-restaurant`.
+
+---
+
+## Design Foundation — 2026-07-15
+
+Backend remains in maintenance mode. Product evolution foundation docs added (design equivalent of `PROJECT_CONTEXT.md` / `ARCHITECTURE.md`).
+
+### Screens improved
+
+None (documentation-only iteration).
+
+### Components added
+
+None in code. Catalogued existing + planned in `COMPONENT_LIBRARY.md`.
+
+### Components removed
+
+None.
+
+### UX improvements
+
+Defined principles, role flows, confirmation policy, feedback/error patterns in `UX_GUIDELINES.md`.
+
+### Performance improvements
+
+Guidelines only (skeleton loading, timer isolate, list virtualization checks in roadmap).
+
+### Accessibility improvements
+
+AA contrast, 48dp targets, status not color-only — specified in UX + Design System.
+
+### Responsive improvements
+
+Breakpoints phone → KDS defined; device lab is Iteration 7.
+
+### Restaurant workflow improvements
+
+Dine-in journeys prioritized (Customer → Kitchen → Cashier → Requests); takeaway/delivery deferred.
+
+### Technical debt remaining
+
+- Current UI still Material-green/Roboto utilitarian (tokens not yet remapped)
+- Dark theme incomplete
+- Feature widgets not yet on shared sheet/dialog shells
+- Demo chrome still present on some customer paths
+- Admin/delivery/takeaway remain stubs
+
+### Product quality score
+
+| Area | Score (pre-redesign) |
+|------|---------------------:|
+| Visual Design | 4 |
+| UX | 5 |
+| Consistency | 4 |
+| Accessibility | 5 |
+| Performance | 6 |
+| Scalability (UI system) | 4 |
+| Restaurant Readiness | 6 (flows work, polish weak) |
+| Commercial Readiness | 4 |
+| Maintainability | 7 |
+| **Overall Product Quality** | **5** |
+
+### Next highest-impact iteration
+
+**UI Roadmap Iteration 0** — Design System bootstrap (remap tokens, fonts, core primitives), then **Iteration 1** Customer journey.
+
+### Foundation documents
+
+| Doc | Path |
+|-----|------|
+| Product Vision | `PRODUCT_VISION.md` |
+| Design System | `DESIGN_SYSTEM.md` |
+| UX Guidelines | `UX_GUIDELINES.md` |
+| Component Library | `COMPONENT_LIBRARY.md` |
+| UI Roadmap | `UI_ROADMAP.md` |
+
+**Gate:** Human approval of Design System v1.0 (especially color + typography) before large-scale screen redesign.
