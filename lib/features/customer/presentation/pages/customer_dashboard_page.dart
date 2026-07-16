@@ -109,11 +109,16 @@ class _SessionPageState extends ConsumerState<SessionPage> {
         ],
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
+        child: Stack(
+          children: [
+            const AmbientBackdrop(
+              imageAsset: 'assets/images/backgrounds/bg_customer_sensory.png',
+            ),
+            SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
               // ── Header Section (Table Label & Status in clean typographic style) ──
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -448,7 +453,9 @@ class _SessionPageState extends ConsumerState<SessionPage> {
             ],
           ),
         ),
-      ),
-    );
+      ],
+    ),
+  ),
+);
   }
 }

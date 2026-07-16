@@ -5,6 +5,7 @@ export 'buttons/roms_text_button.dart';
 export 'buttons/secondary_button.dart';
 export 'cards/app_card.dart';
 export 'display/app_avatar.dart';
+export 'display/ambient_backdrop.dart';
 export 'display/roms_money_text.dart';
 export 'display/roms_session_badge.dart';
 export 'display/roms_table_label.dart';

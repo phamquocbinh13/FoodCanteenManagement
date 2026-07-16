@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../application/kitchen/kitchen_view_models.dart';
 import '../../../../core/permissions/permission_service.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/widgets.dart';
 import '../../../../shared/presentation/staff_scaffold.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/kitchen_overview_provider.dart';
@@ -109,33 +110,40 @@ class _KitchenPageState extends ConsumerState<KitchenPage>
     return StaffScaffold(
       title: '',
       requiredPermission: AppPermission.viewKitchenQueue,
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      body: Stack(
         children: [
-          if (kDebugMode && role != null) ...[
-            const SizedBox(height: AppSpacing.sm),
-            Center(child: StaffRoleBadge(role: role)),
-          ],
-          const SizedBox(height: AppSpacing.md),
-          KitchenSegmentedTabs(
-            controller: _tabController,
-            activeOrderCount: overviewCount,
-            pendingBatchCount: _pendingBatchCount(kitchen.queue),
-            unavailableItemCount: _unavailableCount(kitchen.menuItems),
+          const AmbientBackdrop(
+            imageAsset: 'assets/images/backgrounds/bg_kitchen_culinary.png',
           ),
-          const SizedBox(height: AppSpacing.md),
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                const KitchenOverviewTab(),
-                KitchenOrdersTab(
-                  highlightedBatchIds: _highlightedBatchIds,
-                  onBatchesUpdated: _onBatchesUpdated,
-                ),
-                const KitchenInventoryTab(),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (kDebugMode && role != null) ...[
+                const SizedBox(height: AppSpacing.sm),
+                Center(child: StaffRoleBadge(role: role)),
               ],
-            ),
+              const SizedBox(height: AppSpacing.md),
+              KitchenSegmentedTabs(
+                controller: _tabController,
+                activeOrderCount: overviewCount,
+                pendingBatchCount: _pendingBatchCount(kitchen.queue),
+                unavailableItemCount: _unavailableCount(kitchen.menuItems),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    const KitchenOverviewTab(),
+                    KitchenOrdersTab(
+                      highlightedBatchIds: _highlightedBatchIds,
+                      onBatchesUpdated: _onBatchesUpdated,
+                    ),
+                    const KitchenInventoryTab(),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),

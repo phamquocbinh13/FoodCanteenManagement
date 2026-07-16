@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/widgets.dart';
 import '../../../../shared/presentation/staff_scaffold.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../request_queue/presentation/providers/request_queue_provider.dart';
@@ -56,29 +57,36 @@ class _CashierPageState extends ConsumerState<CashierPage>
 
     return StaffScaffold(
       title: 'Cashier',
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      body: Stack(
         children: [
-          if (kDebugMode && role != null) ...[
-            const SizedBox(height: AppSpacing.sm),
-            Center(child: StaffRoleBadge(role: role)),
-          ],
-          const SizedBox(height: AppSpacing.md),
-          CashierSegmentedTabs(
-            controller: _tabController,
-            occupiedCount: session.occupiedTableCount,
-            pendingRequestCount: queue.pendingCount,
+          const AmbientBackdrop(
+            imageAsset: 'assets/images/backgrounds/bg_cashier_lobby.png',
           ),
-          const SizedBox(height: AppSpacing.md),
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: const [
-                CashierFloorSessionsTab(),
-                CashierRequestQueueTab(),
-                CashierEditOrdersTab(),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (kDebugMode && role != null) ...[
+                const SizedBox(height: AppSpacing.sm),
+                Center(child: StaffRoleBadge(role: role)),
               ],
-            ),
+              const SizedBox(height: AppSpacing.md),
+              CashierSegmentedTabs(
+                controller: _tabController,
+                occupiedCount: session.occupiedTableCount,
+                pendingRequestCount: queue.pendingCount,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: const [
+                    CashierFloorSessionsTab(),
+                    CashierRequestQueueTab(),
+                    CashierEditOrdersTab(),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
