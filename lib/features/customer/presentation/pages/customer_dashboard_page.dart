@@ -5,7 +5,6 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../application/session/customer_session_messages.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/restaurant_brand.dart';
 import '../../../../core/widgets/widgets.dart';
 import '../../../../domain/enums/domain_enums.dart';
@@ -13,7 +12,7 @@ import '../providers/customer_ordering_provider.dart';
 import '../providers/customer_session_provider.dart';
 import '../widgets/customer_demo_exit_button.dart';
 
-/// Customer session hub after a successful join.
+/// Customer session hub after a successful join with luxurious borderless layout.
 class SessionPage extends ConsumerStatefulWidget {
   const SessionPage({super.key, required this.sessionToken});
 
@@ -57,15 +56,6 @@ class _SessionPageState extends ConsumerState<SessionPage> {
     );
   }
 
-  StatusTone _phaseTone(SessionLifecyclePhase phase) {
-    return switch (phase) {
-      SessionLifecyclePhase.available => StatusTone.success,
-      SessionLifecyclePhase.occupied => StatusTone.brand,
-      SessionLifecyclePhase.waitingPayment => StatusTone.warning,
-      SessionLifecyclePhase.closed => StatusTone.neutral,
-    };
-  }
-
   @override
   Widget build(BuildContext context) {
     final controller = ref.watch(customerSessionControllerProvider);
@@ -96,8 +86,11 @@ class _SessionPageState extends ConsumerState<SessionPage> {
     final bill = ordering.bill;
 
     return Scaffold(
+      backgroundColor: AppColors.canvas,
       appBar: AppBar(
         title: Text(brand.displayName),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         actions: [
           RomsIconButton(
             icon: Icons.refresh_rounded,
@@ -117,224 +110,330 @@ class _SessionPageState extends ConsumerState<SessionPage> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppSpacing.lg),
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              AppCard(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    RomsTableLabel(
-                      label: snapshot.tableLabel,
-                      emphasize: true,
-                      statusLabel: controller.statusLabel,
-                      tone: _phaseTone(phase),
+              // ── Header Section (Table Label & Status in clean typographic style) ──
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    snapshot.tableLabel,
+                    style: theme.textTheme.displayMedium?.copyWith(
+                      color: AppColors.ink,
+                      fontWeight: FontWeight.w600,
                     ),
-                    const SizedBox(height: AppSpacing.md),
-                    RomsSessionBadge(
-                      displayNumber: snapshot.session.displayNumber,
-                      phaseLabel: controller.statusLabel,
-                      tone: _phaseTone(phase),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Text(
-                      brand.tagline ?? 'Your dining session',
-                      style: theme.textTheme.bodySmall,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppSpacing.xl),
-              Text('Order progress', style: theme.textTheme.titleMedium),
-              const SizedBox(height: AppSpacing.sm),
-              if (ordering.batchProgress.isEmpty)
-                AppCard(
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  child: Row(
+                  ),
+                  const SizedBox(height: 4.0),
+                  Row(
                     children: [
-                      const Icon(
-                        Icons.restaurant_outlined,
-                        color: AppColors.inkMuted,
+                      Text(
+                        'ID: ${snapshot.session.displayNumber}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: AppColors.inkMuted,
+                        ),
                       ),
-                      const SizedBox(width: AppSpacing.md),
-                      Expanded(
-                        child: Text(
-                          'No orders sent to the kitchen yet. Browse the menu to begin.',
-                          style: theme.textTheme.bodyMedium,
+                      const SizedBox(width: 8.0),
+                      Text(
+                        '•',
+                        style: TextStyle(color: AppColors.inkMuted),
+                      ),
+                      const SizedBox(width: 8.0),
+                      Text(
+                        controller.statusLabel,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: AppColors.brand,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24.0),
+
+              // ── Order Progress Section ─────────────────────────────────────
+              Text(
+                'ORDER PROGRESS',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: AppColors.inkMuted,
+                  letterSpacing: 1.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 12.0),
+              if (ordering.batchProgress.isEmpty)
+                Text(
+                  'No orders sent to the kitchen yet. Browse the menu to begin.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: AppColors.inkMuted,
                   ),
                 )
               else
                 ...ordering.batchProgress.map(
                   (batch) => Padding(
-                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                    child: AppCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          ListTile(
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.lg,
-                              vertical: AppSpacing.xs,
-                            ),
-                            title: Text(
+                    padding: const EdgeInsets.only(bottom: 16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
                               'Batch #${batch.batchNumber}',
-                              style: theme.textTheme.titleMedium,
-                            ),
-                            trailing: StatusChip(
-                              label: batch.statusLabel,
-                              tone: batch.isCompleted
-                                  ? StatusTone.success
-                                  : StatusTone.warning,
-                            ),
-                          ),
-                          if (batch.items.isNotEmpty) ...[
-                            const Divider(height: 1),
-                            ...batch.items.map((item) => ListTile(
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: AppSpacing.lg,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                color: AppColors.ink,
+                                fontWeight: FontWeight.w600,
                               ),
-                              title: Text(item.name),
-                              subtitle: item.kitchenNotes.isNotEmpty
-                                ? Text(item.kitchenNotes)
-                                : null,
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
+                            ),
+                            Text(
+                              batch.statusLabel,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: AppColors.brand,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8.0),
+                        if (batch.items.isNotEmpty)
+                          ...batch.items.map(
+                            (item) => Padding(
+                              padding: const EdgeInsets.only(bottom: 8.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    item.quantityLabel,
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                      color: AppColors.inkMuted,
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          '${item.quantityLabel} x ${item.name}',
+                                          style: theme.textTheme.bodyMedium?.copyWith(
+                                            color: AppColors.ink,
+                                          ),
+                                        ),
+                                      ),
+                                      RomsMoneyText(
+                                        amountMinor: item.lineTotalMinor,
+                                        currencyCode: 'VND',
+                                        color: AppColors.ink,
+                                      ),
+                                    ],
+                                  ),
+                                  if (item.kitchenNotes.isNotEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.only(left: 12.0, top: 2.0),
+                                      child: Text(
+                                        item.kitchenNotes,
+                                        style: theme.textTheme.bodySmall?.copyWith(
+                                          color: AppColors.inkMuted,
+                                          fontStyle: FontStyle.italic,
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(width: AppSpacing.md),
-                                  RomsMoneyText(
-                                    amountMinor: item.lineTotalMinor,
-                                    currencyCode: 'VND',
-                                  ),
                                 ],
                               ),
-                            )),
-                            const SizedBox(height: AppSpacing.xs),
-                          ],
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 24.0),
+
+              // ── Bill Ledger Section ────────────────────────────────────────
+              Text(
+                'BILL LEDGER',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: AppColors.inkMuted,
+                  letterSpacing: 1.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 12.0),
+              if (bill != null && bill.totalMinor > 0)
+                Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Total Bill',
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: AppColors.ink,
+                          ),
+                        ),
+                        RomsMoneyText(
+                          amountMinor: bill.totalMinor,
+                          currencyCode: 'VND',
+                          large: true,
+                          color: AppColors.ink,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8.0),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Paid',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: AppColors.inkMuted,
+                          ),
+                        ),
+                        RomsMoneyText(
+                          amountMinor: bill.paidMinor,
+                          currencyCode: 'VND',
+                          color: AppColors.inkMuted,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8.0),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Outstanding',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: bill.outstandingMinor == 0 ? AppColors.success : AppColors.accent,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        RomsMoneyText(
+                          amountMinor: bill.outstandingMinor,
+                          currencyCode: 'VND',
+                          color: bill.outstandingMinor == 0 ? AppColors.success : AppColors.accent,
+                          large: true,
+                        ),
+                      ],
+                    ),
+                  ],
+                )
+              else
+                Text(
+                  'No items ordered yet.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: AppColors.inkMuted,
+                  ),
+                ),
+              const SizedBox(height: 32.0),
+
+              // ── Concierge Dock (Browse Menu & Call Staff Horizontal Row) ──
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.brand,
+                        foregroundColor: AppColors.onBrand,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 16.0),
+                      ),
+                      onPressed: () async {
+                        await context.push('/s/${widget.sessionToken}/menu');
+                        if (!context.mounted) return;
+                        await ordering.refreshSessionOrdering(snapshot.session.id);
+                      },
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.menu_book_outlined, size: 18.0, color: AppColors.onBrand),
+                          const SizedBox(width: 8.0),
+                          const Text('Browse Menu'),
                         ],
                       ),
                     ),
                   ),
-                ),
-              const SizedBox(height: AppSpacing.xl),
-              Text('Bill so far', style: theme.textTheme.titleMedium),
-              const SizedBox(height: AppSpacing.sm),
-              AppCard(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                child: bill != null && bill.totalMinor > 0
-                    ? Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text('Total Bill', style: theme.textTheme.bodyLarge),
-                              RomsMoneyText(
-                                amountMinor: bill.totalMinor,
-                                currencyCode: 'VND',
-                                large: true,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: AppSpacing.xs),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text('Paid', style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.inkMuted)),
-                              RomsMoneyText(
-                                amountMinor: bill.paidMinor,
-                                currencyCode: 'VND',
-                                color: AppColors.inkMuted,
-                              ),
-                            ],
-                          ),
-                          const Divider(),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text('Outstanding', style: theme.textTheme.titleMedium?.copyWith(color: AppColors.warning)),
-                              RomsMoneyText(
-                                amountMinor: bill.outstandingMinor,
-                                currencyCode: 'VND',
-                                color: AppColors.warning,
-                                large: true,
-                              ),
-                            ],
-                          ),
-                        ],
-                      )
-                    : Text(
-                        'No items ordered yet.',
-                        style: theme.textTheme.bodyMedium,
+                  const SizedBox(width: 12.0),
+                  Expanded(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.inkMuted,
+                        side: BorderSide(color: AppColors.borderStrong),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 16.0),
                       ),
+                      onPressed: () => context.push(
+                        '/s/${widget.sessionToken}/request',
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.support_agent_outlined, size: 18.0, color: AppColors.inkMuted),
+                          const SizedBox(width: 8.0),
+                          const Text('Call Staff'),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: AppSpacing.xxl),
-              PrimaryButton(
-                label: 'Browse menu',
-                icon: Icons.menu_book_outlined,
-                isExpanded: true,
-                onPressed: () async {
-                  await context.push('/s/${widget.sessionToken}/menu');
-                  if (!context.mounted) return;
-                  await ordering.refreshSessionOrdering(snapshot.session.id);
-                },
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              SecondaryButton(
-                label: 'Call staff',
-                icon: Icons.support_agent_outlined,
-                isExpanded: true,
-                onPressed: () => context.push(
-                  '/s/${widget.sessionToken}/request',
+              const SizedBox(height: 24.0),
+
+              // ── Payment Action Triggers (Minimal flat text triggers at bottom) ──
+              if (phase != SessionLifecyclePhase.closed && bill != null && bill.outstandingMinor > 0) ...[
+                const Divider(color: AppColors.border, height: 1.0),
+                const SizedBox(height: 16.0),
+                TextButton(
+                  onPressed: controller.paymentRequested ? null : _requestPayment,
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.brand,
+                    padding: const EdgeInsets.symmetric(vertical: 12.0),
+                  ),
+                  child: Text(
+                    controller.paymentRequested
+                        ? 'PAYMENT REQUESTED'
+                        : 'REQUEST PAYMENT (CASH)',
+                    style: const TextStyle(
+                      letterSpacing: 1.2,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              PrimaryButton(
-                label: controller.paymentRequested
-                    ? 'Payment requested'
-                    : 'Request payment (Cash)',
-                icon: Icons.payments_outlined,
-                isExpanded: true,
-                onPressed: phase == SessionLifecyclePhase.closed ||
-                        controller.paymentRequested || bill == null || bill.outstandingMinor <= 0
-                    ? null
-                    : _requestPayment,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              PrimaryButton(
-                label: 'Pay with VNPAY',
-                icon: Icons.qr_code_2_outlined,
-                isExpanded: true,
-                onPressed: phase == SessionLifecyclePhase.closed || bill == null || bill.outstandingMinor <= 0
-                    ? null
-                    : () async {
-                        final url = await ordering.createVnpayIntent();
-                        if (url != null && mounted) {
-                          await launchUrl(Uri.parse(url), mode: LaunchMode.inAppWebView);
-                          // The user returns when the webview is closed.
-                          // It will automatically refresh in the background because of the SSE event,
-                          // but we could also check the status.
-                          final status = await ordering.checkPaymentStatus();
-                          if (status == 'paid') {
-                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Payment Successful!')));
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Payment Not Completed. Check again later.')));
-                          }
-                        } else if (ordering.errorMessage != null && mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ordering.errorMessage!)));
-                        }
-                      },
-              ),
+                const SizedBox(height: 8.0),
+                TextButton(
+                  onPressed: () async {
+                    final url = await ordering.createVnpayIntent();
+                    if (url != null && context.mounted) {
+                      await launchUrl(Uri.parse(url), mode: LaunchMode.inAppWebView);
+                      final status = await ordering.checkPaymentStatus();
+                      if (!context.mounted) return;
+                      if (status == 'paid') {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Payment Successful!')),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Payment Not Completed. Check again later.')),
+                        );
+                      }
+                    } else if (ordering.errorMessage != null && context.mounted) {
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(ordering.errorMessage!)),
+                      );
+                    }
+                  },
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.accent,
+                    padding: const EdgeInsets.symmetric(vertical: 12.0),
+                  ),
+                  child: const Text(
+                    'PAY WITH VNPAY',
+                    style: TextStyle(
+                      letterSpacing: 1.2,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
