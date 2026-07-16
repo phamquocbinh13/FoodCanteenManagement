@@ -39,6 +39,7 @@ flutter:
   assets:
     - assets/images/common/
     - assets/images/login/
+    - assets/images/menu/
   fonts:
     - family: PlusJakartaSans
       fonts:
