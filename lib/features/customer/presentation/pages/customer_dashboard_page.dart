@@ -403,17 +403,28 @@ class _SessionPageState extends ConsumerState<SessionPage> {
                     final url = await ordering.createVnpayIntent();
                     if (url != null && context.mounted) {
                       await launchUrl(Uri.parse(url), mode: LaunchMode.inAppWebView);
-                      final status = await ordering.checkPaymentStatus();
-                      if (!context.mounted) return;
-                      if (status == 'paid') {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Payment Successful!')),
-                        );
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Payment Not Completed. Check again later.')),
-                        );
+                      
+                      // Poll status every 2 seconds for up to 20 seconds to allow payment processing
+                      for (int i = 0; i < 10; i++) {
+                        await Future.delayed(const Duration(seconds: 2));
+                        if (!context.mounted) return;
+                        final status = await ordering.checkPaymentStatus();
+                        if (status == 'paid') {
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Payment Successful!')),
+                          );
+                          await controller.refreshCurrentSession();
+                          if (!context.mounted) return;
+                          await ordering.refreshSessionOrdering(snapshot.session.id);
+                          return;
+                        }
                       }
+                      
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Payment status checking. Refresh dashboard to update.')),
+                      );
                     } else if (ordering.errorMessage != null && context.mounted) {
                       if (!context.mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
