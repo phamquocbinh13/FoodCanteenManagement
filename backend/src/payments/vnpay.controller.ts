@@ -137,8 +137,8 @@ export class VnpayController {
       return { RspCode: '97', Message: 'Invalid signature' };
     }
 
-    const payment = await this.prisma.session_payment.findUnique({
-      where: { id: txnRef },
+    const payment = await this.prisma.session_payment.findFirst({
+      where: { provider_transaction_id: txnRef },
     });
 
     if (!payment) {
@@ -160,7 +160,7 @@ export class VnpayController {
     } else {
       await this.prisma.$transaction([
         this.prisma.session_payment.update({
-          where: { id: txnRef },
+          where: { id: payment.id },
           data: { payment_status: 'failed' },
         }),
         this.prisma.dine_in_session.update({
@@ -174,15 +174,38 @@ export class VnpayController {
 
   @Get('payments/vnpay/return')
   async vnpayReturn(@Query() query: any, @Res() res: Response) {
-    const { isValid, isSuccess, amountMinor } = this.vnpayService.verifyIpn(query);
+    const { isValid, isSuccess, amountMinor, txnRef } = this.vnpayService.verifyIpn(query);
 
     let statusHtml = '';
     if (!isValid) {
       statusHtml = '<h2 style="color: red;">Invalid Signature</h2><p>The payment response is invalid.</p>';
-    } else if (isSuccess) {
-      statusHtml = `<h2 style="color: green;">Payment Successful</h2><p>You have successfully paid ${amountMinor} VND.</p>`;
     } else {
-      statusHtml = '<h2 style="color: orange;">Payment Failed / Canceled</h2><p>The payment was not completed.</p>';
+      const payment = await this.prisma.session_payment.findFirst({
+        where: { provider_transaction_id: txnRef },
+      });
+
+      if (payment && payment.payment_status !== 'paid') {
+        if (isSuccess) {
+          await this.paymentsService.closeSessionOnWebhookSuccess(payment.session_id, payment.id);
+        } else {
+          await this.prisma.$transaction([
+            this.prisma.session_payment.update({
+              where: { id: payment.id },
+              data: { payment_status: 'failed' },
+            }),
+            this.prisma.dine_in_session.update({
+              where: { id: payment.session_id },
+              data: { payment_status: 'unpaid', status: 'open' },
+            }),
+          ]);
+        }
+      }
+
+      if (isSuccess) {
+        statusHtml = `<h2 style="color: green;">Payment Successful</h2><p>You have successfully paid ${amountMinor} VND.</p>`;
+      } else {
+        statusHtml = '<h2 style="color: orange;">Payment Failed / Canceled</h2><p>The payment was not completed.</p>';
+      }
     }
 
     const html = `
