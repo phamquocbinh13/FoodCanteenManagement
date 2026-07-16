@@ -5,7 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
 
-/// Large-touch batch item tile — one tap completes immediately.
+/// Large-touch batch item tile — clean modern checkbox indicator.
 class KitchenItemTile extends StatelessWidget {
   const KitchenItemTile({
     super.key,
@@ -47,7 +47,7 @@ class KitchenItemTile extends StatelessWidget {
                         style: theme.textTheme.titleMedium?.copyWith(
                           decoration:
                               completed ? TextDecoration.lineThrough : null,
-                          color: completed ? AppColors.inkMuted : null,
+                          color: completed ? AppColors.inkMuted : AppColors.ink,
                         ),
                       ),
                       if (item.kitchenNotes.isNotEmpty)
@@ -63,6 +63,7 @@ class KitchenItemTile extends StatelessWidget {
                     ],
                   ),
                 ),
+                const SizedBox(width: AppSpacing.md),
                 if (isPending)
                   const SizedBox(
                     width: 24,
@@ -70,9 +71,15 @@ class KitchenItemTile extends StatelessWidget {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 else if (completed)
-                  const Icon(Icons.check_circle, color: AppColors.success)
+                  const Icon(
+                    Icons.check_box, // Soft gold checkmark (uses AppColors.brand)
+                    color: AppColors.brand,
+                  )
                 else
-                  const Icon(Icons.touch_app, color: AppColors.brand),
+                  const Icon(
+                    Icons.check_box_outline_blank, // Clean checkbox outline
+                    color: AppColors.inkMuted,
+                  ),
               ],
             ),
           ),

@@ -107,7 +107,7 @@ class _KitchenPageState extends ConsumerState<KitchenPage>
     final overviewCount = overview.asData?.value.totalActiveOrders ?? 0;
 
     return StaffScaffold(
-      title: 'Kitchen',
+      title: '',
       requiredPermission: AppPermission.viewKitchenQueue,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

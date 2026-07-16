@@ -87,15 +87,8 @@ class _KitchenOrdersTabState extends ConsumerState<KitchenOrdersTab>
                 AppSpacing.xs,
               ),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Expanded(
-                    child: Text(
-                      'NEXT: oldest ticket first · $columns-col',
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
                   FilterChip(
                     label: const Text('Completed'),
                     selected: kitchen.showCompleted,

@@ -4,9 +4,8 @@ import '../../../../application/kitchen/kitchen_view_models.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
-import '../../../../core/widgets/widgets.dart';
 
-/// Menu availability row — one tap toggles instantly.
+/// Menu availability row — clean switch indicator.
 class KitchenInventoryTile extends StatelessWidget {
   const KitchenInventoryTile({
     super.key,
@@ -23,7 +22,7 @@ class KitchenInventoryTile extends StatelessWidget {
     final available = item.isAvailable;
 
     return Material(
-      color: available ? AppColors.brandSoft : AppColors.dangerSoft,
+      color: AppColors.surface, // Surface background #121815
       borderRadius: BorderRadius.circular(AppRadius.md),
       child: InkWell(
         onTap: onTap,
@@ -38,11 +37,21 @@ class KitchenInventoryTile extends StatelessWidget {
             child: Row(
               children: [
                 Expanded(
-                  child: Text(item.name, style: theme.textTheme.titleMedium),
+                  child: Text(
+                    item.name,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: available ? AppColors.ink : AppColors.inkMuted,
+                    ),
+                  ),
                 ),
-                StatusChip(
-                  label: available ? 'Available' : 'Out of stock',
-                  tone: available ? StatusTone.success : StatusTone.danger,
+                const SizedBox(width: AppSpacing.md),
+                Switch.adaptive(
+                  value: available,
+                  activeThumbColor: AppColors.brand, // Brand Gold #C5A880
+                  activeTrackColor: AppColors.brand.withValues(alpha: 0.35),
+                  inactiveThumbColor: AppColors.inkMuted,
+                  inactiveTrackColor: AppColors.border,
+                  onChanged: (_) => onTap(),
                 ),
               ],
             ),

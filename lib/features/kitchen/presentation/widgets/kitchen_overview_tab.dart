@@ -7,7 +7,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/widgets.dart';
 import '../providers/kitchen_overview_provider.dart';
 
-/// Operational kitchen dashboard — what to cook next, not vanity metrics.
+/// Operational kitchen dashboard — restructured layout placing Demand at the top and Stats at the bottom.
 class KitchenOverviewTab extends ConsumerWidget {
   const KitchenOverviewTab({super.key});
 
@@ -28,167 +28,117 @@ class KitchenOverviewTab extends ConsumerWidget {
         return RefreshIndicator(
           onRefresh: () async => ref.invalidate(kitchenOverviewProvider),
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.md,
-              AppSpacing.sm,
-              AppSpacing.md,
-              AppSpacing.lg,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
             children: [
-              Material(
-                color: view.ordersWaiting > 0 || view.longestWaitingMinutes >= 10
-                    ? AppColors.warning.withValues(alpha: 0.12)
-                    : theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(8),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                    vertical: AppSpacing.sm,
-                  ),
-                  child: Text(
-                    next,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              _MetricStrip(
-                cells: [
-                  _Metric('Active tickets', '${view.totalActiveOrders}', true),
-                  _Metric('Preparing', '${view.ordersPreparing}', false),
-                  _Metric('Ready', '${view.ordersReady}', false),
-                  _Metric('Waiting', '${view.ordersWaiting}', false),
-                  _Metric('Food qty', '${view.totalFoodOrders}', false),
-                  _Metric('Drink qty', '${view.totalDrinkOrders}', false),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.md),
-              DecoratedBox(
+              // ── 1. Next Action Status Banner ──────────────────────────────
+              Container(
                 decoration: BoxDecoration(
-                  border: Border.all(color: theme.colorScheme.outlineVariant),
+                  color: AppColors.surface,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.timer_outlined,
-                        color: view.longestWaitingMinutes >= 10
-                            ? AppColors.danger
-                            : theme.colorScheme.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'LONGEST WAITING TICKET',
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.5,
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                            Text(
-                              view.longestWaitingTable == null
-                                  ? 'None — queue clear'
-                                  : '${view.longestWaitingTable} · '
-                                      '${view.longestWaitingMinutes.round()}m',
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.sm,
+                ),
+                child: Text(
+                  next,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: AppColors.brand,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
-              const SizedBox(height: AppSpacing.md),
+              const SizedBox(height: 24.0),
+
+              // ── 2. ENHANCED DEMAND SLATE TILES (TOP SECTION) ──────────────
               Text(
                 'DEMAND BY MENU ITEM',
                 style: theme.textTheme.labelSmall?.copyWith(
                   fontWeight: FontWeight.w800,
-                  letterSpacing: 0.5,
-                  color: theme.colorScheme.onSurfaceVariant,
+                  letterSpacing: 1.0,
+                  color: AppColors.inkMuted,
                 ),
               ),
-              const SizedBox(height: AppSpacing.xs),
+              const SizedBox(height: 12.0),
               if (view.menuDemand.isEmpty)
                 Text(
                   'No active demand — stand by for new tickets.',
-                  style: theme.textTheme.bodyMedium,
+                  style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.inkMuted),
                 )
               else
                 Wrap(
-                  spacing: AppSpacing.sm,
-                  runSpacing: AppSpacing.sm,
+                  spacing: 12.0,
+                  runSpacing: 12.0,
                   children: view.menuDemand.map((row) {
-                    final color = row.quantity > 5
-                        ? AppColors.danger
-                        : row.quantity >= 3
-                            ? AppColors.warning
-                            : AppColors.success;
-                    final textColor = color == AppColors.warning
-                        ? Colors.black87
-                        : Colors.white;
-
-                    return SizedBox(
-                      width: 140,
-                      height: 140,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: color,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: color.withValues(alpha: 0.3),
-                              blurRadius: 8,
-                              offset: const Offset(0, 4),
+                    return Container(
+                      width: 160.0,
+                      height: 160.0,
+                      decoration: BoxDecoration(
+                        color: AppColors.surface, // Surface Token #121815
+                        borderRadius: BorderRadius.circular(8.0), // Radius.sm
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            '${row.quantity}',
+                            style: theme.textTheme.displayLarge?.copyWith(
+                              fontSize: 48,
+                              color: AppColors.brand, // Brand Gold #C5A880
+                              fontWeight: FontWeight.w700,
+                              fontFeatures: const [FontFeature.tabularFigures()],
                             ),
-                          ],
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(AppSpacing.sm),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                row.name,
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  color: textColor,
-                                  fontWeight: FontWeight.bold,
-                                  height: 1.2,
-                                ),
-                                maxLines: 3,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              Align(
-                                alignment: Alignment.bottomRight,
-                                child: Text(
-                                  '${row.quantity}',
-                                  style: theme.textTheme.displaySmall?.copyWith(
-                                    color: textColor,
-                                    fontWeight: FontWeight.w900,
-                                    fontFeatures: const [
-                                      FontFeature.tabularFigures(),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
                           ),
-                        ),
+                          const SizedBox(height: 12.0),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                            child: Text(
+                              row.name,
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontSize: 14,
+                                color: AppColors.ink, // Ink Primary #E6EBE7
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     );
                   }).toList(),
                 ),
+              const SizedBox(height: 24.0),
+
+              // ── 3. LONGEST WAITING TICKET (Urgency section) ────────────────
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'LONGEST WAITING TICKET',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.0,
+                      color: AppColors.inkMuted,
+                    ),
+                  ),
+                  const SizedBox(height: 4.0),
+                  Text(
+                    view.longestWaitingTable == null
+                        ? 'None — queue clear'
+                        : '${view.longestWaitingTable} · ${view.longestWaitingMinutes.round()}m',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: AppColors.accent, // Accent Terracotta #BD6B42
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24.0),
+
+              // ── 4. CONSOLIDATED STATISTICS FOOTER (Bottom Section) ──────────
+              _CleanSystemStatisticsBar(view: view),
             ],
           ),
         );
@@ -198,94 +148,91 @@ class KitchenOverviewTab extends ConsumerWidget {
 
   String _nextAction(KitchenOverviewView view) {
     if (view.totalActiveOrders == 0) {
-      return 'NEXT: Queue clear — stand by';
+      return 'Prepare dishes • Top Demand First';
     }
-    if (view.ordersWaiting > 0) {
-      return 'NEXT: Start waiting tickets ($view.ordersWaiting)';
-    }
-    if (view.ordersPreparing > 0) {
-      return 'NEXT: Finish preparing ($view.ordersPreparing) · '
-          'top demand first';
-    }
-    if (view.ordersReady > 0) {
-      return 'NEXT: Ready for pickup ($view.ordersReady)';
-    }
-    return 'NEXT: Monitor active tickets';
+    final topDish = view.menuDemand.isNotEmpty ? view.menuDemand.first.name : 'dishes';
+    return 'Prepare $topDish • Top Demand First';
   }
 }
 
-class _Metric {
-  const _Metric(this.label, this.value, this.emphasize);
-  final String label;
-  final String value;
-  final bool emphasize;
-}
-
-class _MetricStrip extends StatelessWidget {
-  const _MetricStrip({required this.cells});
-  final List<_Metric> cells;
+class _CleanSystemStatisticsBar extends StatelessWidget {
+  const _CleanSystemStatisticsBar({required this.view});
+  final KitchenOverviewView view;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final cols = constraints.maxWidth >= 900
-            ? 6
-            : constraints.maxWidth >= 520
-                ? 3
-                : 2;
-        final gap = AppSpacing.xs;
-        final width = (constraints.maxWidth - gap * (cols - 1)) / cols;
-        return Wrap(
-          spacing: gap,
-          runSpacing: gap,
-          children: [
-            for (final cell in cells)
-              SizedBox(
-                width: width,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    border:
-                        Border.all(color: theme.colorScheme.outlineVariant),
-                    borderRadius: BorderRadius.circular(6),
-                    color: cell.emphasize
-                        ? theme.colorScheme.surfaceContainerHighest
-                        : null,
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.sm,
-                      vertical: AppSpacing.xs,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          cell.label,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+    
+    final List<(String, int)> metrics = [
+      ('Active', view.totalActiveOrders),
+      ('Preparing', view.ordersPreparing),
+      ('Ready', view.ordersReady),
+      ('Food Qty', view.totalFoodOrders),
+      ('Drink Qty', view.totalDrinkOrders),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'SYSTEM STATISTICS',
+          style: theme.textTheme.labelSmall?.copyWith(
+            fontWeight: FontWeight.w800,
+            letterSpacing: 1.0,
+            color: AppColors.inkMuted,
+          ),
+        ),
+        const SizedBox(height: 12.0),
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.surface, // Surface background #121815
+            borderRadius: BorderRadius.circular(8.0), // Radius.sm
+          ),
+          padding: const EdgeInsets.symmetric(
+            vertical: 12.0,
+            horizontal: 24.0,
+          ),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                for (int i = 0; i < metrics.length; i++) ...[
+                  if (i > 0)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Text(
+                        '|',
+                        style: TextStyle(
+                          color: AppColors.border,
                         ),
-                        Text(
-                          cell.value,
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.w800,
-                            fontFeatures: const [
-                              FontFeature.tabularFigures(),
-                            ],
+                      ),
+                    ),
+                  RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: '${metrics[i].$1}: ',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: AppColors.inkMuted,
+                          ),
+                        ),
+                        TextSpan(
+                          text: '${metrics[i].$2}',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: AppColors.ink,
+                            fontWeight: FontWeight.bold,
+                            fontFeatures: const [FontFeature.tabularFigures()],
                           ),
                         ),
                       ],
                     ),
                   ),
-                ),
-              ),
-          ],
-        );
-      },
+                ],
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
