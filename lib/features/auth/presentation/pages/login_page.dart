@@ -50,22 +50,41 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppSpacing.xl),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      'ROMS',
-                      style: theme.textTheme.displaySmall,
-                      textAlign: TextAlign.center,
-                    ),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Ambient background — 0.08 opacity per DESIGN_BIBLE §5
+          Opacity(
+            opacity: 0.08,
+            child: Image.asset(
+              'assets/images/login/bg_ambience_forest.png',
+              fit: BoxFit.cover,
+            ),
+          ),
+          SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(AppSpacing.xl),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Center(
+                          child: Image.asset(
+                            'assets/images/common/logo_gold.png',
+                            width: 80,
+                            height: 80,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        Text(
+                          'ROMS',
+                          style: theme.textTheme.displaySmall,
+                          textAlign: TextAlign.center,
+                        ),
                     const SizedBox(height: AppSpacing.sm),
                     Text(
                       'Staff sign-in',
@@ -148,12 +167,14 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       label: 'Guest? Join your table',
                       onPressed: () => context.go(RoutePaths.customer),
                     ),
-                  ],
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }

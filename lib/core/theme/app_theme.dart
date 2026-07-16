@@ -58,7 +58,6 @@ abstract final class AppTheme {
         color: AppColors.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
-          side: const BorderSide(color: AppColors.border),
         ),
         margin: EdgeInsets.zero,
       ),
@@ -203,7 +202,6 @@ abstract final class AppTheme {
         color: AppDarkColors.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
-          side: const BorderSide(color: AppDarkColors.border),
         ),
         margin: EdgeInsets.zero,
       ),
@@ -305,24 +303,19 @@ abstract final class AppTheme {
         horizontal: AppSpacing.lg,
         vertical: AppSpacing.md,
       ),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.sm),
+      border: UnderlineInputBorder(
         borderSide: BorderSide(color: border),
       ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.sm),
+      enabledBorder: UnderlineInputBorder(
         borderSide: BorderSide(color: border),
       ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.sm),
+      focusedBorder: UnderlineInputBorder(
         borderSide: BorderSide(color: focus, width: 2),
       ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.sm),
+      errorBorder: UnderlineInputBorder(
         borderSide: BorderSide(color: error),
       ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.sm),
+      focusedErrorBorder: UnderlineInputBorder(
         borderSide: BorderSide(color: error, width: 2),
       ),
     );

@@ -5,91 +5,92 @@ import 'package:flutter/material.dart';
 /// Prefer semantic names (`ink`, `brand`, `canvas`). Legacy aliases
 /// (`primary`, `background`, …) remain for gradual migration.
 abstract final class AppColors {
-  // ── Atelier semantic ─────────────────────────────────────────────
-  static const Color ink = Color(0xFF14201A);
-  static const Color inkMuted = Color(0xFF5C6B63);
-  static const Color inkDisabled = Color(0xFF9AA69F);
+  // ── Rainforest Sanctuary semantic ───────────────────────────────
+  static const Color ink           = Color(0xFFE6EBE7); // Ink Primary  — warm alabaster
+  static const Color inkMuted      = Color(0xFF829289); // Ink Muted    — mist grey-green
+  static const Color inkDisabled   = Color(0xFF4E5C55);
 
-  static const Color canvas = Color(0xFFF3F5F2);
-  static const Color surface = Color(0xFFFFFFFF);
-  static const Color surfaceRaised = Color(0xFFE8EDE9);
+  static const Color canvas        = Color(0xFF0A0F0D); // Canvas       — ultra-deep charcoal green
+  static const Color surface       = Color(0xFF121815); // Surface      — soft muted moss stone
+  static const Color surfaceRaised = Color(0xFF1A221E); // Surface Raised — elevated layer
 
-  static const Color border = Color(0xFFD5DDD7);
-  static const Color borderStrong = Color(0xFFA8B5AD);
-  static const Color divider = Color(0xFFD5DDD7);
+  static const Color border        = Color(0xFF253029);
+  static const Color borderStrong  = Color(0xFF3A4D42);
+  static const Color divider       = Color(0xFF1F2B24);
 
-  static const Color brand = Color(0xFF1F6B4A);
-  static const Color brandPressed = Color(0xFF175338);
-  static const Color brandSoft = Color(0xFFE3F2EA);
+  static const Color brand         = Color(0xFFC5A880); // Brand Gold   — desaturated champagne
+  static const Color brandPressed  = Color(0xFFAD9067);
+  static const Color brandSoft     = Color(0xFF2A2218);
 
-  static const Color accent = Color(0xFFC45C26);
-  static const Color accentSoft = Color(0xFFF8E8DE);
+  static const Color accent        = Color(0xFFBD6B42); // Accent       — damp earth terracotta
+  static const Color accentSoft    = Color(0xFF291A11);
 
-  static const Color success = Color(0xFF2F6F4E);
-  static const Color successSoft = Color(0xFFE4F3EB);
-  static const Color warning = Color(0xFFB86E14);
-  static const Color warningSoft = Color(0xFFFFF1DC);
-  static const Color danger = Color(0xFFB42318);
-  static const Color dangerSoft = Color(0xFFFCEBEA);
-  static const Color info = Color(0xFF1F5C8A);
-  static const Color infoSoft = Color(0xFFE7F1F8);
+  static const Color success       = Color(0xFF3F5E4D); // Muted Sage Green
+  static const Color successSoft   = Color(0xFF182820);
+  static const Color warning       = Color(0xFFA88B5E); // Soft Amber Sand
+  static const Color warningSoft   = Color(0xFF25200F);
+  static const Color danger        = Color(0xFF9E473A); // Ochre Rust
+  static const Color dangerSoft    = Color(0xFF261210);
+  static const Color info          = Color(0xFF3A6080);
+  static const Color infoSoft      = Color(0xFF0E1E2B);
 
-  static const Color onBrand = Color(0xFFFFFFFF);
+  static const Color onBrand       = Color(0xFF0A0F0D);
 
   // ── Legacy aliases (do not remove — features still reference) ────
-  static const Color primary = brand;
-  static const Color primaryDark = brandPressed;
-  static const Color primaryLight = Color(0xFF3FA87A);
-  static const Color secondary = accent;
-  static const Color secondaryDark = Color(0xFFA34A1A);
-  static const Color secondaryLight = Color(0xFFE08A4F);
+  static const Color primary        = brand;
+  static const Color primaryDark    = brandPressed;
+  static const Color primaryLight   = Color(0xFFD4BC98);
+  static const Color secondary      = accent;
+  static const Color secondaryDark  = Color(0xFF9A5230);
+  static const Color secondaryLight = Color(0xFFCF8762);
 
-  static const Color background = canvas;
+  static const Color background     = canvas;
   static const Color surfaceVariant = surfaceRaised;
 
-  static const Color textPrimary = ink;
-  static const Color textSecondary = inkMuted;
-  static const Color textDisabled = inkDisabled;
-  static const Color textOnPrimary = onBrand;
+  static const Color textPrimary    = ink;
+  static const Color textSecondary  = inkMuted;
+  static const Color textDisabled   = inkDisabled;
+  static const Color textOnPrimary  = onBrand;
 
-  static const Color successLight = successSoft;
-  static const Color warningLight = warningSoft;
-  static const Color error = danger;
-  static const Color errorLight = dangerSoft;
-  static const Color infoLight = infoSoft;
+  static const Color successLight   = successSoft;
+  static const Color warningLight   = warningSoft;
+  static const Color error          = danger;
+  static const Color errorLight     = dangerSoft;
+  static const Color infoLight      = infoSoft;
 
   // Status chips (domain)
-  static const Color statusAvailable = success;
-  static const Color statusOccupied = warning;
-  static const Color statusReserved = info;
+  static const Color statusAvailable  = success;
+  static const Color statusOccupied   = warning;
+  static const Color statusReserved   = info;
   static const Color statusOutOfStock = danger;
 }
 
-/// Dark Atelier surfaces (KDS / night staff).
+/// Dark Rainforest Sanctuary surfaces (KDS / night staff).
+/// Shares the same deep palette — dark mode is the primary mode.
 abstract final class AppDarkColors {
-  static const Color ink = Color(0xFFF2F5F3);
-  static const Color inkMuted = Color(0xFFA8B5AD);
-  static const Color inkDisabled = Color(0xFF6B7870);
+  static const Color ink           = AppColors.ink;
+  static const Color inkMuted      = AppColors.inkMuted;
+  static const Color inkDisabled   = AppColors.inkDisabled;
 
-  static const Color canvas = Color(0xFF0E1210);
-  static const Color surface = Color(0xFF1A211D);
-  static const Color surfaceRaised = Color(0xFF243029);
-  static const Color border = Color(0xFF334038);
-  static const Color divider = Color(0xFF334038);
+  static const Color canvas        = AppColors.canvas;
+  static const Color surface       = AppColors.surface;
+  static const Color surfaceRaised = AppColors.surfaceRaised;
+  static const Color border        = AppColors.border;
+  static const Color divider       = AppColors.divider;
 
-  static const Color brand = Color(0xFF3FA87A);
-  static const Color brandPressed = Color(0xFF2F8A62);
-  static const Color brandSoft = Color(0xFF1A3328);
-  static const Color accent = Color(0xFFE08A4F);
-  static const Color accentSoft = Color(0xFF3A2A1F);
+  static const Color brand         = AppColors.brand;
+  static const Color brandPressed  = AppColors.brandPressed;
+  static const Color brandSoft     = AppColors.brandSoft;
+  static const Color accent        = AppColors.accent;
+  static const Color accentSoft    = AppColors.accentSoft;
 
-  static const Color onBrand = Color(0xFF0E1210);
+  static const Color onBrand       = AppColors.onBrand;
 
   // Legacy aliases
-  static const Color background = canvas;
+  static const Color background     = canvas;
   static const Color surfaceVariant = surfaceRaised;
-  static const Color textPrimary = ink;
-  static const Color textSecondary = inkMuted;
+  static const Color textPrimary    = ink;
+  static const Color textSecondary  = inkMuted;
 }
 
 /// Semantic tone for chips and banners.

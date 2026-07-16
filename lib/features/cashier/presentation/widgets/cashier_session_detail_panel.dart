@@ -24,9 +24,9 @@ class CashierSessionDetailPanel extends ConsumerWidget {
     final theme = Theme.of(context);
 
     if (snapshot == null) {
-      return DecoratedBox(
+      return Container(
         decoration: BoxDecoration(
-          border: Border.all(color: theme.colorScheme.outlineVariant),
+          color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Center(
@@ -77,9 +77,9 @@ class CashierSessionDetailPanel extends ConsumerWidget {
             ? 'NEXT: Handle request'
             : 'NEXT: Monitor / close when ready');
 
-    return DecoratedBox(
+    return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -187,7 +187,7 @@ class CashierSessionDetailPanel extends ConsumerWidget {
                           ),
                         ],
                       ),
-                      const Divider(height: 16),
+                      const SizedBox(height: AppSpacing.md),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
