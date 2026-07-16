@@ -1,3 +1,4 @@
+import type { Response } from 'express';
 import { type CustomerSessionContext } from '../sessions/guards/session-token.guard';
 import { PaymentsService } from './payments.service';
 import { VnpayService } from './vnpay.service';
@@ -17,4 +18,5 @@ export declare class VnpayController {
         RspCode: string;
         Message: string;
     }>;
+    vnpayReturn(query: any, res: Response): Promise<Response<any, Record<string, any>>>;
 }

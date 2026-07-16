@@ -153,6 +153,41 @@ let VnpayController = class VnpayController {
             return { RspCode: '00', Message: 'Confirm Success' };
         }
     }
+    async vnpayReturn(query, res) {
+        const { isValid, isSuccess, amountMinor } = this.vnpayService.verifyIpn(query);
+        let statusHtml = '';
+        if (!isValid) {
+            statusHtml = '<h2 style="color: red;">Invalid Signature</h2><p>The payment response is invalid.</p>';
+        }
+        else if (isSuccess) {
+            statusHtml = `<h2 style="color: green;">Payment Successful</h2><p>You have successfully paid ${amountMinor} VND.</p>`;
+        }
+        else {
+            statusHtml = '<h2 style="color: orange;">Payment Failed / Canceled</h2><p>The payment was not completed.</p>';
+        }
+        const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>ROMS Payment Status</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+          body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background-color: #f4f4f9; }
+          .card { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); text-align: center; max-width: 400px; width: 90%; }
+          button { margin-top: 1.5rem; padding: 0.75rem 1.5rem; background: #000; color: #fff; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          ${statusHtml}
+          <button onclick="window.close()">Close Window</button>
+          <p style="margin-top: 1rem; color: #666; font-size: 0.9rem;">Please return to the ROMS App to view your updated session status.</p>
+        </div>
+      </body>
+      </html>
+    `;
+        return res.status(200).send(html);
+    }
 };
 exports.VnpayController = VnpayController;
 __decorate([
@@ -180,6 +215,14 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], VnpayController.prototype, "ipn", null);
+__decorate([
+    (0, common_1.Get)('payments/vnpay/return'),
+    __param(0, (0, common_1.Query)()),
+    __param(1, (0, common_1.Res)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], VnpayController.prototype, "vnpayReturn", null);
 exports.VnpayController = VnpayController = __decorate([
     (0, swagger_1.ApiTags)('vnpay'),
     (0, common_1.Controller)(),

@@ -35,7 +35,7 @@ export class VnpayService {
       vnp_TxnRef: txnRef,
       vnp_OrderInfo: orderInfo,
       vnp_OrderType: 'other',
-      vnp_Amount: Number(amountMinor) * 100, // VNPAY amount is multiplied by 100
+      vnp_Amount: Number(amountMinor), // amountMinor is already VND * 100 in ROMS
       vnp_ReturnUrl: this.config.returnUrl,
       vnp_IpAddr: ipAddr,
       vnp_CreateDate: createDate,
@@ -67,7 +67,7 @@ export class VnpayService {
     const isValid = secureHash === signed;
     const isSuccess = vnp_Params['vnp_ResponseCode'] === '00';
     const txnRef = vnp_Params['vnp_TxnRef'];
-    const amountMinor = BigInt(Math.floor(Number(vnp_Params['vnp_Amount']) / 100));
+    const amountMinor = BigInt(Math.floor(Number(vnp_Params['vnp_Amount'])));
 
     return { isValid, isSuccess, txnRef, amountMinor };
   }

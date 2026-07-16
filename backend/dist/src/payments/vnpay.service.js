@@ -61,7 +61,7 @@ let VnpayService = class VnpayService {
             vnp_TxnRef: txnRef,
             vnp_OrderInfo: orderInfo,
             vnp_OrderType: 'other',
-            vnp_Amount: Number(amountMinor) * 100,
+            vnp_Amount: Number(amountMinor),
             vnp_ReturnUrl: this.config.returnUrl,
             vnp_IpAddr: ipAddr,
             vnp_CreateDate: createDate,
@@ -86,7 +86,7 @@ let VnpayService = class VnpayService {
         const isValid = secureHash === signed;
         const isSuccess = vnp_Params['vnp_ResponseCode'] === '00';
         const txnRef = vnp_Params['vnp_TxnRef'];
-        const amountMinor = BigInt(Math.floor(Number(vnp_Params['vnp_Amount']) / 100));
+        const amountMinor = BigInt(Math.floor(Number(vnp_Params['vnp_Amount'])));
         return { isValid, isSuccess, txnRef, amountMinor };
     }
     sortObject(obj) {
