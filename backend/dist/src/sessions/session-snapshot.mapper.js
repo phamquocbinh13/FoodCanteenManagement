@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.mapSessionSnapshot = mapSessionSnapshot;
 const big_int_1 = require("../common/utils/big-int");
 function mapSessionSnapshot(params) {
-    const { session, activeToken, tableLabel } = params;
+    const { session, activeToken, tableLabel, paidMinor = 0, outstandingMinor = 0 } = params;
     return {
         session: {
             id: session.id,
@@ -24,6 +24,8 @@ function mapSessionSnapshot(params) {
                 taxMinor: (0, big_int_1.toNumber)(session.payment_tax_minor),
                 serviceChargeMinor: (0, big_int_1.toNumber)(session.payment_service_charge_minor),
                 totalMinor: (0, big_int_1.toNumber)(session.payment_total_minor),
+                paidMinor,
+                outstandingMinor,
             },
             openedAt: session.opened_at.toISOString(),
             closedAt: session.closed_at?.toISOString() ?? null,

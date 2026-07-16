@@ -21,6 +21,8 @@ export type SessionSnapshot = {
       taxMinor: number;
       serviceChargeMinor: number;
       totalMinor: number;
+      paidMinor: number;
+      outstandingMinor: number;
     };
     openedAt: string;
     closedAt: string | null;
@@ -46,8 +48,10 @@ export function mapSessionSnapshot(params: {
   tableLabel: string;
   batchIds?: string[];
   requestIds?: string[];
+  paidMinor?: number;
+  outstandingMinor?: number;
 }): SessionSnapshot {
-  const { session, activeToken, tableLabel } = params;
+  const { session, activeToken, tableLabel, paidMinor = 0, outstandingMinor = 0 } = params;
   return {
     session: {
       id: session.id,
@@ -68,6 +72,8 @@ export function mapSessionSnapshot(params: {
         taxMinor: toNumber(session.payment_tax_minor),
         serviceChargeMinor: toNumber(session.payment_service_charge_minor),
         totalMinor: toNumber(session.payment_total_minor),
+        paidMinor,
+        outstandingMinor,
       },
       openedAt: session.opened_at.toISOString(),
       closedAt: session.closed_at?.toISOString() ?? null,

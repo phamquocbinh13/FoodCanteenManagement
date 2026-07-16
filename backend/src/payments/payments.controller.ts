@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   Headers,
   HttpCode,
   HttpStatus,
@@ -42,5 +43,13 @@ export class PaymentsController {
     @Headers('idempotency-key') _idempotencyKey?: string,
   ) {
     return this.payments.create(restaurantId, sessionId, user.sub, dto);
+  }
+
+  @Get('balance')
+  @ApiOperation({
+    summary: 'Get session outstanding balance',
+  })
+  balance(@Param('sessionId') sessionId: string) {
+    return this.payments.calculateSessionBalance(sessionId);
   }
 }

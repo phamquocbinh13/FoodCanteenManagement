@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$SessionPaymentSummary {
 
- int get subtotalMinor; int get discountMinor; int get taxMinor; int get serviceChargeMinor; int get totalMinor;
+ int get subtotalMinor; int get discountMinor; int get taxMinor; int get serviceChargeMinor; int get totalMinor; int get paidMinor; int get outstandingMinor;
 /// Create a copy of SessionPaymentSummary
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $SessionPaymentSummaryCopyWith<SessionPaymentSummary> get copyWith => _$SessionP
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionPaymentSummary&&(identical(other.subtotalMinor, subtotalMinor) || other.subtotalMinor == subtotalMinor)&&(identical(other.discountMinor, discountMinor) || other.discountMinor == discountMinor)&&(identical(other.taxMinor, taxMinor) || other.taxMinor == taxMinor)&&(identical(other.serviceChargeMinor, serviceChargeMinor) || other.serviceChargeMinor == serviceChargeMinor)&&(identical(other.totalMinor, totalMinor) || other.totalMinor == totalMinor));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionPaymentSummary&&(identical(other.subtotalMinor, subtotalMinor) || other.subtotalMinor == subtotalMinor)&&(identical(other.discountMinor, discountMinor) || other.discountMinor == discountMinor)&&(identical(other.taxMinor, taxMinor) || other.taxMinor == taxMinor)&&(identical(other.serviceChargeMinor, serviceChargeMinor) || other.serviceChargeMinor == serviceChargeMinor)&&(identical(other.totalMinor, totalMinor) || other.totalMinor == totalMinor)&&(identical(other.paidMinor, paidMinor) || other.paidMinor == paidMinor)&&(identical(other.outstandingMinor, outstandingMinor) || other.outstandingMinor == outstandingMinor));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,subtotalMinor,discountMinor,taxMinor,serviceChargeMinor,totalMinor);
+int get hashCode => Object.hash(runtimeType,subtotalMinor,discountMinor,taxMinor,serviceChargeMinor,totalMinor,paidMinor,outstandingMinor);
 
 @override
 String toString() {
-  return 'SessionPaymentSummary(subtotalMinor: $subtotalMinor, discountMinor: $discountMinor, taxMinor: $taxMinor, serviceChargeMinor: $serviceChargeMinor, totalMinor: $totalMinor)';
+  return 'SessionPaymentSummary(subtotalMinor: $subtotalMinor, discountMinor: $discountMinor, taxMinor: $taxMinor, serviceChargeMinor: $serviceChargeMinor, totalMinor: $totalMinor, paidMinor: $paidMinor, outstandingMinor: $outstandingMinor)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $SessionPaymentSummaryCopyWith<$Res>  {
   factory $SessionPaymentSummaryCopyWith(SessionPaymentSummary value, $Res Function(SessionPaymentSummary) _then) = _$SessionPaymentSummaryCopyWithImpl;
 @useResult
 $Res call({
- int subtotalMinor, int discountMinor, int taxMinor, int serviceChargeMinor, int totalMinor
+ int subtotalMinor, int discountMinor, int taxMinor, int serviceChargeMinor, int totalMinor, int paidMinor, int outstandingMinor
 });
 
 
@@ -65,13 +65,15 @@ class _$SessionPaymentSummaryCopyWithImpl<$Res>
 
 /// Create a copy of SessionPaymentSummary
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? subtotalMinor = null,Object? discountMinor = null,Object? taxMinor = null,Object? serviceChargeMinor = null,Object? totalMinor = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? subtotalMinor = null,Object? discountMinor = null,Object? taxMinor = null,Object? serviceChargeMinor = null,Object? totalMinor = null,Object? paidMinor = null,Object? outstandingMinor = null,}) {
   return _then(_self.copyWith(
 subtotalMinor: null == subtotalMinor ? _self.subtotalMinor : subtotalMinor // ignore: cast_nullable_to_non_nullable
 as int,discountMinor: null == discountMinor ? _self.discountMinor : discountMinor // ignore: cast_nullable_to_non_nullable
 as int,taxMinor: null == taxMinor ? _self.taxMinor : taxMinor // ignore: cast_nullable_to_non_nullable
 as int,serviceChargeMinor: null == serviceChargeMinor ? _self.serviceChargeMinor : serviceChargeMinor // ignore: cast_nullable_to_non_nullable
 as int,totalMinor: null == totalMinor ? _self.totalMinor : totalMinor // ignore: cast_nullable_to_non_nullable
+as int,paidMinor: null == paidMinor ? _self.paidMinor : paidMinor // ignore: cast_nullable_to_non_nullable
+as int,outstandingMinor: null == outstandingMinor ? _self.outstandingMinor : outstandingMinor // ignore: cast_nullable_to_non_nullable
 as int,
   ));
 }
@@ -157,10 +159,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int subtotalMinor,  int discountMinor,  int taxMinor,  int serviceChargeMinor,  int totalMinor)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int subtotalMinor,  int discountMinor,  int taxMinor,  int serviceChargeMinor,  int totalMinor,  int paidMinor,  int outstandingMinor)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SessionPaymentSummary() when $default != null:
-return $default(_that.subtotalMinor,_that.discountMinor,_that.taxMinor,_that.serviceChargeMinor,_that.totalMinor);case _:
+return $default(_that.subtotalMinor,_that.discountMinor,_that.taxMinor,_that.serviceChargeMinor,_that.totalMinor,_that.paidMinor,_that.outstandingMinor);case _:
   return orElse();
 
 }
@@ -178,10 +180,10 @@ return $default(_that.subtotalMinor,_that.discountMinor,_that.taxMinor,_that.ser
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int subtotalMinor,  int discountMinor,  int taxMinor,  int serviceChargeMinor,  int totalMinor)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int subtotalMinor,  int discountMinor,  int taxMinor,  int serviceChargeMinor,  int totalMinor,  int paidMinor,  int outstandingMinor)  $default,) {final _that = this;
 switch (_that) {
 case _SessionPaymentSummary():
-return $default(_that.subtotalMinor,_that.discountMinor,_that.taxMinor,_that.serviceChargeMinor,_that.totalMinor);case _:
+return $default(_that.subtotalMinor,_that.discountMinor,_that.taxMinor,_that.serviceChargeMinor,_that.totalMinor,_that.paidMinor,_that.outstandingMinor);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -198,10 +200,10 @@ return $default(_that.subtotalMinor,_that.discountMinor,_that.taxMinor,_that.ser
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int subtotalMinor,  int discountMinor,  int taxMinor,  int serviceChargeMinor,  int totalMinor)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int subtotalMinor,  int discountMinor,  int taxMinor,  int serviceChargeMinor,  int totalMinor,  int paidMinor,  int outstandingMinor)?  $default,) {final _that = this;
 switch (_that) {
 case _SessionPaymentSummary() when $default != null:
-return $default(_that.subtotalMinor,_that.discountMinor,_that.taxMinor,_that.serviceChargeMinor,_that.totalMinor);case _:
+return $default(_that.subtotalMinor,_that.discountMinor,_that.taxMinor,_that.serviceChargeMinor,_that.totalMinor,_that.paidMinor,_that.outstandingMinor);case _:
   return null;
 
 }
@@ -213,7 +215,7 @@ return $default(_that.subtotalMinor,_that.discountMinor,_that.taxMinor,_that.ser
 @JsonSerializable()
 
 class _SessionPaymentSummary implements SessionPaymentSummary {
-  const _SessionPaymentSummary({this.subtotalMinor = 0, this.discountMinor = 0, this.taxMinor = 0, this.serviceChargeMinor = 0, this.totalMinor = 0});
+  const _SessionPaymentSummary({this.subtotalMinor = 0, this.discountMinor = 0, this.taxMinor = 0, this.serviceChargeMinor = 0, this.totalMinor = 0, this.paidMinor = 0, this.outstandingMinor = 0});
   factory _SessionPaymentSummary.fromJson(Map<String, dynamic> json) => _$SessionPaymentSummaryFromJson(json);
 
 @override@JsonKey() final  int subtotalMinor;
@@ -221,6 +223,8 @@ class _SessionPaymentSummary implements SessionPaymentSummary {
 @override@JsonKey() final  int taxMinor;
 @override@JsonKey() final  int serviceChargeMinor;
 @override@JsonKey() final  int totalMinor;
+@override@JsonKey() final  int paidMinor;
+@override@JsonKey() final  int outstandingMinor;
 
 /// Create a copy of SessionPaymentSummary
 /// with the given fields replaced by the non-null parameter values.
@@ -235,16 +239,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionPaymentSummary&&(identical(other.subtotalMinor, subtotalMinor) || other.subtotalMinor == subtotalMinor)&&(identical(other.discountMinor, discountMinor) || other.discountMinor == discountMinor)&&(identical(other.taxMinor, taxMinor) || other.taxMinor == taxMinor)&&(identical(other.serviceChargeMinor, serviceChargeMinor) || other.serviceChargeMinor == serviceChargeMinor)&&(identical(other.totalMinor, totalMinor) || other.totalMinor == totalMinor));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionPaymentSummary&&(identical(other.subtotalMinor, subtotalMinor) || other.subtotalMinor == subtotalMinor)&&(identical(other.discountMinor, discountMinor) || other.discountMinor == discountMinor)&&(identical(other.taxMinor, taxMinor) || other.taxMinor == taxMinor)&&(identical(other.serviceChargeMinor, serviceChargeMinor) || other.serviceChargeMinor == serviceChargeMinor)&&(identical(other.totalMinor, totalMinor) || other.totalMinor == totalMinor)&&(identical(other.paidMinor, paidMinor) || other.paidMinor == paidMinor)&&(identical(other.outstandingMinor, outstandingMinor) || other.outstandingMinor == outstandingMinor));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,subtotalMinor,discountMinor,taxMinor,serviceChargeMinor,totalMinor);
+int get hashCode => Object.hash(runtimeType,subtotalMinor,discountMinor,taxMinor,serviceChargeMinor,totalMinor,paidMinor,outstandingMinor);
 
 @override
 String toString() {
-  return 'SessionPaymentSummary(subtotalMinor: $subtotalMinor, discountMinor: $discountMinor, taxMinor: $taxMinor, serviceChargeMinor: $serviceChargeMinor, totalMinor: $totalMinor)';
+  return 'SessionPaymentSummary(subtotalMinor: $subtotalMinor, discountMinor: $discountMinor, taxMinor: $taxMinor, serviceChargeMinor: $serviceChargeMinor, totalMinor: $totalMinor, paidMinor: $paidMinor, outstandingMinor: $outstandingMinor)';
 }
 
 
@@ -255,7 +259,7 @@ abstract mixin class _$SessionPaymentSummaryCopyWith<$Res> implements $SessionPa
   factory _$SessionPaymentSummaryCopyWith(_SessionPaymentSummary value, $Res Function(_SessionPaymentSummary) _then) = __$SessionPaymentSummaryCopyWithImpl;
 @override @useResult
 $Res call({
- int subtotalMinor, int discountMinor, int taxMinor, int serviceChargeMinor, int totalMinor
+ int subtotalMinor, int discountMinor, int taxMinor, int serviceChargeMinor, int totalMinor, int paidMinor, int outstandingMinor
 });
 
 
@@ -272,13 +276,15 @@ class __$SessionPaymentSummaryCopyWithImpl<$Res>
 
 /// Create a copy of SessionPaymentSummary
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? subtotalMinor = null,Object? discountMinor = null,Object? taxMinor = null,Object? serviceChargeMinor = null,Object? totalMinor = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? subtotalMinor = null,Object? discountMinor = null,Object? taxMinor = null,Object? serviceChargeMinor = null,Object? totalMinor = null,Object? paidMinor = null,Object? outstandingMinor = null,}) {
   return _then(_SessionPaymentSummary(
 subtotalMinor: null == subtotalMinor ? _self.subtotalMinor : subtotalMinor // ignore: cast_nullable_to_non_nullable
 as int,discountMinor: null == discountMinor ? _self.discountMinor : discountMinor // ignore: cast_nullable_to_non_nullable
 as int,taxMinor: null == taxMinor ? _self.taxMinor : taxMinor // ignore: cast_nullable_to_non_nullable
 as int,serviceChargeMinor: null == serviceChargeMinor ? _self.serviceChargeMinor : serviceChargeMinor // ignore: cast_nullable_to_non_nullable
 as int,totalMinor: null == totalMinor ? _self.totalMinor : totalMinor // ignore: cast_nullable_to_non_nullable
+as int,paidMinor: null == paidMinor ? _self.paidMinor : paidMinor // ignore: cast_nullable_to_non_nullable
+as int,outstandingMinor: null == outstandingMinor ? _self.outstandingMinor : outstandingMinor // ignore: cast_nullable_to_non_nullable
 as int,
   ));
 }

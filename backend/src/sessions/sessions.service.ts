@@ -683,11 +683,12 @@ export class SessionsService {
       where: { token_hash: tokenHash },
       include: {
         dine_in_session: {
-          include: {
-            restaurant_table: true,
-            kitchen_batch: { select: { id: true } },
-            staff_request: { select: { id: true } },
-          },
+      include: {
+        restaurant_table: true,
+        restaurant: { select: { settings: true } },
+        kitchen_batch: { select: { id: true } },
+        staff_request: { select: { id: true } },
+      },
         },
       },
     });
@@ -700,12 +701,16 @@ export class SessionsService {
     }
 
     const session = row.dine_in_session;
+    const { paidMinor, outstandingMinor } = await this.calculateBalance(session.id, session.restaurant.settings);
+
     return mapSessionSnapshot({
       session,
       activeToken: row,
       tableLabel: session.restaurant_table.label,
       batchIds: session.kitchen_batch.map((b) => b.id),
       requestIds: session.staff_request.map((r) => r.id),
+      paidMinor,
+      outstandingMinor,
     });
   }
 
@@ -727,6 +732,7 @@ export class SessionsService {
       where: { id: sessionId, restaurant_id: restaurantId },
       include: {
         restaurant_table: true,
+        restaurant: { select: { settings: true } },
         session_auth_token: {
           where: { revoked_at: null },
           orderBy: { created_at: 'desc' },
@@ -739,13 +745,42 @@ export class SessionsService {
     if (!session) {
       throw notFound('SESSION_NOT_FOUND', 'Session not found');
     }
+
+    const { paidMinor, outstandingMinor } = await this.calculateBalance(sessionId, session.restaurant.settings);
+
     return mapSessionSnapshot({
       session,
       activeToken: session.session_auth_token[0] ?? null,
       tableLabel: session.restaurant_table.label,
       batchIds: session.kitchen_batch.map((b) => b.id),
       requestIds: session.staff_request.map((r) => r.id),
+      paidMinor,
+      outstandingMinor,
     });
+  }
+
+  private async calculateBalance(sessionId: string, settings: any): Promise<{ paidMinor: number; outstandingMinor: number }> {
+    if (!settings) return { paidMinor: 0, outstandingMinor: 0 };
+    const batchItems = await this.prisma.batch_item.findMany({
+      where: { kitchen_batch: { session_id: sessionId } },
+    });
+    let subtotalMinor = 0n;
+    for (const i of batchItems) subtotalMinor += i.line_total_minor;
+    
+    const taxAmountMinor = (subtotalMinor * BigInt(settings.taxRateBps) + 5000n) / 10000n;
+    const serviceChargeMinor = (subtotalMinor * BigInt(settings.serviceChargeBps) + 5000n) / 10000n;
+    const totalAmountMinor = subtotalMinor + taxAmountMinor + serviceChargeMinor;
+
+    const payments = await this.prisma.session_payment.findMany({
+      where: { session_id: sessionId, payment_status: 'paid' },
+    });
+    const paidMinor = payments.reduce((s, p) => s + p.total_amount_minor, 0n);
+    const outstanding = totalAmountMinor - paidMinor;
+
+    return {
+      paidMinor: Number(paidMinor),
+      outstandingMinor: Number(outstanding > 0n ? outstanding : 0n),
+    };
   }
 }
 

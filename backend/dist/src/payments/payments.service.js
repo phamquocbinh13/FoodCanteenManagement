@@ -40,12 +40,6 @@ let PaymentsService = class PaymentsService {
             if (session.status === 'closed') {
                 throw (0, api_exception_1.conflict)('SESSION_CLOSED', 'Session is already closed');
             }
-            const existingPayment = await tx.session_payment.findUnique({
-                where: { session_id: sessionId },
-            });
-            if (existingPayment) {
-                throw (0, api_exception_1.conflict)('SESSION_ALREADY_PAID', 'Session already has a payment — no split bill');
-            }
             const settings = await tx.restaurantSettings.findUnique({
                 where: { restaurantId },
             });
@@ -63,49 +57,59 @@ let PaymentsService = class PaymentsService {
                 taxRateBps: settings.taxRateBps,
                 serviceChargeBps: settings.serviceChargeBps,
             });
+            const payments = await tx.session_payment.findMany({
+                where: { session_id: sessionId, payment_status: 'paid' },
+            });
+            const paidMinor = payments.reduce((sum, p) => sum + p.total_amount_minor, 0n);
+            const outstandingMinor = bill.totalAmountMinor - paidMinor;
+            if (dto.closeType === 'payment' && outstandingMinor <= 0n) {
+            }
             const currency = settings.defaultCurrency;
             const now = new Date();
-            const paymentId = (0, uuid_1.v4)();
-            const payment = await tx.session_payment.create({
-                data: {
-                    id: paymentId,
-                    session_id: sessionId,
-                    payment_method: dto.paymentMethod,
-                    close_type: dto.closeType,
-                    force_close_reason: dto.closeType === 'force_closed' ? dto.forceCloseReason : null,
-                    force_close_note: dto.forceCloseNote?.trim() || null,
-                    subtotal_minor: bill.subtotalMinor,
-                    tax_amount_minor: bill.taxAmountMinor,
-                    service_charge_minor: bill.serviceChargeMinor,
-                    total_amount_minor: bill.totalAmountMinor,
-                    currency_code: currency,
-                    closed_by_user_id: closedByUserId,
-                    payment_status: 'paid',
-                    payment_provider: 'cash',
-                    paid_at: now,
-                    created_at: now,
-                },
-            });
-            const billLineRows = batchItems.map((item) => ({
-                id: (0, uuid_1.v4)(),
-                session_payment_id: paymentId,
-                batch_item_id: item.id,
-                description: item.menu_item_name_snapshot,
-                quantity: item.quantity,
-                unit_price_minor: item.unit_price_minor,
-                line_total_minor: item.line_total_minor,
-                currency_code: item.currency_code || currency,
-                created_at: now,
-            }));
-            if (billLineRows.length > 0) {
-                await tx.session_bill_line.createMany({ data: billLineRows });
+            let paymentId;
+            let createdPayment;
+            const createdLines = [];
+            if (outstandingMinor > 0n || dto.closeType === 'force_closed') {
+                paymentId = (0, uuid_1.v4)();
+                const payAmount = outstandingMinor > 0n ? outstandingMinor : 0n;
+                createdPayment = await tx.session_payment.create({
+                    data: {
+                        id: paymentId,
+                        session_id: sessionId,
+                        payment_method: dto.paymentMethod,
+                        close_type: dto.closeType,
+                        force_close_reason: dto.closeType === 'force_closed' ? dto.forceCloseReason : null,
+                        force_close_note: dto.forceCloseNote?.trim() || null,
+                        subtotal_minor: payAmount,
+                        tax_amount_minor: 0n,
+                        service_charge_minor: 0n,
+                        total_amount_minor: payAmount,
+                        currency_code: currency,
+                        closed_by_user_id: closedByUserId,
+                        payment_status: 'paid',
+                        payment_provider: 'cash',
+                        paid_at: now,
+                        created_at: now,
+                    },
+                });
+                const lineId = (0, uuid_1.v4)();
+                await tx.session_bill_line.create({
+                    data: {
+                        id: lineId,
+                        session_payment_id: paymentId,
+                        batch_item_id: batchItems[0]?.id || (0, uuid_1.v4)(),
+                        description: 'Payment',
+                        quantity: 1,
+                        unit_price_minor: payAmount,
+                        line_total_minor: payAmount,
+                        currency_code: currency,
+                        created_at: now,
+                    }
+                });
+                const line = await tx.session_bill_line.findUnique({ where: { id: lineId } });
+                if (line)
+                    createdLines.push(line);
             }
-            const createdLines = billLineRows.length > 0
-                ? await tx.session_bill_line.findMany({
-                    where: { session_payment_id: paymentId },
-                    orderBy: { created_at: 'asc' },
-                })
-                : [];
             const closed = await tx.dine_in_session.updateMany({
                 where: {
                     id: sessionId,
@@ -158,16 +162,45 @@ let PaymentsService = class PaymentsService {
                     occurred_at: now,
                 },
             });
-            return { payment, billLines: createdLines };
+            return { payment: createdPayment, billLines: createdLines };
         });
         const snapshot = await this.sessions.findById(restaurantId, sessionId);
         return {
-            payment: (0, payments_mapper_1.mapSessionPayment)(result.payment),
+            payment: result.payment ? (0, payments_mapper_1.mapSessionPayment)(result.payment) : null,
             billLines: result.billLines.map(payments_mapper_1.mapSessionBillLine),
             snapshot,
         };
     }
-    async closeSessionOnWebhookSuccess(sessionId, paymentId) {
+    async calculateSessionBalance(sessionId) {
+        const session = await this.prisma.dine_in_session.findUnique({
+            where: { id: sessionId },
+            include: {
+                restaurant: { select: { settings: true } }
+            }
+        });
+        if (!session || !session.restaurant?.settings) {
+            return { totalMinor: 0n, paidMinor: 0n, outstandingMinor: 0n };
+        }
+        const batchItems = await this.prisma.batch_item.findMany({
+            where: { kitchen_batch: { session_id: sessionId } },
+        });
+        const bill = (0, payments_mapper_1.computeBillMinors)({
+            lineTotals: batchItems.map((i) => i.line_total_minor),
+            taxRateBps: session.restaurant.settings.taxRateBps,
+            serviceChargeBps: session.restaurant.settings.serviceChargeBps,
+        });
+        const payments = await this.prisma.session_payment.findMany({
+            where: { session_id: sessionId, payment_status: 'paid' },
+        });
+        const paidMinor = payments.reduce((sum, p) => sum + p.total_amount_minor, 0n);
+        const outstandingMinor = bill.totalAmountMinor - paidMinor;
+        return {
+            totalMinor: bill.totalAmountMinor,
+            paidMinor,
+            outstandingMinor: outstandingMinor > 0n ? outstandingMinor : 0n,
+        };
+    }
+    async confirmPaymentOnWebhookSuccess(sessionId, paymentId) {
         await this.prisma.$transaction(async (tx) => {
             const payment = await tx.session_payment.findUnique({ where: { id: paymentId } });
             if (!payment || payment.payment_status === 'paid')
@@ -198,41 +231,17 @@ let PaymentsService = class PaymentsService {
                 where: { id: paymentId },
                 data: { payment_status: 'paid', paid_at: now },
             });
-            await tx.dine_in_session.updateMany({
-                where: { id: sessionId, status: { not: 'closed' } },
-                data: {
-                    status: 'closed',
-                    payment_status: 'paid',
-                    active_table_guard: null,
-                    payment_soft_lock: false,
-                    closed_at: now,
-                    payment_subtotal_minor: payment.subtotal_minor,
-                    payment_tax_minor: payment.tax_amount_minor,
-                    payment_service_charge_minor: payment.service_charge_minor,
-                    payment_total_minor: payment.total_amount_minor,
-                    updated_at: now,
-                },
-            });
-            await tx.restaurantTable.update({
-                where: { id: session.table_id },
-                data: { status: 'available', updatedAt: now },
-            });
-            await tx.session_auth_token.updateMany({
-                where: { session_id: sessionId, revoked_at: null },
-                data: { revoked_at: now },
-            });
             await tx.session_timeline_event.create({
                 data: {
                     id: (0, uuid_1.v4)(),
                     session_id: sessionId,
-                    event_type: 'payment_closed',
+                    event_type: 'payment_received',
                     payload_json: {
-                        closeType: payment.close_type,
                         paymentId,
                         paymentMethod: payment.payment_method,
+                        amountMinor: Number(payment.total_amount_minor),
                     },
-                    actor_type: 'user',
-                    actor_id: payment.closed_by_user_id,
+                    actor_type: 'system',
                     occurred_at: now,
                 },
             });

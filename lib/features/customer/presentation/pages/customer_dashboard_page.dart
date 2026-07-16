@@ -232,14 +232,44 @@ class _SessionPageState extends ConsumerState<SessionPage> {
               AppCard(
                 padding: const EdgeInsets.all(AppSpacing.lg),
                 child: bill != null && bill.totalMinor > 0
-                    ? Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    ? Column(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text('Total', style: theme.textTheme.bodyLarge),
-                          RomsMoneyText(
-                            amountMinor: bill.totalMinor,
-                            currencyCode: 'VND',
-                            large: true,
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('Total Bill', style: theme.textTheme.bodyLarge),
+                              RomsMoneyText(
+                                amountMinor: bill.totalMinor,
+                                currencyCode: 'VND',
+                                large: true,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: AppSpacing.xs),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('Paid', style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.inkMuted)),
+                              RomsMoneyText(
+                                amountMinor: bill.paidMinor,
+                                currencyCode: 'VND',
+                                color: AppColors.inkMuted,
+                              ),
+                            ],
+                          ),
+                          const Divider(),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('Outstanding', style: theme.textTheme.titleMedium?.copyWith(color: AppColors.primaryOrange)),
+                              RomsMoneyText(
+                                amountMinor: bill.outstandingMinor,
+                                currencyCode: 'VND',
+                                color: AppColors.primaryOrange,
+                                large: true,
+                              ),
+                            ],
                           ),
                         ],
                       )
@@ -276,7 +306,7 @@ class _SessionPageState extends ConsumerState<SessionPage> {
                 icon: Icons.payments_outlined,
                 isExpanded: true,
                 onPressed: phase == SessionLifecyclePhase.closed ||
-                        controller.paymentRequested
+                        controller.paymentRequested || bill == null || bill.outstandingMinor <= 0
                     ? null
                     : _requestPayment,
               ),
@@ -285,7 +315,7 @@ class _SessionPageState extends ConsumerState<SessionPage> {
                 label: 'Pay with VNPAY',
                 icon: Icons.qr_code_2_outlined,
                 isExpanded: true,
-                onPressed: phase == SessionLifecyclePhase.closed || bill == null || bill.totalMinor <= 0
+                onPressed: phase == SessionLifecyclePhase.closed || bill == null || bill.outstandingMinor <= 0
                     ? null
                     : () async {
                         final url = await ordering.createVnpayIntent();

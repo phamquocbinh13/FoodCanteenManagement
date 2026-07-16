@@ -14,6 +14,8 @@ _SessionPaymentSummary _$SessionPaymentSummaryFromJson(
   taxMinor: (json['tax_minor'] as num?)?.toInt() ?? 0,
   serviceChargeMinor: (json['service_charge_minor'] as num?)?.toInt() ?? 0,
   totalMinor: (json['total_minor'] as num?)?.toInt() ?? 0,
+  paidMinor: (json['paid_minor'] as num?)?.toInt() ?? 0,
+  outstandingMinor: (json['outstanding_minor'] as num?)?.toInt() ?? 0,
 );
 
 Map<String, dynamic> _$SessionPaymentSummaryToJson(
@@ -24,4 +26,6 @@ Map<String, dynamic> _$SessionPaymentSummaryToJson(
   'tax_minor': instance.taxMinor,
   'service_charge_minor': instance.serviceChargeMinor,
   'total_minor': instance.totalMinor,
+  'paid_minor': instance.paidMinor,
+  'outstanding_minor': instance.outstandingMinor,
 };

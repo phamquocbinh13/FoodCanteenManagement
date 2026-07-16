@@ -42,20 +42,29 @@ class _CashierSessionDetailPageState
   }
 
   Future<void> _closeWithPayment(CashierSessionController session) async {
-    final choice = await showPaymentCloseSheet(context);
-    if (choice == null || !mounted) return;
+    final outstanding = session.bill?.outstandingMinor ?? 0;
+    PaymentMethod? paymentMethod = PaymentMethod.cash;
+
+    if (outstanding > 0) {
+      final choice = await showPaymentCloseSheet(context);
+      if (choice == null || !mounted) return;
+      paymentMethod = choice.paymentMethod;
+    }
+
+    if (!mounted) return;
 
     final confirmed = await showRomsConfirmDialog(
       context: context,
-      title: 'Close session with payment?',
-      message:
-          'Records payment, closes the session, frees the table, and revokes '
-          'guest access. This cannot be undone.',
-      confirmLabel: 'Take payment & close',
+      title: outstanding > 0 ? 'Close session with payment?' : 'Close session?',
+      message: outstanding > 0 
+          ? 'Records payment, closes the session, frees the table, and revokes '
+            'guest access. This cannot be undone.'
+          : 'Frees the table. Outstanding balance is already fully paid.',
+      confirmLabel: outstanding > 0 ? 'Take payment & close' : 'Close session',
       cancelLabel: 'Not yet',
     );
     if (confirmed == true) {
-      await session.closeSession(paymentMethod: choice.paymentMethod);
+      await session.closeSession(paymentMethod: paymentMethod);
       if (mounted) context.pop();
     }
   }
@@ -198,8 +207,18 @@ class _CashierSessionDetailPageState
                           ),
                           _kv(
                             theme,
-                            'Total',
+                            'Total Bill',
                             _money(session.bill!.totalMinor),
+                          ),
+                          _kv(
+                            theme,
+                            'Paid',
+                            _money(session.bill!.paidMinor),
+                          ),
+                          _kv(
+                            theme,
+                            'Outstanding',
+                            _money(session.bill!.outstandingMinor),
                           ),
                         ],
                       ],
@@ -293,7 +312,9 @@ class _CashierSessionDetailPageState
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   PrimaryButton(
-                    label: 'Take payment & close',
+                    label: session.bill?.outstandingMinor == 0
+                        ? 'Close session'
+                        : 'Take payment & close',
                     icon: Icons.payments_outlined,
                     isExpanded: true,
                     isLoading: session.isLoading,

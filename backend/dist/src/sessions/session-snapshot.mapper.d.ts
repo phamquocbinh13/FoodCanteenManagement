@@ -19,6 +19,8 @@ export type SessionSnapshot = {
             taxMinor: number;
             serviceChargeMinor: number;
             totalMinor: number;
+            paidMinor: number;
+            outstandingMinor: number;
         };
         openedAt: string;
         closedAt: string | null;
@@ -43,4 +45,6 @@ export declare function mapSessionSnapshot(params: {
     tableLabel: string;
     batchIds?: string[];
     requestIds?: string[];
+    paidMinor?: number;
+    outstandingMinor?: number;
 }): SessionSnapshot;

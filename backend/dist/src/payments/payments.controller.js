@@ -28,6 +28,9 @@ let PaymentsController = class PaymentsController {
     create(restaurantId, sessionId, user, dto, _idempotencyKey) {
         return this.payments.create(restaurantId, sessionId, user.sub, dto);
     }
+    balance(sessionId) {
+        return this.payments.calculateSessionBalance(sessionId);
+    }
 };
 exports.PaymentsController = PaymentsController;
 __decorate([
@@ -50,6 +53,16 @@ __decorate([
     __metadata("design:paramtypes", [String, String, Object, create_session_payment_dto_1.CreateSessionPaymentDto, String]),
     __metadata("design:returntype", void 0)
 ], PaymentsController.prototype, "create", null);
+__decorate([
+    (0, common_1.Get)('balance'),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Get session outstanding balance',
+    }),
+    __param(0, (0, common_1.Param)('sessionId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], PaymentsController.prototype, "balance", null);
 exports.PaymentsController = PaymentsController = __decorate([
     (0, swagger_1.ApiTags)('payments'),
     (0, swagger_1.ApiBearerAuth)(),

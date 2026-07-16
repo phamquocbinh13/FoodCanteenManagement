@@ -75,5 +75,6 @@ const _$SessionOpenedViaEnumMap = {
 const _$SessionPaymentStatusEnumMap = {
   SessionPaymentStatus.unpaid: 'unpaid',
   SessionPaymentStatus.waitingPayment: 'waiting_payment',
+  SessionPaymentStatus.waitingGateway: 'waiting_gateway',
   SessionPaymentStatus.paid: 'paid',
 };

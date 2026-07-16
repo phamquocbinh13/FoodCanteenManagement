@@ -36,6 +36,8 @@ const _$SessionTimelineEventTypeEnumMap = {
   SessionTimelineEventType.cartItemAdded: 'cart_item_added',
   SessionTimelineEventType.cartItemRemoved: 'cart_item_removed',
   SessionTimelineEventType.batchConfirmed: 'batch_confirmed',
+  SessionTimelineEventType.batchItemCompleted: 'batch_item_completed',
+  SessionTimelineEventType.batchCompleted: 'batch_completed',
   SessionTimelineEventType.staffRequestCreated: 'staff_request_created',
   SessionTimelineEventType.staffRequestHandled: 'staff_request_handled',
   SessionTimelineEventType.paymentRequested: 'payment_requested',

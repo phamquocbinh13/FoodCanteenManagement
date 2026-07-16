@@ -41,29 +41,17 @@ export class VnpayController {
       });
       if (!settings) throw unprocessable('SETTINGS_NOT_FOUND', 'Settings missing');
 
-      const batchItems = await tx.batch_item.findMany({
-        where: { kitchen_batch: { session_id: sessionId } },
-      });
-
-      let subtotalMinor = 0n;
-      for (const item of batchItems) subtotalMinor += item.line_total_minor;
-
-      const taxAmountMinor = (subtotalMinor * BigInt(settings.taxRateBps) + 5000n) / 10000n;
-      const serviceChargeMinor = (subtotalMinor * BigInt(settings.serviceChargeBps) + 5000n) / 10000n;
-      const totalAmountMinor = subtotalMinor + taxAmountMinor + serviceChargeMinor;
-
-      if (totalAmountMinor <= 0n) {
-        throw unprocessable('ZERO_AMOUNT', 'Cannot pay zero amount');
+      const balance = await this.paymentsService.calculateSessionBalance(sessionId);
+      if (balance.outstandingMinor <= 0n) {
+        throw unprocessable('ZERO_AMOUNT', 'Cannot pay zero amount, bill is already settled.');
       }
 
-      // 3. Create or update pending session_payment
-      let existingPayment = await tx.session_payment.findUnique({
-        where: { session_id: sessionId },
-      });
+      const totalAmountMinor = balance.outstandingMinor;
 
-      if (existingPayment && existingPayment.payment_status === 'paid') {
-        throw unprocessable('SESSION_ALREADY_PAID', 'Session already paid');
-      }
+      // 3. Create or update pending session_payment (we always create a new one now for split bills, or update if there's a pending one)
+      let existingPayment = await tx.session_payment.findFirst({
+        where: { session_id: sessionId, payment_status: 'waiting_gateway' },
+      });
 
       const txnRef = uuidv4();
       const now = new Date();
@@ -80,9 +68,9 @@ export class VnpayController {
             payment_status: 'waiting_gateway',
             payment_provider: 'vnpay',
             provider_transaction_id: txnRef,
-            subtotal_minor: subtotalMinor,
-            tax_amount_minor: taxAmountMinor,
-            service_charge_minor: serviceChargeMinor,
+            subtotal_minor: totalAmountMinor, // Map remaining entirely to subtotal for now as partial payment
+            tax_amount_minor: 0n,
+            service_charge_minor: 0n,
             total_amount_minor: totalAmountMinor,
             currency_code: settings.defaultCurrency,
             closed_by_user_id: session.opened_by_user_id || null,
@@ -92,14 +80,14 @@ export class VnpayController {
         });
       } else {
         await tx.session_payment.update({
-          where: { session_id: sessionId },
+          where: { id: existingPayment.id },
           data: {
             payment_status: 'waiting_gateway',
             payment_provider: 'vnpay',
             provider_transaction_id: txnRef,
-            subtotal_minor: subtotalMinor,
-            tax_amount_minor: taxAmountMinor,
-            service_charge_minor: serviceChargeMinor,
+            subtotal_minor: totalAmountMinor,
+            tax_amount_minor: 0n,
+            service_charge_minor: 0n,
             total_amount_minor: totalAmountMinor,
             paid_at: now,
           },
@@ -122,9 +110,10 @@ export class VnpayController {
   @UseGuards(SessionTokenGuard)
   @ApiHeader({ name: 'X-Session-Token', required: false })
   async getStatus(@CurrentSession() ctx: CustomerSessionContext) {
-    const payment = await this.prisma.session_payment.findUnique({
+    const payment = await this.prisma.session_payment.findFirst({
       where: { session_id: ctx.sessionId },
       select: { payment_status: true },
+      orderBy: { created_at: 'desc' },
     });
     return { status: payment?.payment_status || 'created' };
   }
@@ -154,8 +143,8 @@ export class VnpayController {
     }
 
     if (isSuccess) {
-      // Execute atomic close
-      await this.paymentsService.closeSessionOnWebhookSuccess(payment.session_id, payment.id);
+      // Confirm payment
+      await this.paymentsService.confirmPaymentOnWebhookSuccess(payment.session_id, payment.id);
       return { RspCode: '00', Message: 'Confirm Success' };
     } else {
       await this.prisma.$transaction([
@@ -186,7 +175,7 @@ export class VnpayController {
 
       if (payment && payment.payment_status !== 'paid') {
         if (isSuccess) {
-          await this.paymentsService.closeSessionOnWebhookSuccess(payment.session_id, payment.id);
+          await this.paymentsService.confirmPaymentOnWebhookSuccess(payment.session_id, payment.id);
         } else {
           await this.prisma.$transaction([
             this.prisma.session_payment.update({

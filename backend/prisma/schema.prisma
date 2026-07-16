@@ -341,7 +341,7 @@ model dine_in_session {
   session_auth_token                                       session_auth_token[]
   session_cart                                             session_cart?
   session_device                                           session_device[]
-  session_payment                                          session_payment?
+  session_payment                                          session_payment[]
   session_timeline_event                                   session_timeline_event[]
   staff_request                                            staff_request[]
 
@@ -567,12 +567,12 @@ model session_device {
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model session_payment {
   id                   String              @id @db.Char(36)
-  session_id           String              @unique(map: "uq_session_payment") @db.Char(36)
+  session_id           String              @db.Char(36)
   payment_method       String              @db.VarChar(32)
   close_type           String              @default("payment") @db.VarChar(32)
-    payment_status       String              @default("paid") @db.VarChar(32)
-    payment_provider     String              @default("cash") @db.VarChar(32)
-    provider_transaction_id String?          @db.VarChar(100)
+  payment_status       String              @default("paid") @db.VarChar(32)
+  payment_provider     String              @default("cash") @db.VarChar(32)
+  provider_transaction_id String?          @db.VarChar(100)
   force_close_reason   String?             @db.VarChar(32)
   force_close_note     String?             @db.VarChar(500)
   subtotal_minor       BigInt
@@ -588,6 +588,7 @@ model session_payment {
   staff_user           StaffUser?          @relation(fields: [closed_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_session_payment_user")
 
   @@index([closed_by_user_id], map: "fk_session_payment_user")
+  @@index([session_id], map: "idx_session_payment_session")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.

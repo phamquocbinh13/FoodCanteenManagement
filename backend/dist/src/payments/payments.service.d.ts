@@ -13,5 +13,10 @@ export declare class PaymentsService {
     private readonly sessions;
     constructor(prisma: PrismaService, sessions: SessionsService);
     create(restaurantId: string, sessionId: string, closedByUserId: string, dto: CreateSessionPaymentDto): Promise<CreatePaymentResult>;
-    closeSessionOnWebhookSuccess(sessionId: string, paymentId: string): Promise<void>;
+    calculateSessionBalance(sessionId: string): Promise<{
+        totalMinor: bigint;
+        paidMinor: bigint;
+        outstandingMinor: bigint;
+    }>;
+    confirmPaymentOnWebhookSuccess(sessionId: string, paymentId: string): Promise<void>;
 }

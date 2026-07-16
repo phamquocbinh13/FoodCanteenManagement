@@ -162,15 +162,43 @@ class CashierSessionDetailPanel extends ConsumerWidget {
                 if (session.bill == null)
                   Text('No bill yet', style: theme.textTheme.bodySmall)
                 else
-                  Row(
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Expanded(
-                        child: Text('Total', style: theme.textTheme.titleSmall),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Total Bill', style: theme.textTheme.bodyMedium),
+                          RomsMoneyText(
+                            amountMinor: session.bill!.totalMinor,
+                            currencyCode: 'VND',
+                          ),
+                        ],
                       ),
-                      RomsMoneyText(
-                        amountMinor: session.bill!.totalMinor,
-                        currencyCode: 'VND',
-                        large: true,
+                      const SizedBox(height: 2),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Paid', style: theme.textTheme.bodySmall?.copyWith(color: AppColors.inkMuted)),
+                          RomsMoneyText(
+                            amountMinor: session.bill!.paidMinor,
+                            currencyCode: 'VND',
+                            color: AppColors.inkMuted,
+                          ),
+                        ],
+                      ),
+                      const Divider(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Outstanding', style: theme.textTheme.titleSmall?.copyWith(color: AppColors.primaryOrange)),
+                          RomsMoneyText(
+                            amountMinor: session.bill!.outstandingMinor,
+                            currencyCode: 'VND',
+                            large: true,
+                            color: AppColors.primaryOrange,
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -271,7 +299,9 @@ class CashierSessionDetailPanel extends ConsumerWidget {
                 PrimaryButton(
                   label: snapshot.session.paymentStatus == SessionPaymentStatus.waitingGateway
                       ? 'Payment Processing...'
-                      : 'Take payment & close',
+                      : (session.bill?.outstandingMinor == 0
+                          ? 'Close session'
+                          : 'Take payment & close'),
                   icon: Icons.payments_outlined,
                   isExpanded: true,
                   isLoading: session.isLoading,
@@ -299,17 +329,28 @@ class CashierSessionDetailPanel extends ConsumerWidget {
     BuildContext context,
     CashierSessionController session,
   ) async {
-    final choice = await showPaymentCloseSheet(context);
-    if (choice == null || !context.mounted) return;
+    final outstanding = session.bill?.outstandingMinor ?? 0;
+    
+    PaymentMethod? paymentMethod = PaymentMethod.cash;
+    if (outstanding > 0) {
+      final choice = await showPaymentCloseSheet(context);
+      if (choice == null || !context.mounted) return;
+      paymentMethod = choice.paymentMethod;
+    }
+
+    if (!context.mounted) return;
+
     final confirmed = await showRomsConfirmDialog(
       context: context,
-      title: 'Close session with payment?',
-      message: 'Records payment and frees the table. Cannot be undone.',
-      confirmLabel: 'Take payment & close',
+      title: outstanding > 0 ? 'Close session with payment?' : 'Close session?',
+      message: outstanding > 0 
+          ? 'Records payment and frees the table. Cannot be undone.'
+          : 'Frees the table. Outstanding balance is already fully paid.',
+      confirmLabel: outstanding > 0 ? 'Take payment & close' : 'Close session',
       cancelLabel: 'Not yet',
     );
     if (confirmed == true) {
-      await session.closeSession(paymentMethod: choice.paymentMethod);
+      await session.closeSession(paymentMethod: paymentMethod);
     }
   }
 

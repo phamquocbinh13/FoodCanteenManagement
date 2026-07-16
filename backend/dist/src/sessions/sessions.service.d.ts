@@ -50,4 +50,5 @@ export declare class SessionsService {
     private resolveByToken;
     private requireSession;
     private getSnapshotById;
+    private calculateBalance;
 }

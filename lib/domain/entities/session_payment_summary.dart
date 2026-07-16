@@ -12,6 +12,8 @@ abstract class SessionPaymentSummary with _$SessionPaymentSummary {
     @Default(0) int taxMinor,
     @Default(0) int serviceChargeMinor,
     @Default(0) int totalMinor,
+    @Default(0) int paidMinor,
+    @Default(0) int outstandingMinor,
   }) = _SessionPaymentSummary;
 
   factory SessionPaymentSummary.fromJson(Map<String, dynamic> json) =>
