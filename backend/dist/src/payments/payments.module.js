@@ -12,14 +12,16 @@ const auth_module_1 = require("../auth/auth.module");
 const sessions_module_1 = require("../sessions/sessions.module");
 const payments_controller_1 = require("./payments.controller");
 const payments_service_1 = require("./payments.service");
+const vnpay_controller_1 = require("./vnpay.controller");
+const vnpay_service_1 = require("./vnpay.service");
 let PaymentsModule = class PaymentsModule {
 };
 exports.PaymentsModule = PaymentsModule;
 exports.PaymentsModule = PaymentsModule = __decorate([
     (0, common_1.Module)({
         imports: [auth_module_1.AuthModule, sessions_module_1.SessionsModule],
-        controllers: [payments_controller_1.PaymentsController],
-        providers: [payments_service_1.PaymentsService],
+        controllers: [payments_controller_1.PaymentsController, vnpay_controller_1.VnpayController],
+        providers: [payments_service_1.PaymentsService, vnpay_service_1.VnpayService],
     })
 ], PaymentsModule);
 //# sourceMappingURL=payments.module.js.map

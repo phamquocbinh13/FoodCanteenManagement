@@ -133,7 +133,7 @@ class CashierSessionDetailPanel extends ConsumerWidget {
                       child: RomsTableLabel(
                         label: snapshot.tableLabel,
                         emphasize: true,
-                        statusLabel: _phaseLabel(phase),
+                        statusLabel: _phaseLabel(phase, snapshot.session.paymentStatus),
                         tone: tone,
                       ),
                     ),
@@ -153,7 +153,7 @@ class CashierSessionDetailPanel extends ConsumerWidget {
                       snapshot.session.openedVia.name,
                     ),
                     ('Batches', '${snapshot.session.currentBatchNumber}'),
-                    ('Status', _phaseLabel(phase)),
+                    ('Status', _phaseLabel(phase, snapshot.session.paymentStatus)),
                   ],
                 ),
                 const SizedBox(height: AppSpacing.md),
@@ -269,11 +269,13 @@ class CashierSessionDetailPanel extends ConsumerWidget {
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 PrimaryButton(
-                  label: 'Take payment & close',
+                  label: snapshot.session.paymentStatus == SessionPaymentStatus.waitingGateway
+                      ? 'Payment Processing...'
+                      : 'Take payment & close',
                   icon: Icons.payments_outlined,
                   isExpanded: true,
                   isLoading: session.isLoading,
-                  onPressed: session.isLoading
+                  onPressed: session.isLoading || snapshot.session.paymentStatus == SessionPaymentStatus.waitingGateway
                       ? null
                       : () => _closeWithPayment(context, session),
                 ),
@@ -335,12 +337,15 @@ class CashierSessionDetailPanel extends ConsumerWidget {
     }
   }
 
-  String _phaseLabel(SessionLifecyclePhase phase) => switch (phase) {
-        SessionLifecyclePhase.available => 'Available',
-        SessionLifecyclePhase.occupied => 'Occupied',
-        SessionLifecyclePhase.waitingPayment => 'Waiting payment',
-        SessionLifecyclePhase.closed => 'Closed',
-      };
+  String _phaseLabel(SessionLifecyclePhase phase, SessionPaymentStatus? paymentStatus) {
+    if (paymentStatus == SessionPaymentStatus.waitingGateway) return 'Payment Processing...';
+    return switch (phase) {
+      SessionLifecyclePhase.available => 'Available',
+      SessionLifecyclePhase.occupied => 'Occupied',
+      SessionLifecyclePhase.waitingPayment => 'Waiting payment',
+      SessionLifecyclePhase.closed => 'Closed',
+    };
+  }
 
   String _formatTime(DateTime dt) {
     final local = dt.toLocal();

@@ -11,9 +11,12 @@ export type SessionPaymentDto = {
     taxAmount: MoneyDto;
     serviceChargeAmount: MoneyDto;
     totalAmount: MoneyDto;
-    closedByUserId: string;
+    closedByUserId: string | null;
     paidAt: string;
     createdAt: string;
+    paymentStatus: string;
+    paymentProvider: string;
+    providerTransactionId: string | null;
 };
 export type SessionBillLineDto = {
     id: string;

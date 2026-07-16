@@ -16,6 +16,8 @@ import '../../../../application/kitchen/kitchen_view_models.dart';
 import '../../../../application/usecases/kitchen/get_session_batch_progress_use_case.dart';
 import '../../../../application/usecases/menu/get_menu_catalog_use_case.dart';
 import '../../../../application/usecases/menu/get_menu_item_detail_use_case.dart';
+import '../../../../application/usecases/payment/check_payment_status_use_case.dart';
+import '../../../../application/usecases/payment/create_vnpay_intent_use_case.dart';
 import '../../../../application/usecases/session/get_session_bill_use_case.dart';
 import '../../../../core/result/result.dart';
 import '../../../../domain/entities/session_cart_item.dart';
@@ -36,6 +38,8 @@ final class CustomerOrderingController extends ChangeNotifier {
     required UseCase<KitchenBatchTicket, ConfirmBatchParams> confirmBatch,
     required GetSessionBillUseCase getSessionBill,
     required GetSessionBatchProgressUseCase getSessionBatchProgress,
+    required CreateVnpayIntentUseCase createVnpayIntent,
+    required CheckPaymentStatusUseCase checkPaymentStatus,
   })  : _restaurantId = restaurantId,
         _getMenuCatalog = getMenuCatalog,
         _getMenuItemDetail = getMenuItemDetail,
@@ -47,7 +51,9 @@ final class CustomerOrderingController extends ChangeNotifier {
         _clearSessionCart = clearSessionCart,
         _confirmBatch = confirmBatch,
         _getSessionBill = getSessionBill,
-        _getSessionBatchProgress = getSessionBatchProgress;
+        _getSessionBatchProgress = getSessionBatchProgress,
+        _createVnpayIntent = createVnpayIntent,
+        _checkPaymentStatus = checkPaymentStatus;
 
   final String _restaurantId;
   final GetMenuCatalogUseCase _getMenuCatalog;
@@ -61,6 +67,8 @@ final class CustomerOrderingController extends ChangeNotifier {
   final UseCase<KitchenBatchTicket, ConfirmBatchParams> _confirmBatch;
   final GetSessionBillUseCase _getSessionBill;
   final GetSessionBatchProgressUseCase _getSessionBatchProgress;
+  final CreateVnpayIntentUseCase _createVnpayIntent;
+  final CheckPaymentStatusUseCase _checkPaymentStatus;
 
   MenuCatalogView? _catalog;
   CartView? _cart;
@@ -345,6 +353,31 @@ final class CustomerOrderingController extends ChangeNotifier {
       refreshBill(sessionId),
       refreshBatchProgress(sessionId),
     ]);
+  }
+
+  Future<String?> createVnpayIntent() async {
+    _setLoading(true);
+    try {
+      final result = await _createVnpayIntent(null);
+      if (result is Success<String>) {
+        return result.value;
+      } else if (result is Err<String>) {
+        _errorMessage = result.failure.message;
+        notifyListeners();
+        return null;
+      }
+    } finally {
+      _setLoading(false);
+    }
+    return null;
+  }
+
+  Future<String> checkPaymentStatus() async {
+    final result = await _checkPaymentStatus(null);
+    if (result is Success<String>) {
+      return result.value;
+    }
+    return 'error';
   }
 
   /// Clears in-memory ordering state when leaving the customer demo session.

@@ -3,6 +3,7 @@ import 'package:food_canteen_management/domain/entities/batch_item_customization
 import 'package:food_canteen_management/domain/entities/batch_item_status_history.dart';
 import 'package:food_canteen_management/domain/entities/kitchen_batch.dart';
 import 'package:food_canteen_management/domain/repositories/batch_repository.dart';
+import 'package:food_canteen_management/domain/value_objects/quantity.dart';
 import 'ordering_store.dart';
 
 /// In-memory batch repository backed by [OrderingStore].
@@ -144,5 +145,37 @@ final class BatchRepositoryImpl implements BatchRepository {
           1;
     }
     return 1;
+  }
+
+  @override
+  Future<void> deleteItem({
+    required String restaurantId,
+    required String batchItemId,
+  }) async {
+    for (final items in _store.batchItemsByBatchId.values) {
+      items.removeWhere((item) => item.id == batchItemId);
+    }
+  }
+
+  @override
+  Future<void> updateItemQuantity({
+    required String restaurantId,
+    required String batchItemId,
+    required int delta,
+  }) async {
+    for (final items in _store.batchItemsByBatchId.values) {
+      for (int i = 0; i < items.length; i++) {
+        if (items[i].id == batchItemId) {
+          items[i] = items[i].copyWith(quantity: Quantity(items[i].quantity.value + delta));
+          return;
+        }
+      }
+    }
+    throw StateError('Batch item not found');
+  }
+
+  Future<void> deleteBatch(String batchId) async {
+    _store.batches.remove(batchId);
+    _store.batchItemsByBatchId.remove(batchId);
   }
 }

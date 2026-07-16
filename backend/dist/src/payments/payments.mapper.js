@@ -23,6 +23,9 @@ function mapSessionPayment(row) {
         closedByUserId: row.closed_by_user_id,
         paidAt: row.paid_at.toISOString(),
         createdAt: row.created_at.toISOString(),
+        paymentStatus: row.payment_status,
+        paymentProvider: row.payment_provider,
+        providerTransactionId: row.provider_transaction_id,
     };
 }
 function mapSessionBillLine(row) {

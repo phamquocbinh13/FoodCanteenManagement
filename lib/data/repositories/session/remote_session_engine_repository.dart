@@ -383,6 +383,7 @@ final class RemoteSessionEngineRepository implements SessionEngineRepository {
   String _paymentStatus(SessionPaymentStatus value) => switch (value) {
         SessionPaymentStatus.unpaid => 'unpaid',
         SessionPaymentStatus.waitingPayment => 'waiting_payment',
+        SessionPaymentStatus.waitingGateway => 'waiting_gateway',
         SessionPaymentStatus.paid => 'paid',
       };
 

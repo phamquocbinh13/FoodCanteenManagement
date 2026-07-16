@@ -22,5 +22,7 @@ final customerOrderingControllerProvider =
     confirmBatch: sl<UseCase<KitchenBatchTicket, ConfirmBatchParams>>(),
     getSessionBill: sl(),
     getSessionBatchProgress: sl(),
+    createVnpayIntent: sl(),
+    checkPaymentStatus: sl(),
   );
 });

@@ -570,6 +570,9 @@ model session_payment {
   session_id           String              @unique(map: "uq_session_payment") @db.Char(36)
   payment_method       String              @db.VarChar(32)
   close_type           String              @default("payment") @db.VarChar(32)
+    payment_status       String              @default("paid") @db.VarChar(32)
+    payment_provider     String              @default("cash") @db.VarChar(32)
+    provider_transaction_id String?          @db.VarChar(100)
   force_close_reason   String?             @db.VarChar(32)
   force_close_note     String?             @db.VarChar(500)
   subtotal_minor       BigInt
@@ -577,12 +580,12 @@ model session_payment {
   service_charge_minor BigInt              @default(0)
   total_amount_minor   BigInt
   currency_code        String              @db.Char(3)
-  closed_by_user_id    String              @db.Char(36)
+  closed_by_user_id    String?             @db.Char(36)
   paid_at              DateTime
   created_at           DateTime            @default(now())
   session_bill_line    session_bill_line[]
   dine_in_session      dine_in_session     @relation(fields: [session_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_session_payment_session")
-  staff_user           StaffUser           @relation(fields: [closed_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_session_payment_user")
+  staff_user           StaffUser?          @relation(fields: [closed_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_session_payment_user")
 
   @@index([closed_by_user_id], map: "fk_session_payment_user")
 }
@@ -661,3 +664,4 @@ model user_role {
   @@unique([user_id, role_id], map: "uq_user_role")
   @@index([role_id], map: "fk_user_role_role")
 }
+

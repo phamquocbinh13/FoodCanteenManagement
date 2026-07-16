@@ -113,6 +113,8 @@ export class PaymentsService {
           total_amount_minor: bill.totalAmountMinor,
           currency_code: currency,
           closed_by_user_id: closedByUserId,
+          payment_status: 'paid',
+          payment_provider: 'cash',
           paid_at: now,
           created_at: now,
         },
@@ -209,5 +211,85 @@ export class PaymentsService {
       billLines: result.billLines.map(mapSessionBillLine),
       snapshot,
     };
+  }
+
+  async closeSessionOnWebhookSuccess(sessionId: string, paymentId: string): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      const payment = await tx.session_payment.findUnique({ where: { id: paymentId } });
+      if (!payment || payment.payment_status === 'paid') return;
+
+      const session = await tx.dine_in_session.findUnique({ where: { id: sessionId } });
+      if (!session) return;
+
+      const now = new Date();
+
+      const batchItems = await tx.batch_item.findMany({
+        where: { kitchen_batch: { session_id: sessionId } },
+        orderBy: { created_at: 'asc' },
+      });
+
+      const billLineRows: Prisma.session_bill_lineCreateManyInput[] = batchItems.map((item) => ({
+        id: uuidv4(),
+        session_payment_id: paymentId,
+        batch_item_id: item.id,
+        description: item.menu_item_name_snapshot,
+        quantity: item.quantity,
+        unit_price_minor: item.unit_price_minor,
+        line_total_minor: item.line_total_minor,
+        currency_code: item.currency_code || payment.currency_code,
+        created_at: now,
+      }));
+
+      if (billLineRows.length > 0) {
+        await tx.session_bill_line.createMany({ data: billLineRows });
+      }
+
+      await tx.session_payment.update({
+        where: { id: paymentId },
+        data: { payment_status: 'paid', paid_at: now },
+      });
+
+      await tx.dine_in_session.updateMany({
+        where: { id: sessionId, status: { not: 'closed' } },
+        data: {
+          status: 'closed',
+          payment_status: 'paid',
+          active_table_guard: null,
+          payment_soft_lock: false,
+          closed_at: now,
+          payment_subtotal_minor: payment.subtotal_minor,
+          payment_tax_minor: payment.tax_amount_minor,
+          payment_service_charge_minor: payment.service_charge_minor,
+          payment_total_minor: payment.total_amount_minor,
+          updated_at: now,
+        },
+      });
+
+      await tx.restaurantTable.update({
+        where: { id: session.table_id },
+        data: { status: 'available', updatedAt: now },
+      });
+
+      await tx.session_auth_token.updateMany({
+        where: { session_id: sessionId, revoked_at: null },
+        data: { revoked_at: now },
+      });
+
+      await tx.session_timeline_event.create({
+        data: {
+          id: uuidv4(),
+          session_id: sessionId,
+          event_type: 'payment_closed',
+          payload_json: {
+            closeType: payment.close_type,
+            paymentId,
+            paymentMethod: payment.payment_method,
+          },
+          actor_type: 'user',
+          actor_id: payment.closed_by_user_id,
+          occurred_at: now,
+        },
+      });
+    });
   }
 }

@@ -18,6 +18,8 @@ import 'package:food_canteen_management/application/usecases/cart/update_cart_it
 import 'package:food_canteen_management/application/usecases/kitchen/get_session_batch_progress_use_case.dart';
 import 'package:food_canteen_management/application/usecases/menu/get_menu_catalog_use_case.dart';
 import 'package:food_canteen_management/application/usecases/menu/get_menu_item_detail_use_case.dart';
+import 'package:food_canteen_management/application/usecases/payment/check_payment_status_use_case.dart';
+import 'package:food_canteen_management/application/usecases/payment/create_vnpay_intent_use_case.dart';
 import 'package:food_canteen_management/application/usecases/request/create_staff_request_use_case.dart';
 import 'package:food_canteen_management/application/usecases/request/list_session_staff_requests_use_case.dart';
 import 'package:food_canteen_management/application/usecases/session/create_session_use_case.dart'
@@ -27,9 +29,12 @@ import 'package:food_canteen_management/application/usecases/session/join_sessio
 import 'package:food_canteen_management/application/usecases/session/mark_waiting_payment_use_case.dart';
 import 'package:food_canteen_management/application/usecases/session/validate_session_use_case.dart';
 import 'package:food_canteen_management/application/validators/customization_validator.dart';
+import 'package:food_canteen_management/core/clock/clock.dart';
+import 'package:food_canteen_management/core/id/id_generator.dart';
+import 'package:food_canteen_management/core/network/api_client.dart';
 import 'package:food_canteen_management/core/result/result.dart';
-import '../fakes/cart_local_datasource.dart';
 import 'package:food_canteen_management/data/datasources/customer/customer_session_local_datasource.dart';
+import '../fakes/cart_local_datasource.dart';
 import '../fakes/ordering_store.dart';
 import '../fakes/in_memory_session_engine_datasource.dart';
 import '../fakes/batch_repository_impl.dart';
@@ -50,8 +55,25 @@ import '../helpers/test_helpers.dart';
 final class _NoOpEvents implements DomainEventPublisher {
   @override
   Future<void> publish(DomainEvent event) async {}
+  @override
+  Stream<T> on<T extends DomainEvent>() => const Stream.empty();
 }
 
+class _DummyApiClient implements ApiClient {
+  @override
+  Future<ApiResponse<T>> send<T>(ApiRequest request) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  void addErrorInterceptor(ErrorInterceptor interceptor) {}
+
+  @override
+  void addRequestInterceptor(RequestInterceptor interceptor) {}
+
+  @override
+  void addResponseInterceptor(ResponseInterceptor interceptor) {}
+}
 
 Future<
     ({
@@ -190,6 +212,8 @@ Future<
     getSessionBatchProgress: GetSessionBatchProgressUseCase(
       batchRepository: batchRepo,
     ),
+    createVnpayIntent: CreateVnpayIntentUseCase(_DummyApiClient(), InMemoryCustomerSessionLocalDataSource()),
+    checkPaymentStatus: CheckPaymentStatusUseCase(_DummyApiClient(), InMemoryCustomerSessionLocalDataSource()),
   );
 
   await ordering.addToCart(

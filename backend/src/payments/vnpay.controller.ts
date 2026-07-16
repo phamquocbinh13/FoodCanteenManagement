@@ -1,0 +1,173 @@
+import { Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import { ApiHeader, ApiTags } from '@nestjs/swagger';
+import { CurrentSession } from '../sessions/decorators/current-session.decorator';
+import { SessionTokenGuard, type CustomerSessionContext } from '../sessions/guards/session-token.guard';
+import { PaymentsService } from './payments.service';
+import { VnpayService } from './vnpay.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { v4 as uuidv4 } from 'uuid';
+import { unprocessable } from '../common/errors/api-exception';
+
+@ApiTags('vnpay')
+@Controller()
+export class VnpayController {
+  constructor(
+    private readonly vnpayService: VnpayService,
+    private readonly paymentsService: PaymentsService,
+    private readonly prisma: PrismaService,
+  ) {}
+
+  @Post('sessions/me/payments/vnpay/create')
+  @UseGuards(SessionTokenGuard)
+  @ApiHeader({ name: 'X-Session-Token', required: false })
+  async createPayment(
+    @CurrentSession() ctx: CustomerSessionContext,
+  ) {
+    const { restaurantId, sessionId } = ctx;
+    
+    return await this.prisma.$transaction(async (tx) => {
+      // 1. Validate session
+      const session = await tx.dine_in_session.findFirst({
+        where: { id: sessionId, restaurant_id: restaurantId },
+      });
+      if (!session || session.status === 'closed') {
+        throw unprocessable('SESSION_CLOSED', 'Session is already closed or not found');
+      }
+
+      // 2. Compute Bill
+      const settings = await tx.restaurantSettings.findUnique({
+        where: { restaurantId },
+      });
+      if (!settings) throw unprocessable('SETTINGS_NOT_FOUND', 'Settings missing');
+
+      const batchItems = await tx.batch_item.findMany({
+        where: { kitchen_batch: { session_id: sessionId } },
+      });
+
+      let subtotalMinor = 0n;
+      for (const item of batchItems) subtotalMinor += item.line_total_minor;
+
+      const taxAmountMinor = (subtotalMinor * BigInt(settings.taxRateBps) + 5000n) / 10000n;
+      const serviceChargeMinor = (subtotalMinor * BigInt(settings.serviceChargeBps) + 5000n) / 10000n;
+      const totalAmountMinor = subtotalMinor + taxAmountMinor + serviceChargeMinor;
+
+      if (totalAmountMinor <= 0n) {
+        throw unprocessable('ZERO_AMOUNT', 'Cannot pay zero amount');
+      }
+
+      // 3. Create or update pending session_payment
+      let existingPayment = await tx.session_payment.findUnique({
+        where: { session_id: sessionId },
+      });
+
+      if (existingPayment && existingPayment.payment_status === 'paid') {
+        throw unprocessable('SESSION_ALREADY_PAID', 'Session already paid');
+      }
+
+      const txnRef = uuidv4();
+      const now = new Date();
+      // expire in 15 mins
+      const expiresAt = new Date(now.getTime() + 15 * 60 * 1000);
+
+      if (!existingPayment) {
+        await tx.session_payment.create({
+          data: {
+            id: txnRef, // Use ID as txnRef
+            session_id: sessionId,
+            payment_method: 'bank_transfer',
+            close_type: 'payment',
+            payment_status: 'waiting_gateway',
+            payment_provider: 'vnpay',
+            provider_transaction_id: txnRef,
+            subtotal_minor: subtotalMinor,
+            tax_amount_minor: taxAmountMinor,
+            service_charge_minor: serviceChargeMinor,
+            total_amount_minor: totalAmountMinor,
+            currency_code: settings.defaultCurrency,
+            closed_by_user_id: session.opened_by_user_id || null,
+            paid_at: now,
+            created_at: now,
+          },
+        });
+      } else {
+        await tx.session_payment.update({
+          where: { session_id: sessionId },
+          data: {
+            payment_status: 'waiting_gateway',
+            payment_provider: 'vnpay',
+            provider_transaction_id: txnRef,
+            subtotal_minor: subtotalMinor,
+            tax_amount_minor: taxAmountMinor,
+            service_charge_minor: serviceChargeMinor,
+            total_amount_minor: totalAmountMinor,
+            paid_at: now,
+          },
+        });
+      }
+
+      await tx.dine_in_session.update({
+        where: { id: sessionId },
+        data: { payment_status: 'waiting_payment', status: 'payment_pending' },
+      });
+
+      const orderInfo = `Pay ROMS Session ${sessionId.split('-')[0]}`;
+      const url = this.vnpayService.createPaymentUrl('127.0.0.1', totalAmountMinor, txnRef, orderInfo);
+
+      return { checkoutUrl: url };
+    });
+  }
+
+  @Get('sessions/me/payments/status')
+  @UseGuards(SessionTokenGuard)
+  @ApiHeader({ name: 'X-Session-Token', required: false })
+  async getStatus(@CurrentSession() ctx: CustomerSessionContext) {
+    const payment = await this.prisma.session_payment.findUnique({
+      where: { session_id: ctx.sessionId },
+      select: { payment_status: true },
+    });
+    return { status: payment?.payment_status || 'created' };
+  }
+
+  @Get('payments/vnpay/ipn')
+  async ipn(@Query() query: any) {
+    const { isValid, isSuccess, txnRef, amountMinor } = this.vnpayService.verifyIpn(query);
+
+    if (!isValid) {
+      return { RspCode: '97', Message: 'Invalid signature' };
+    }
+
+    const payment = await this.prisma.session_payment.findUnique({
+      where: { id: txnRef },
+    });
+
+    if (!payment) {
+      return { RspCode: '01', Message: 'Order not found' };
+    }
+
+    if (payment.total_amount_minor !== amountMinor) {
+      return { RspCode: '04', Message: 'Invalid amount' };
+    }
+
+    if (payment.payment_status === 'paid') {
+      return { RspCode: '02', Message: 'Order already confirmed' };
+    }
+
+    if (isSuccess) {
+      // Execute atomic close
+      await this.paymentsService.closeSessionOnWebhookSuccess(payment.session_id, payment.id);
+      return { RspCode: '00', Message: 'Confirm Success' };
+    } else {
+      await this.prisma.$transaction([
+        this.prisma.session_payment.update({
+          where: { id: txnRef },
+          data: { payment_status: 'failed' },
+        }),
+        this.prisma.dine_in_session.update({
+          where: { id: payment.session_id },
+          data: { payment_status: 'unpaid', status: 'open' },
+        }),
+      ]);
+      return { RspCode: '00', Message: 'Confirm Success' };
+    }
+  }
+}

@@ -32,6 +32,8 @@ enum SessionPaymentStatus {
   unpaid,
   @JsonValue('waiting_payment')
   waitingPayment,
+  @JsonValue('waiting_gateway')
+  waitingGateway,
   @JsonValue('paid')
   paid,
 }

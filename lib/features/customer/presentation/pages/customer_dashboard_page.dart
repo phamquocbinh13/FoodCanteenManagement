@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../application/session/customer_session_messages.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -271,13 +272,38 @@ class _SessionPageState extends ConsumerState<SessionPage> {
               PrimaryButton(
                 label: controller.paymentRequested
                     ? 'Payment requested'
-                    : 'Request payment',
+                    : 'Request payment (Cash)',
                 icon: Icons.payments_outlined,
                 isExpanded: true,
                 onPressed: phase == SessionLifecyclePhase.closed ||
                         controller.paymentRequested
                     ? null
                     : _requestPayment,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              PrimaryButton(
+                label: 'Pay with VNPAY',
+                icon: Icons.qr_code_2_outlined,
+                isExpanded: true,
+                onPressed: phase == SessionLifecyclePhase.closed || bill == null || bill.totalMinor <= 0
+                    ? null
+                    : () async {
+                        final url = await ordering.createVnpayIntent();
+                        if (url != null && mounted) {
+                          await launchUrl(Uri.parse(url), mode: LaunchMode.inAppWebView);
+                          // The user returns when the webview is closed.
+                          // It will automatically refresh in the background because of the SSE event,
+                          // but we could also check the status.
+                          final status = await ordering.checkPaymentStatus();
+                          if (status == 'paid') {
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Payment Successful!')));
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Payment Not Completed. Check again later.')));
+                          }
+                        } else if (ordering.errorMessage != null && mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ordering.errorMessage!)));
+                        }
+                      },
               ),
             ],
           ),
