@@ -191,12 +191,12 @@ class CashierSessionDetailPanel extends ConsumerWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Outstanding', style: theme.textTheme.titleSmall?.copyWith(color: AppColors.primaryOrange)),
+                          Text('Outstanding', style: theme.textTheme.titleSmall?.copyWith(color: AppColors.warning)),
                           RomsMoneyText(
                             amountMinor: session.bill!.outstandingMinor,
                             currencyCode: 'VND',
                             large: true,
-                            color: AppColors.primaryOrange,
+                            color: AppColors.warning,
                           ),
                         ],
                       ),

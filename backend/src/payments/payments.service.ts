@@ -92,18 +92,16 @@ export class PaymentsService {
       const paidMinor = payments.reduce((sum, p) => sum + p.total_amount_minor, 0n);
       const outstandingMinor = bill.totalAmountMinor - paidMinor;
 
-      if (dto.closeType === 'payment' && outstandingMinor <= 0n) {
-        // If already paid in full, we don't create a new payment
-      }
-
+      // If this is a normal payment close and balance is already 0, no new payment record needed
       const currency = settings.defaultCurrency;
       const now = new Date();
-      
+
       let paymentId: string | undefined;
       let createdPayment: any;
       const createdLines: any[] = [];
 
-      if (outstandingMinor > 0n || dto.closeType === 'force_closed') {
+      const shouldRecordPayment = outstandingMinor > 0n || dto.closeType === 'force_closed';
+      if (shouldRecordPayment) {
         paymentId = uuidv4();
         const payAmount = outstandingMinor > 0n ? outstandingMinor : 0n;
 
@@ -115,7 +113,7 @@ export class PaymentsService {
             close_type: dto.closeType,
             force_close_reason: dto.closeType === 'force_closed' ? dto.forceCloseReason! : null,
             force_close_note: dto.forceCloseNote?.trim() || null,
-            subtotal_minor: payAmount, // simplifying partial payment
+            subtotal_minor: payAmount,
             tax_amount_minor: 0n,
             service_charge_minor: 0n,
             total_amount_minor: payAmount,
@@ -128,30 +126,28 @@ export class PaymentsService {
           },
         });
 
-        // We should ideally figure out which batch items are unpaid, but for simplicity, 
-        // we can just create a single bill line for "Remaining Balance" or skip bill lines for partials.
-        // Actually, to preserve schema, let's just not create bill lines if it's a partial sum, 
-        // or just link all batch items again? Wait, session_bill_line is used for receipts.
-        // Let's just create one generic bill line.
-        const lineId = uuidv4();
-        await tx.session_bill_line.create({
-          data: {
-            id: lineId,
-            session_payment_id: paymentId,
-            batch_item_id: batchItems[0]?.id || uuidv4(), // Hack: link to first item or dummy
-            description: 'Payment',
-            quantity: 1,
-            unit_price_minor: payAmount,
-            line_total_minor: payAmount,
-            currency_code: currency,
-            created_at: now,
+        // Only create bill lines if there are actual batch items to link to
+        if (batchItems.length > 0) {
+          for (const item of batchItems) {
+            const lineId = uuidv4();
+            await tx.session_bill_line.create({
+              data: {
+                id: lineId,
+                session_payment_id: paymentId,
+                batch_item_id: item.id,
+                description: 'Payment',
+                quantity: item.quantity,
+                unit_price_minor: item.unit_price_minor,
+                line_total_minor: item.line_total_minor,
+                currency_code: currency,
+                created_at: now,
+              },
+            });
+            const line = await tx.session_bill_line.findUnique({ where: { id: lineId } });
+            if (line) createdLines.push(line);
           }
-        });
-        const line = await tx.session_bill_line.findUnique({ where: { id: lineId } });
-        if (line) createdLines.push(line);
+        }
       }
-
-      // Bill lines replaced above
 
       const closed = await tx.dine_in_session.updateMany({
         where: {

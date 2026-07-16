@@ -62,14 +62,13 @@ let PaymentsService = class PaymentsService {
             });
             const paidMinor = payments.reduce((sum, p) => sum + p.total_amount_minor, 0n);
             const outstandingMinor = bill.totalAmountMinor - paidMinor;
-            if (dto.closeType === 'payment' && outstandingMinor <= 0n) {
-            }
             const currency = settings.defaultCurrency;
             const now = new Date();
             let paymentId;
             let createdPayment;
             const createdLines = [];
-            if (outstandingMinor > 0n || dto.closeType === 'force_closed') {
+            const shouldRecordPayment = outstandingMinor > 0n || dto.closeType === 'force_closed';
+            if (shouldRecordPayment) {
                 paymentId = (0, uuid_1.v4)();
                 const payAmount = outstandingMinor > 0n ? outstandingMinor : 0n;
                 createdPayment = await tx.session_payment.create({
@@ -92,23 +91,27 @@ let PaymentsService = class PaymentsService {
                         created_at: now,
                     },
                 });
-                const lineId = (0, uuid_1.v4)();
-                await tx.session_bill_line.create({
-                    data: {
-                        id: lineId,
-                        session_payment_id: paymentId,
-                        batch_item_id: batchItems[0]?.id || (0, uuid_1.v4)(),
-                        description: 'Payment',
-                        quantity: 1,
-                        unit_price_minor: payAmount,
-                        line_total_minor: payAmount,
-                        currency_code: currency,
-                        created_at: now,
+                if (batchItems.length > 0) {
+                    for (const item of batchItems) {
+                        const lineId = (0, uuid_1.v4)();
+                        await tx.session_bill_line.create({
+                            data: {
+                                id: lineId,
+                                session_payment_id: paymentId,
+                                batch_item_id: item.id,
+                                description: 'Payment',
+                                quantity: item.quantity,
+                                unit_price_minor: item.unit_price_minor,
+                                line_total_minor: item.line_total_minor,
+                                currency_code: currency,
+                                created_at: now,
+                            },
+                        });
+                        const line = await tx.session_bill_line.findUnique({ where: { id: lineId } });
+                        if (line)
+                            createdLines.push(line);
                     }
-                });
-                const line = await tx.session_bill_line.findUnique({ where: { id: lineId } });
-                if (line)
-                    createdLines.push(line);
+                }
             }
             const closed = await tx.dine_in_session.updateMany({
                 where: {

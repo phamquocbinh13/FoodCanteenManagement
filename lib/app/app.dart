@@ -36,6 +36,7 @@ class _FoodCanteenManagementAppState
       title: Injection.config.appName,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
+      themeMode: ThemeMode.light,
       routerConfig: _router,
       localizationsDelegates: const [
         AppLocalizations.delegate,

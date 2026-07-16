@@ -262,11 +262,11 @@ class _SessionPageState extends ConsumerState<SessionPage> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text('Outstanding', style: theme.textTheme.titleMedium?.copyWith(color: AppColors.primaryOrange)),
+                              Text('Outstanding', style: theme.textTheme.titleMedium?.copyWith(color: AppColors.warning)),
                               RomsMoneyText(
                                 amountMinor: bill.outstandingMinor,
                                 currencyCode: 'VND',
-                                color: AppColors.primaryOrange,
+                                color: AppColors.warning,
                                 large: true,
                               ),
                             ],

@@ -12,6 +12,8 @@ import '../../../domain/events/domain_events.dart';
 import '../use_case.dart';
 
 /// Result of atomic payment close (API contract §8.2).
+/// [payment] is null when the session was already fully paid (e.g. via VNPAY)
+/// and the cashier is merely closing it with no outstanding balance.
 final class PaymentCloseResult {
   const PaymentCloseResult({
     required this.payment,
@@ -19,7 +21,8 @@ final class PaymentCloseResult {
     required this.snapshot,
   });
 
-  final SessionPayment payment;
+  /// Null when no new payment record was created (balance was already 0).
+  final SessionPayment? payment;
   final List<SessionBillLine> billLines;
   final SessionEngineSnapshot snapshot;
 }
@@ -64,9 +67,13 @@ final class CloseSessionWithPaymentUseCase
       );
 
       final data = response.data;
-      final payment = SessionPayment.fromJson(
-        camelCaseKeysToSnake(data['payment'] as Map<String, dynamic>),
-      );
+
+      // payment may be null when session was already fully paid (e.g. via VNPAY)
+      final paymentRaw = data['payment'] as Map<String, dynamic>?;
+      final SessionPayment? payment = paymentRaw != null
+          ? SessionPayment.fromJson(camelCaseKeysToSnake(paymentRaw))
+          : null;
+
       final billLines = (data['billLines'] as List<dynamic>? ?? [])
           .cast<Map<String, dynamic>>()
           .map((j) => SessionBillLine.fromJson(camelCaseKeysToSnake(j)))
@@ -76,15 +83,18 @@ final class CloseSessionWithPaymentUseCase
       );
 
       final now = _clock.now();
-      await _eventPublisher.publish(
-        PaymentCompleted(
-          eventId: _idGenerator.nextId(),
-          occurredAt: now,
-          aggregateId: payment.id,
-          sessionId: params.sessionId,
-          amountMinor: payment.totalAmount.amountMinor,
-        ),
-      );
+      // Only publish PaymentCompleted if a new payment record was created
+      if (payment != null) {
+        await _eventPublisher.publish(
+          PaymentCompleted(
+            eventId: _idGenerator.nextId(),
+            occurredAt: now,
+            aggregateId: payment.id,
+            sessionId: params.sessionId,
+            amountMinor: payment.totalAmount.amountMinor,
+          ),
+        );
+      }
       await _eventPublisher.publish(
         SessionClosedEvent(
           eventId: _idGenerator.nextId(),
