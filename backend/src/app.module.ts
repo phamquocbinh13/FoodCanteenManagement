@@ -11,6 +11,11 @@ import { PrismaModule } from './prisma/prisma.module';
 import { RequestsModule } from './requests/requests.module';
 import { RestaurantsModule } from './restaurants/restaurants.module';
 import { SessionsModule } from './sessions/sessions.module';
+import { AnalyticsModule } from './analytics/analytics.module';
+import { AuditModule } from './audit/audit.module';
+import { StaffModule } from './staff/staff.module';
+import { RolesModule } from './roles/roles.module';
+import { SettingsModule } from './settings/settings.module';
 
 @Module({
   imports: [
@@ -29,6 +34,11 @@ import { SessionsModule } from './sessions/sessions.module';
     KitchenModule,
     RequestsModule,
     PaymentsModule,
+    AnalyticsModule,
+    AuditModule,
+    StaffModule,
+    RolesModule,
+    SettingsModule,
   ],
 })
 export class AppModule {}

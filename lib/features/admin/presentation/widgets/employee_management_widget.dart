@@ -1,0 +1,93 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../providers/admin_dashboard_provider.dart';
+
+class EmployeeManagementWidget extends ConsumerWidget {
+  const EmployeeManagementWidget({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final staffListAsync = ref.watch(adminStaffListProvider);
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.xxl),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Employee Directory', style: Theme.of(context).textTheme.headlineMedium),
+              ElevatedButton.icon(
+                onPressed: () {
+                  // TBD: Show Add Employee Dialog
+                },
+                icon: const Icon(Icons.add),
+                label: const Text('Add Employee'),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xxl),
+          staffListAsync.when(
+            data: (staffList) {
+              if (staffList.isEmpty) {
+                return const Center(child: Text('No employees found', style: TextStyle(color: AppColors.inkMuted)));
+              }
+              return DataTable(
+                columns: const [
+                  DataColumn(label: Text('Name')),
+                  DataColumn(label: Text('Email')),
+                  DataColumn(label: Text('Status')),
+                  DataColumn(label: Text('Roles')),
+                  DataColumn(label: Text('Actions')),
+                ],
+                rows: staffList.map((staff) {
+                  return DataRow(
+                    cells: [
+                      DataCell(Text(staff.displayName)),
+                      DataCell(Text(staff.email)),
+                      DataCell(
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: staff.isActive ? AppColors.successSoft : AppColors.error.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            staff.isActive ? 'Active' : 'Inactive',
+                            style: TextStyle(
+                              color: staff.isActive ? AppColors.success : AppColors.error,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const DataCell(Text('Roles managed via API')),
+                      DataCell(
+                        IconButton(
+                          icon: const Icon(Icons.edit, color: AppColors.inkMuted, size: 20),
+                          onPressed: () {
+                            // TBD: Show Edit Employee Dialog
+                          },
+                        ),
+                      ),
+                    ],
+                  );
+                }).toList(),
+              );
+            },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (err, stack) => Center(child: Text('Failed to load employees: $err')),
+          ),
+        ],
+      ),
+    );
+  }
+}

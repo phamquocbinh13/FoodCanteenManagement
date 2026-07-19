@@ -20,6 +20,11 @@ const prisma_module_1 = require("./prisma/prisma.module");
 const requests_module_1 = require("./requests/requests.module");
 const restaurants_module_1 = require("./restaurants/restaurants.module");
 const sessions_module_1 = require("./sessions/sessions.module");
+const analytics_module_1 = require("./analytics/analytics.module");
+const audit_module_1 = require("./audit/audit.module");
+const staff_module_1 = require("./staff/staff.module");
+const roles_module_1 = require("./roles/roles.module");
+const settings_module_1 = require("./settings/settings.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -41,6 +46,11 @@ exports.AppModule = AppModule = __decorate([
             kitchen_module_1.KitchenModule,
             requests_module_1.RequestsModule,
             payments_module_1.PaymentsModule,
+            analytics_module_1.AnalyticsModule,
+            audit_module_1.AuditModule,
+            staff_module_1.StaffModule,
+            roles_module_1.RolesModule,
+            settings_module_1.SettingsModule,
         ],
     })
 ], AppModule);
