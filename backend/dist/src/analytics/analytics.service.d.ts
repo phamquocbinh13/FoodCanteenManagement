@@ -4,41 +4,47 @@ export declare class AnalyticsService {
     private readonly logger;
     constructor(prisma: PrismaService);
     getVelocity(restaurantId: string): Promise<{
-        bestSellers: {
+        best_sellers: {
             id: string | undefined;
             name: string | undefined;
-            imageUrl: string | null | undefined;
-            quantitySold: number;
-            currencyCode: string | undefined;
-            basePriceMinor: number;
+            image_url: string | null | undefined;
+            quantity_sold: number;
+            currency_code: string | undefined;
+            base_price_minor: number;
         }[];
-        worstSellers: {
+        worst_sellers: {
             id: string | undefined;
             name: string | undefined;
-            imageUrl: string | null | undefined;
-            quantitySold: number;
-            currencyCode: string | undefined;
-            basePriceMinor: number;
+            image_url: string | null | undefined;
+            quantity_sold: number;
+            currency_code: string | undefined;
+            base_price_minor: number;
         }[];
     }>;
     getInsights(): Promise<{
         alerts: string[];
+        forecast_days: {
+            date: any;
+            weather_code: any;
+            temp_max: number;
+            temp_min: number;
+        }[];
     }>;
     getRevenue(restaurantId: string): Promise<{
         date: string;
-        revenueMinor: number;
+        revenue_minor: number;
     }[]>;
     getHeatmap(restaurantId: string): Promise<{
         hour: number;
         intensity: number;
     }[]>;
     getKpis(restaurantId: string): Promise<{
-        averageOrderValueMinor: number;
-        totalSessions: number;
-        totalRevenueMinor: number;
-        paymentMethods: {
+        average_order_value_minor: number;
+        total_sessions: number;
+        total_revenue_minor: number;
+        payment_methods: {
             method: string;
-            totalMinor: number;
+            total_minor: number;
         }[];
     }>;
 }

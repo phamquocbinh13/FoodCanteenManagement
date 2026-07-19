@@ -47,17 +47,40 @@ Map<String, dynamic> _$ProductVelocityDataToJson(
   'worst_sellers': instance.worstSellers.map((e) => e.toJson()).toList(),
 };
 
+_WeatherDay _$WeatherDayFromJson(Map<String, dynamic> json) => _WeatherDay(
+  date: json['date'] as String,
+  weatherCode: (json['weather_code'] as num).toInt(),
+  tempMax: (json['temp_max'] as num).toInt(),
+  tempMin: (json['temp_min'] as num).toInt(),
+);
+
+Map<String, dynamic> _$WeatherDayToJson(_WeatherDay instance) =>
+    <String, dynamic>{
+      'date': instance.date,
+      'weather_code': instance.weatherCode,
+      'temp_max': instance.tempMax,
+      'temp_min': instance.tempMin,
+    };
+
 _PredictiveInsightsData _$PredictiveInsightsDataFromJson(
   Map<String, dynamic> json,
 ) => _PredictiveInsightsData(
   alerts:
       (json['alerts'] as List<dynamic>?)?.map((e) => e as String).toList() ??
       const [],
+  forecastDays:
+      (json['forecast_days'] as List<dynamic>?)
+          ?.map((e) => WeatherDay.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const [],
 );
 
 Map<String, dynamic> _$PredictiveInsightsDataToJson(
   _PredictiveInsightsData instance,
-) => <String, dynamic>{'alerts': instance.alerts};
+) => <String, dynamic>{
+  'alerts': instance.alerts,
+  'forecast_days': instance.forecastDays.map((e) => e.toJson()).toList(),
+};
 
 _RevenuePoint _$RevenuePointFromJson(Map<String, dynamic> json) =>
     _RevenuePoint(

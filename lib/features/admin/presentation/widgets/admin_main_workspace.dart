@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../providers/admin_dashboard_provider.dart';
 import 'predictive_insights_banner.dart';
 import 'restaurant_health_card.dart';
 import 'product_velocity_grid.dart';
@@ -16,6 +17,25 @@ class AdminMainWorkspace extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Dashboard Overview',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              ElevatedButton.icon(
+                onPressed: () {
+                  ref.read(adminDashboardRefresherProvider).refreshAll();
+                },
+                icon: const Icon(Icons.refresh),
+                label: const Text('Refresh Data'),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
           const PredictiveInsightsBanner(),
           const SizedBox(height: AppSpacing.xxl),
           const RestaurantHealthCard(),

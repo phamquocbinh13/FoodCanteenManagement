@@ -30,9 +30,23 @@ abstract class ProductVelocityData with _$ProductVelocityData {
 }
 
 @freezed
+abstract class WeatherDay with _$WeatherDay {
+  const factory WeatherDay({
+    required String date,
+    required int weatherCode,
+    required int tempMax,
+    required int tempMin,
+  }) = _WeatherDay;
+
+  factory WeatherDay.fromJson(Map<String, dynamic> json) =>
+      _$WeatherDayFromJson(json);
+}
+
+@freezed
 abstract class PredictiveInsightsData with _$PredictiveInsightsData {
   const factory PredictiveInsightsData({
     @Default([]) List<String> alerts,
+    @Default([]) List<WeatherDay> forecastDays,
   }) = _PredictiveInsightsData;
 
   factory PredictiveInsightsData.fromJson(Map<String, dynamic> json) =>

@@ -14,6 +14,9 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuditController = void 0;
 const common_1 = require("@nestjs/common");
+const swagger_1 = require("@nestjs/swagger");
+const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
+const restaurant_scope_guard_1 = require("../auth/guards/restaurant-scope.guard");
 const audit_service_1 = require("./audit.service");
 let AuditController = class AuditController {
     auditService;
@@ -21,21 +24,22 @@ let AuditController = class AuditController {
         this.auditService = auditService;
     }
     async getRecentLogs(restaurantId) {
-        if (!restaurantId)
-            throw new common_1.UnauthorizedException('Missing restaurant ID');
         return this.auditService.getRecentLogs(restaurantId);
     }
 };
 exports.AuditController = AuditController;
 __decorate([
     (0, common_1.Get)('recent'),
-    __param(0, (0, common_1.Headers)('x-restaurant-id')),
+    __param(0, (0, common_1.Param)('restaurantId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], AuditController.prototype, "getRecentLogs", null);
 exports.AuditController = AuditController = __decorate([
-    (0, common_1.Controller)('audit'),
+    (0, swagger_1.ApiTags)('audit'),
+    (0, swagger_1.ApiBearerAuth)(),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, restaurant_scope_guard_1.RestaurantScopeGuard),
+    (0, common_1.Controller)('restaurants/:restaurantId/audit'),
     __metadata("design:paramtypes", [audit_service_1.AuditService])
 ], AuditController);
 //# sourceMappingURL=audit.controller.js.map

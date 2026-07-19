@@ -14,6 +14,9 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AnalyticsController = void 0;
 const common_1 = require("@nestjs/common");
+const swagger_1 = require("@nestjs/swagger");
+const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
+const restaurant_scope_guard_1 = require("../auth/guards/restaurant-scope.guard");
 const analytics_service_1 = require("./analytics.service");
 let AnalyticsController = class AnalyticsController {
     analyticsService;
@@ -21,33 +24,25 @@ let AnalyticsController = class AnalyticsController {
         this.analyticsService = analyticsService;
     }
     async getVelocity(restaurantId) {
-        if (!restaurantId)
-            throw new common_1.UnauthorizedException('Missing restaurant ID');
         return this.analyticsService.getVelocity(restaurantId);
     }
     async getInsights() {
         return this.analyticsService.getInsights();
     }
     async getRevenue(restaurantId) {
-        if (!restaurantId)
-            throw new common_1.UnauthorizedException('Missing restaurant ID');
         return this.analyticsService.getRevenue(restaurantId);
     }
     async getHeatmap(restaurantId) {
-        if (!restaurantId)
-            throw new common_1.UnauthorizedException('Missing restaurant ID');
         return this.analyticsService.getHeatmap(restaurantId);
     }
     async getKpis(restaurantId) {
-        if (!restaurantId)
-            throw new common_1.UnauthorizedException('Missing restaurant ID');
         return this.analyticsService.getKpis(restaurantId);
     }
 };
 exports.AnalyticsController = AnalyticsController;
 __decorate([
     (0, common_1.Get)('velocity'),
-    __param(0, (0, common_1.Headers)('x-restaurant-id')),
+    __param(0, (0, common_1.Param)('restaurantId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
@@ -60,27 +55,30 @@ __decorate([
 ], AnalyticsController.prototype, "getInsights", null);
 __decorate([
     (0, common_1.Get)('revenue'),
-    __param(0, (0, common_1.Headers)('x-restaurant-id')),
+    __param(0, (0, common_1.Param)('restaurantId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], AnalyticsController.prototype, "getRevenue", null);
 __decorate([
     (0, common_1.Get)('heatmap'),
-    __param(0, (0, common_1.Headers)('x-restaurant-id')),
+    __param(0, (0, common_1.Param)('restaurantId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], AnalyticsController.prototype, "getHeatmap", null);
 __decorate([
     (0, common_1.Get)('kpis'),
-    __param(0, (0, common_1.Headers)('x-restaurant-id')),
+    __param(0, (0, common_1.Param)('restaurantId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], AnalyticsController.prototype, "getKpis", null);
 exports.AnalyticsController = AnalyticsController = __decorate([
-    (0, common_1.Controller)('analytics'),
+    (0, swagger_1.ApiTags)('analytics'),
+    (0, swagger_1.ApiBearerAuth)(),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, restaurant_scope_guard_1.RestaurantScopeGuard),
+    (0, common_1.Controller)('restaurants/:restaurantId/analytics'),
     __metadata("design:paramtypes", [analytics_service_1.AnalyticsService])
 ], AnalyticsController);
 //# sourceMappingURL=analytics.controller.js.map

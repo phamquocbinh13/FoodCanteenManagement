@@ -6,6 +6,7 @@ import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../providers/admin_nav_provider.dart';
+import '../providers/admin_dashboard_provider.dart';
 import '../widgets/admin_main_workspace.dart';
 import '../widgets/admin_operations_workspace.dart';
 import '../widgets/admin_analytics_workspace.dart';
@@ -20,6 +21,8 @@ class AdminPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Keep refresher alive while admin page is open
+    ref.watch(adminDashboardRefresherProvider);
     final activeIndex = ref.watch(adminNavIndexProvider);
 
     return LayoutBuilder(
@@ -38,6 +41,14 @@ class AdminPage extends ConsumerWidget {
               backgroundColor: AppColors.surface,
               iconTheme: const IconThemeData(color: AppColors.brand),
               elevation: 0,
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.refresh),
+                  onPressed: () {
+                    ref.read(adminDashboardRefresherProvider).refreshAll();
+                  },
+                ),
+              ],
             ),
             drawer: const AdminDrawer(),
             body: Stack(

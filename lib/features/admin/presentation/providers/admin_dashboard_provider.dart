@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get_it/get_it.dart';
 import '../../../cashier/presentation/providers/cashier_session_provider.dart';
@@ -14,7 +15,38 @@ import '../../../../data/repositories/user/remote_user_repository.dart';
 import '../../../../data/repositories/restaurant/remote_restaurant_repository.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../app/config/restaurant_context.dart';
-import 'package:get_it/get_it.dart';
+import 'package:intl/intl.dart';
+
+// --- Dashboard Refresher & Polling ---
+class AdminDashboardRefresher {
+  AdminDashboardRefresher(this.ref) {
+    refreshAll();
+    _timer = Timer.periodic(const Duration(seconds: 30), (_) => refreshAll());
+  }
+
+  final Ref ref;
+  Timer? _timer;
+
+  void refreshAll() {
+    ref.read(cashierSessionControllerProvider).restore();
+    ref.read(kitchenControllerProvider).refresh();
+    ref.invalidate(adminVelocityProvider);
+    ref.invalidate(adminInsightsProvider);
+    ref.invalidate(adminKpisProvider);
+    ref.invalidate(adminRevenueHistoryProvider);
+    ref.invalidate(adminHeatmapProvider);
+  }
+
+  void dispose() {
+    _timer?.cancel();
+  }
+}
+
+final adminDashboardRefresherProvider = Provider.autoDispose<AdminDashboardRefresher>((ref) {
+  final refresher = AdminDashboardRefresher(ref);
+  ref.onDispose(() => refresher.dispose());
+  return refresher;
+});
 
 final adminOpenTablesProvider = Provider<String>((ref) {
   final sessionState = ref.watch(cashierSessionControllerProvider);
@@ -26,16 +58,12 @@ final adminOpenTablesProvider = Provider<String>((ref) {
 });
 
 final adminRevenueProvider = Provider<String>((ref) {
-  final sessionState = ref.watch(cashierSessionControllerProvider);
-  if (sessionState.isLoading && sessionState.activeSessions.isEmpty) return '...';
+  final kpis = ref.watch(adminKpisProvider).valueOrNull;
+  if (kpis == null) return '...';
   
-  double total = 0.0;
-  for (final snapshot in sessionState.activeSessions) {
-    if (snapshot.session.paymentSummary != null) {
-      total += snapshot.session.paymentSummary!.totalMinor / 100.0;
-    }
-  }
-  return '\$${total.toStringAsFixed(2)}';
+  final total = kpis.totalRevenueMinor;
+  final formatter = NumberFormat.decimalPattern();
+  return '${formatter.format(total)} ₫';
 });
 
 final adminNetProfitProvider = Provider<String>((ref) {
@@ -77,19 +105,22 @@ final adminAnalyticsRepoProvider = Provider<AnalyticsRepository>((ref) {
 
 final adminVelocityProvider = FutureProvider.autoDispose<ProductVelocityData>((ref) async {
   final repo = ref.watch(adminAnalyticsRepoProvider);
-  final result = await repo.getProductVelocity();
+  final restaurantId = GetIt.I<RestaurantContext>().restaurantId;
+  final result = await repo.getProductVelocity(restaurantId);
   return result.valueOrNull ?? const ProductVelocityData();
 });
 
 final adminInsightsProvider = FutureProvider.autoDispose<PredictiveInsightsData>((ref) async {
   final repo = ref.watch(adminAnalyticsRepoProvider);
-  final result = await repo.getPredictiveInsights();
+  final restaurantId = GetIt.I<RestaurantContext>().restaurantId;
+  final result = await repo.getPredictiveInsights(restaurantId);
   return result.valueOrNull ?? const PredictiveInsightsData();
 });
 
 final adminAuditFeedProvider = FutureProvider.autoDispose<List<AuditLog>>((ref) async {
   final repo = ref.watch(adminAnalyticsRepoProvider);
-  final result = await repo.getRecentAuditLogs();
+  final restaurantId = GetIt.I<RestaurantContext>().restaurantId;
+  final result = await repo.getRecentAuditLogs(restaurantId);
   return result.valueOrNull ?? [];
 });
 
@@ -97,19 +128,22 @@ final adminAuditFeedProvider = FutureProvider.autoDispose<List<AuditLog>>((ref) 
 
 final adminRevenueHistoryProvider = FutureProvider.autoDispose<List<RevenuePoint>>((ref) async {
   final repo = ref.watch(adminAnalyticsRepoProvider);
-  final result = await repo.getRevenue();
+  final restaurantId = GetIt.I<RestaurantContext>().restaurantId;
+  final result = await repo.getRevenue(restaurantId);
   return result.valueOrNull ?? [];
 });
 
 final adminHeatmapProvider = FutureProvider.autoDispose<List<HeatmapPoint>>((ref) async {
   final repo = ref.watch(adminAnalyticsRepoProvider);
-  final result = await repo.getHeatmap();
+  final restaurantId = GetIt.I<RestaurantContext>().restaurantId;
+  final result = await repo.getHeatmap(restaurantId);
   return result.valueOrNull ?? [];
 });
 
 final adminKpisProvider = FutureProvider.autoDispose<KpiMetrics>((ref) async {
   final repo = ref.watch(adminAnalyticsRepoProvider);
-  final result = await repo.getKpis();
+  final restaurantId = GetIt.I<RestaurantContext>().restaurantId;
+  final result = await repo.getKpis(restaurantId);
   return result.valueOrNull ?? const KpiMetrics(averageOrderValueMinor: 0, totalSessions: 0, totalRevenueMinor: 0, paymentMethods: []);
 });
 

@@ -12,10 +12,10 @@ class RemoteAnalyticsRepository implements AnalyticsRepository {
   final ApiClient _apiClient;
 
   @override
-  Future<Result<ProductVelocityData>> getProductVelocity() async {
+  Future<Result<ProductVelocityData>> getProductVelocity(String restaurantId) async {
     try {
       final response = await _apiClient.send<Map<String, dynamic>>(
-        const ApiRequest(path: '/analytics/velocity', method: HttpMethod.get),
+        ApiRequest(path: '/restaurants/$restaurantId/analytics/velocity', method: HttpMethod.get),
       );
       return Success(ProductVelocityData.fromJson(response.data));
     } catch (e) {
@@ -24,10 +24,10 @@ class RemoteAnalyticsRepository implements AnalyticsRepository {
   }
 
   @override
-  Future<Result<PredictiveInsightsData>> getPredictiveInsights() async {
+  Future<Result<PredictiveInsightsData>> getPredictiveInsights(String restaurantId) async {
     try {
       final response = await _apiClient.send<Map<String, dynamic>>(
-        const ApiRequest(path: '/analytics/insights', method: HttpMethod.get),
+        ApiRequest(path: '/restaurants/$restaurantId/analytics/insights', method: HttpMethod.get),
       );
       return Success(PredictiveInsightsData.fromJson(response.data));
     } catch (e) {
@@ -36,10 +36,10 @@ class RemoteAnalyticsRepository implements AnalyticsRepository {
   }
 
   @override
-  Future<Result<List<AuditLog>>> getRecentAuditLogs() async {
+  Future<Result<List<AuditLog>>> getRecentAuditLogs(String restaurantId) async {
     try {
       final response = await _apiClient.send<List<dynamic>>(
-        const ApiRequest(path: '/audit/recent', method: HttpMethod.get),
+        ApiRequest(path: '/restaurants/$restaurantId/audit/recent', method: HttpMethod.get),
       );
       return Success(response.data.map((e) => AuditLog.fromJson(e as Map<String, dynamic>)).toList());
     } catch (e) {
@@ -48,10 +48,10 @@ class RemoteAnalyticsRepository implements AnalyticsRepository {
   }
 
   @override
-  Future<Result<List<RevenuePoint>>> getRevenue() async {
+  Future<Result<List<RevenuePoint>>> getRevenue(String restaurantId) async {
     try {
       final response = await _apiClient.send<List<dynamic>>(
-        const ApiRequest(path: '/analytics/revenue', method: HttpMethod.get),
+        ApiRequest(path: '/restaurants/$restaurantId/analytics/revenue', method: HttpMethod.get),
       );
       return Success(response.data.map((e) => RevenuePoint.fromJson(e as Map<String, dynamic>)).toList());
     } catch (e) {
@@ -60,10 +60,10 @@ class RemoteAnalyticsRepository implements AnalyticsRepository {
   }
 
   @override
-  Future<Result<List<HeatmapPoint>>> getHeatmap() async {
+  Future<Result<List<HeatmapPoint>>> getHeatmap(String restaurantId) async {
     try {
       final response = await _apiClient.send<List<dynamic>>(
-        const ApiRequest(path: '/analytics/heatmap', method: HttpMethod.get),
+        ApiRequest(path: '/restaurants/$restaurantId/analytics/heatmap', method: HttpMethod.get),
       );
       return Success(response.data.map((e) => HeatmapPoint.fromJson(e as Map<String, dynamic>)).toList());
     } catch (e) {
@@ -72,10 +72,10 @@ class RemoteAnalyticsRepository implements AnalyticsRepository {
   }
 
   @override
-  Future<Result<KpiMetrics>> getKpis() async {
+  Future<Result<KpiMetrics>> getKpis(String restaurantId) async {
     try {
       final response = await _apiClient.send<Map<String, dynamic>>(
-        const ApiRequest(path: '/analytics/kpis', method: HttpMethod.get),
+        ApiRequest(path: '/restaurants/$restaurantId/analytics/kpis', method: HttpMethod.get),
       );
       return Success(KpiMetrics.fromJson(response.data));
     } catch (e) {

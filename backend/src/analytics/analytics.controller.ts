@@ -1,13 +1,18 @@
-import { Controller, Get, Param, Headers, UnauthorizedException } from '@nestjs/common';
+import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RestaurantScopeGuard } from '../auth/guards/restaurant-scope.guard';
 import { AnalyticsService } from './analytics.service';
 
-@Controller('analytics')
+@ApiTags('analytics')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, RestaurantScopeGuard)
+@Controller('restaurants/:restaurantId/analytics')
 export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 
   @Get('velocity')
-  async getVelocity(@Headers('x-restaurant-id') restaurantId: string) {
-    if (!restaurantId) throw new UnauthorizedException('Missing restaurant ID');
+  async getVelocity(@Param('restaurantId') restaurantId: string) {
     return this.analyticsService.getVelocity(restaurantId);
   }
 
@@ -17,20 +22,17 @@ export class AnalyticsController {
   }
 
   @Get('revenue')
-  async getRevenue(@Headers('x-restaurant-id') restaurantId: string) {
-    if (!restaurantId) throw new UnauthorizedException('Missing restaurant ID');
+  async getRevenue(@Param('restaurantId') restaurantId: string) {
     return this.analyticsService.getRevenue(restaurantId);
   }
 
   @Get('heatmap')
-  async getHeatmap(@Headers('x-restaurant-id') restaurantId: string) {
-    if (!restaurantId) throw new UnauthorizedException('Missing restaurant ID');
+  async getHeatmap(@Param('restaurantId') restaurantId: string) {
     return this.analyticsService.getHeatmap(restaurantId);
   }
 
   @Get('kpis')
-  async getKpis(@Headers('x-restaurant-id') restaurantId: string) {
-    if (!restaurantId) throw new UnauthorizedException('Missing restaurant ID');
+  async getKpis(@Param('restaurantId') restaurantId: string) {
     return this.analyticsService.getKpis(restaurantId);
   }
 }
