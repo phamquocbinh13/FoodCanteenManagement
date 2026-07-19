@@ -6,6 +6,7 @@ import '../providers/admin_dashboard_provider.dart';
 import 'staff_form_dialog.dart';
 import '../../../../domain/entities/staff_user.dart';
 import '../../../../app/config/restaurant_context.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import 'package:get_it/get_it.dart';
 
 class EmployeeManagementWidget extends ConsumerStatefulWidget {
@@ -17,12 +18,30 @@ class EmployeeManagementWidget extends ConsumerStatefulWidget {
 
 class _EmployeeManagementWidgetState extends ConsumerState<EmployeeManagementWidget> {
   Future<void> _showStaffDialog({StaffUser? user}) async {
+    final currentUser = ref.read(currentUserProvider);
+    final isSelf = user != null && currentUser?.id == user.id;
+
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (context) => StaffFormDialog(initialUser: user),
+      builder: (context) => StaffFormDialog(initialUser: user, isSelf: isSelf),
     );
 
     if (result != null) {
+      if (user != null && result['is_active'] == false) {
+        final currentUser = ref.read(currentUserProvider);
+        if (currentUser?.id == user.id) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('You cannot deactivate your own account.'),
+                backgroundColor: AppColors.error,
+              ),
+            );
+          }
+          return;
+        }
+      }
+
       try {
         final repo = ref.read(adminUserRepoProvider);
         final restaurantId = GetIt.I<RestaurantContext>().restaurantId;

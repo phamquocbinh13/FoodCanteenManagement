@@ -4,9 +4,10 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 
 class StaffFormDialog extends StatefulWidget {
-  const StaffFormDialog({super.key, this.initialUser});
+  const StaffFormDialog({super.key, this.initialUser, this.isSelf = false});
 
   final StaffUser? initialUser;
+  final bool isSelf;
 
   @override
   State<StaffFormDialog> createState() => _StaffFormDialogState();
@@ -133,18 +134,20 @@ class _StaffFormDialogState extends State<StaffFormDialog> {
                   return null;
                 },
               ),
-              const SizedBox(height: AppSpacing.lg),
-              SwitchListTile(
-                title: const Text('Account Active', style: TextStyle(color: AppColors.ink)),
-                value: _isActive,
-                activeTrackColor: AppColors.brand,
-                contentPadding: EdgeInsets.zero,
-                onChanged: (val) {
-                  setState(() {
-                    _isActive = val;
-                  });
-                },
-              ),
+              if (!widget.isSelf) ...[
+                const SizedBox(height: AppSpacing.lg),
+                SwitchListTile(
+                  title: const Text('Account Active', style: TextStyle(color: AppColors.ink)),
+                  value: _isActive,
+                  activeTrackColor: AppColors.brand,
+                  contentPadding: EdgeInsets.zero,
+                  onChanged: (val) {
+                    setState(() {
+                      _isActive = val;
+                    });
+                  },
+                ),
+              ],
               const SizedBox(height: AppSpacing.xl),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
