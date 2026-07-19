@@ -7,9 +7,15 @@ export class RolesService {
   constructor(private prisma: PrismaService) {}
 
   async findAll() {
-    return this.prisma.role.findMany({
+    const roles = await this.prisma.role.findMany({
       orderBy: { name: 'asc' },
     });
+    return roles.map(r => ({
+      id: r.id,
+      key: r.roleKey,
+      name: r.name,
+      created_at: r.createdAt
+    }));
   }
 
   async assignRoles(restaurantId: string, userId: string, roleIds: string[]) {

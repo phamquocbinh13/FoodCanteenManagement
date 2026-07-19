@@ -1,13 +1,20 @@
 import 'package:flutter/material.dart';
 import '../../../../domain/entities/staff_user.dart';
+import '../../../../domain/entities/role.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 
 class StaffFormDialog extends StatefulWidget {
-  const StaffFormDialog({super.key, this.initialUser, this.isSelf = false});
+  const StaffFormDialog({
+    super.key, 
+    this.initialUser, 
+    this.isSelf = false,
+    required this.availableRoles,
+  });
 
   final StaffUser? initialUser;
   final bool isSelf;
+  final List<Role> availableRoles;
 
   @override
   State<StaffFormDialog> createState() => _StaffFormDialogState();
@@ -19,6 +26,7 @@ class _StaffFormDialogState extends State<StaffFormDialog> {
   late TextEditingController _emailController;
   late TextEditingController _passwordController;
   late bool _isActive;
+  String? _selectedRoleId;
 
   @override
   void initState() {
@@ -27,6 +35,7 @@ class _StaffFormDialogState extends State<StaffFormDialog> {
     _emailController = TextEditingController(text: widget.initialUser?.email ?? '');
     _passwordController = TextEditingController();
     _isActive = widget.initialUser?.isActive ?? true;
+    _selectedRoleId = widget.initialUser?.roles.firstOrNull?.id;
   }
 
   @override
@@ -38,11 +47,22 @@ class _StaffFormDialogState extends State<StaffFormDialog> {
   }
 
   void _submit() {
+    if (_selectedRoleId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select exactly 1 role for this employee.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
     if (_formKey.currentState!.validate()) {
       final data = {
         'display_name': _nameController.text.trim(),
         'email': _emailController.text.trim(),
         'is_active': _isActive,
+        'roleIds': [_selectedRoleId],
       };
       
       if (_passwordController.text.isNotEmpty) {
@@ -133,6 +153,38 @@ class _StaffFormDialogState extends State<StaffFormDialog> {
                   }
                   return null;
                 },
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              const Text('Assigned Roles', style: TextStyle(color: AppColors.ink)),
+              const SizedBox(height: AppSpacing.sm),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: widget.availableRoles.map((role) {
+                  final isSelected = _selectedRoleId == role.id;
+                  final isDisabled = _selectedRoleId != null && !isSelected;
+                  
+                  return FilterChip(
+                    label: Text(role.name),
+                    selected: isSelected,
+                    onSelected: isDisabled ? null : (selected) {
+                      setState(() {
+                        if (selected) {
+                          _selectedRoleId = role.id;
+                        } else {
+                          _selectedRoleId = null;
+                        }
+                      });
+                    },
+                    selectedColor: AppColors.brand.withValues(alpha: 0.2),
+                    checkmarkColor: AppColors.brand,
+                    disabledColor: AppColors.surfaceRaised.withValues(alpha: 0.5),
+                    labelStyle: TextStyle(
+                      color: isSelected ? AppColors.brand : (isDisabled ? AppColors.inkMuted : AppColors.ink),
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    ),
+                  );
+                }).toList(),
               ),
               if (!widget.isSelf) ...[
                 const SizedBox(height: AppSpacing.lg),

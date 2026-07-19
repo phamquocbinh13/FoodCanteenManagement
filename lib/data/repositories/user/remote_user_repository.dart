@@ -70,9 +70,14 @@ class RemoteUserRepository implements UserRepository {
     return StaffUser.fromJson(response.data);
   }
 
-  Future<void> assignRoles(String userId, List<String> roleIds) async {
+  Future<void> assignRoles(String restaurantId, String userId, List<String> roleIds) async {
     await _apiClient.send(
-      ApiRequest(path: '/roles/staff/$userId', method: HttpMethod.put, body: {'roleIds': roleIds}),
+      ApiRequest(
+        path: '/roles/staff/$userId', 
+        method: HttpMethod.put, 
+        body: {'roleIds': roleIds},
+        headers: {'x-restaurant-id': restaurantId},
+      ),
     );
   }
 

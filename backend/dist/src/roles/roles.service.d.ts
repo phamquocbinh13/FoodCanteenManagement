@@ -4,9 +4,9 @@ export declare class RolesService {
     constructor(prisma: PrismaService);
     findAll(): Promise<{
         id: string;
+        key: string;
         name: string;
-        createdAt: Date;
-        roleKey: string;
+        created_at: Date;
     }[]>;
     assignRoles(restaurantId: string, userId: string, roleIds: string[]): Promise<{
         success: boolean;

@@ -20,10 +20,17 @@ class _EmployeeManagementWidgetState extends ConsumerState<EmployeeManagementWid
   Future<void> _showStaffDialog({StaffUser? user}) async {
     final currentUser = ref.read(currentUserProvider);
     final isSelf = user != null && currentUser?.id == user.id;
+    
+    // Read roles, default to empty if not loaded
+    final availableRoles = ref.read(adminRolesListProvider).valueOrNull ?? [];
 
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (context) => StaffFormDialog(initialUser: user, isSelf: isSelf),
+      builder: (context) => StaffFormDialog(
+        initialUser: user, 
+        isSelf: isSelf,
+        availableRoles: availableRoles,
+      ),
     );
 
     if (result != null) {
@@ -45,11 +52,19 @@ class _EmployeeManagementWidgetState extends ConsumerState<EmployeeManagementWid
       try {
         final repo = ref.read(adminUserRepoProvider);
         final restaurantId = GetIt.I<RestaurantContext>().restaurantId;
+        
+        StaffUser savedUser;
         if (user == null) {
-          await repo.createStaff(restaurantId, result);
+          savedUser = await repo.createStaff(restaurantId, result);
         } else {
-          await repo.updateStaff(restaurantId, user.id, result);
+          savedUser = await repo.updateStaff(restaurantId, user.id, result);
         }
+        
+        if (result['roleIds'] != null) {
+          final roleIds = (result['roleIds'] as List).cast<String>();
+          await repo.assignRoles(restaurantId, savedUser.id, roleIds);
+        }
+        
         ref.invalidate(adminStaffListProvider);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

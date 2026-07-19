@@ -4,9 +4,9 @@ export declare class RolesController {
     constructor(rolesService: RolesService);
     findAll(): Promise<{
         id: string;
+        key: string;
         name: string;
-        createdAt: Date;
-        roleKey: string;
+        created_at: Date;
     }[]>;
     assignRoles(restaurantId: string, userId: string, data: {
         roleIds: string[];
