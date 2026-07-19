@@ -32,24 +32,40 @@ class RemoteUserRepository implements UserRepository {
   Future<List<StaffUser>> getAllStaff(String restaurantId) async {
     try {
       final response = await _apiClient.send<List<dynamic>>(
-        const ApiRequest(path: '/staff', method: HttpMethod.get),
+        ApiRequest(
+          path: '/staff', 
+          method: HttpMethod.get,
+          headers: {'x-restaurant-id': restaurantId},
+        ),
       );
       return response.data.map((e) => StaffUser.fromJson(e)).toList();
-    } catch (e) {
+    } catch (e, st) {
+      print('getAllStaff error: $e');
+      print(st);
       return [];
     }
   }
 
-  Future<StaffUser> createStaff(Map<String, dynamic> data) async {
+  Future<StaffUser> createStaff(String restaurantId, Map<String, dynamic> data) async {
     final response = await _apiClient.send<Map<String, dynamic>>(
-      ApiRequest(path: '/staff', method: HttpMethod.post, body: data),
+      ApiRequest(
+        path: '/staff', 
+        method: HttpMethod.post, 
+        body: data,
+        headers: {'x-restaurant-id': restaurantId},
+      ),
     );
     return StaffUser.fromJson(response.data);
   }
 
-  Future<StaffUser> updateStaff(String userId, Map<String, dynamic> data) async {
+  Future<StaffUser> updateStaff(String restaurantId, String userId, Map<String, dynamic> data) async {
     final response = await _apiClient.send<Map<String, dynamic>>(
-      ApiRequest(path: '/staff/$userId', method: HttpMethod.put, body: data),
+      ApiRequest(
+        path: '/staff/$userId', 
+        method: HttpMethod.put, 
+        body: data,
+        headers: {'x-restaurant-id': restaurantId},
+      ),
     );
     return StaffUser.fromJson(response.data);
   }

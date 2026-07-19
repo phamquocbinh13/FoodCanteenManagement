@@ -3,12 +3,52 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../providers/admin_dashboard_provider.dart';
+import 'staff_form_dialog.dart';
+import '../../../../domain/entities/staff_user.dart';
+import '../../../../app/config/restaurant_context.dart';
+import 'package:get_it/get_it.dart';
 
-class EmployeeManagementWidget extends ConsumerWidget {
+class EmployeeManagementWidget extends ConsumerStatefulWidget {
   const EmployeeManagementWidget({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<EmployeeManagementWidget> createState() => _EmployeeManagementWidgetState();
+}
+
+class _EmployeeManagementWidgetState extends ConsumerState<EmployeeManagementWidget> {
+  Future<void> _showStaffDialog({StaffUser? user}) async {
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (context) => StaffFormDialog(initialUser: user),
+    );
+
+    if (result != null) {
+      try {
+        final repo = ref.read(adminUserRepoProvider);
+        final restaurantId = GetIt.I<RestaurantContext>().restaurantId;
+        if (user == null) {
+          await repo.createStaff(restaurantId, result);
+        } else {
+          await repo.updateStaff(restaurantId, user.id, result);
+        }
+        ref.invalidate(adminStaffListProvider);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(user == null ? 'Employee created' : 'Employee updated')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to save employee: $e'), backgroundColor: AppColors.error),
+          );
+        }
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final staffListAsync = ref.watch(adminStaffListProvider);
 
     return Container(
@@ -25,9 +65,7 @@ class EmployeeManagementWidget extends ConsumerWidget {
             children: [
               Text('Employee Directory', style: Theme.of(context).textTheme.headlineMedium),
               ElevatedButton.icon(
-                onPressed: () {
-                  // TBD: Show Add Employee Dialog
-                },
+                onPressed: () => _showStaffDialog(),
                 icon: const Icon(Icons.add),
                 label: const Text('Add Employee'),
               ),
@@ -56,7 +94,7 @@ class EmployeeManagementWidget extends ConsumerWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: staff.isActive ? AppColors.successSoft : AppColors.error.withOpacity(0.1),
+                            color: staff.isActive ? AppColors.successSoft : AppColors.error.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
@@ -69,13 +107,20 @@ class EmployeeManagementWidget extends ConsumerWidget {
                           ),
                         ),
                       ),
-                      const DataCell(Text('Roles managed via API')),
+                      DataCell(
+                        Wrap(
+                          spacing: 4,
+                          children: staff.roles.map((r) => Chip(
+                            label: Text(r.name, style: const TextStyle(fontSize: 11)),
+                            padding: EdgeInsets.zero,
+                            visualDensity: VisualDensity.compact,
+                          )).toList(),
+                        ),
+                      ),
                       DataCell(
                         IconButton(
                           icon: const Icon(Icons.edit, color: AppColors.inkMuted, size: 20),
-                          onPressed: () {
-                            // TBD: Show Edit Employee Dialog
-                          },
+                          onPressed: () => _showStaffDialog(user: staff),
                         ),
                       ),
                     ],

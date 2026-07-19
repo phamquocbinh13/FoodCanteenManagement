@@ -7,12 +7,33 @@ import { v4 as uuidv4 } from 'uuid';
 export class StaffService {
   constructor(private prisma: PrismaService) {}
 
+  private _mapToSnakeCase(user: any) {
+    if (!user) return null;
+    return {
+      id: user.id,
+      restaurant_id: user.restaurantId,
+      email: user.email,
+      display_name: user.displayName,
+      password_hash: user.passwordHash,
+      is_active: user.isActive,
+      created_at: user.createdAt,
+      updated_at: user.updatedAt,
+      roles: user.user_role?.map((ur: any) => ({
+        id: ur.role.id,
+        key: ur.role.roleKey,
+        name: ur.role.name,
+        created_at: ur.role.createdAt
+      })) || []
+    };
+  }
+
   async findAll(restaurantId: string) {
-    return this.prisma.staffUser.findMany({
+    const users = await this.prisma.staffUser.findMany({
       where: { restaurantId },
       include: { user_role: { include: { role: true } } },
       orderBy: { displayName: 'asc' },
     });
+    return users.map(u => this._mapToSnakeCase(u));
   }
 
   async findOne(restaurantId: string, id: string) {
@@ -21,23 +42,24 @@ export class StaffService {
       include: { user_role: { include: { role: true } } },
     });
     if (!user) throw new NotFoundException('Staff not found');
-    return user;
+    return this._mapToSnakeCase(user);
   }
 
   async create(restaurantId: string, data: any) {
-    const passwordHash = await argon2.hash(data.password || 'changeme123');
+    const passwordHash = await argon2.hash(data.password || data.password_hash || 'changeme123');
     
-    return this.prisma.staffUser.create({
+    const user = await this.prisma.staffUser.create({
       data: {
         id: uuidv4(),
         restaurantId,
         email: data.email,
-        displayName: data.displayName,
+        displayName: data.displayName || data.display_name,
         passwordHash,
-        isActive: data.isActive ?? true,
+        isActive: data.isActive ?? data.is_active ?? true,
       },
       include: { user_role: { include: { role: true } } },
     });
+    return this._mapToSnakeCase(user);
   }
 
   async update(restaurantId: string, id: string, data: any) {
@@ -45,27 +67,29 @@ export class StaffService {
     
     const updateData: any = {
       email: data.email,
-      displayName: data.displayName,
-      isActive: data.isActive,
+      displayName: data.displayName || data.display_name,
+      isActive: data.isActive ?? data.is_active,
     };
     
-    if (data.password) {
-      updateData.passwordHash = await argon2.hash(data.password);
+    if (data.password || data.password_hash) {
+      updateData.passwordHash = await argon2.hash(data.password || data.password_hash);
     }
 
-    return this.prisma.staffUser.update({
+    const user = await this.prisma.staffUser.update({
       where: { id },
       data: updateData,
       include: { user_role: { include: { role: true } } },
     });
+    return this._mapToSnakeCase(user);
   }
 
   async remove(restaurantId: string, id: string) {
     await this.findOne(restaurantId, id);
     // Soft delete by deactivating
-    return this.prisma.staffUser.update({
+    const user = await this.prisma.staffUser.update({
       where: { id },
       data: { isActive: false },
     });
+    return this._mapToSnakeCase(user);
   }
 }

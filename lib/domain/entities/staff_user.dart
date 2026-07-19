@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'role.dart';
 
 part 'staff_user.freezed.dart';
 part 'staff_user.g.dart';
@@ -18,6 +19,7 @@ abstract class StaffUser with _$StaffUser {
     DateTime? lastLoginAt,
     required DateTime createdAt,
     required DateTime updatedAt,
+    @Default([]) List<Role> roles,
   }) = _StaffUser;
 
   factory StaffUser.fromJson(Map<String, dynamic> json) =>

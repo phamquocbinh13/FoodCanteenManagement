@@ -18,6 +18,11 @@ _StaffUser _$StaffUserFromJson(Map<String, dynamic> json) => _StaffUser(
       : DateTime.parse(json['last_login_at'] as String),
   createdAt: DateTime.parse(json['created_at'] as String),
   updatedAt: DateTime.parse(json['updated_at'] as String),
+  roles:
+      (json['roles'] as List<dynamic>?)
+          ?.map((e) => Role.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const [],
 );
 
 Map<String, dynamic> _$StaffUserToJson(_StaffUser instance) =>
@@ -31,4 +36,5 @@ Map<String, dynamic> _$StaffUserToJson(_StaffUser instance) =>
       'last_login_at': instance.lastLoginAt?.toIso8601String(),
       'created_at': instance.createdAt.toIso8601String(),
       'updated_at': instance.updatedAt.toIso8601String(),
+      'roles': instance.roles.map((e) => e.toJson()).toList(),
     };

@@ -2,115 +2,60 @@ import { PrismaService } from '../prisma/prisma.service';
 export declare class StaffService {
     private prisma;
     constructor(prisma: PrismaService);
+    private _mapToSnakeCase;
     findAll(restaurantId: string): Promise<({
-        user_role: ({
-            role: {
-                id: string;
-                name: string;
-                createdAt: Date;
-                roleKey: string;
-            };
-        } & {
-            id: string;
-            created_at: Date;
-            role_id: string;
-            user_id: string;
-        })[];
-    } & {
-        id: string;
-        isActive: boolean;
-        createdAt: Date;
-        updatedAt: Date;
-        restaurantId: string;
-        email: string;
-        displayName: string;
-        passwordHash: string;
-        lastLoginAt: Date | null;
-    })[]>;
+        id: any;
+        restaurant_id: any;
+        email: any;
+        display_name: any;
+        password_hash: any;
+        is_active: any;
+        created_at: any;
+        updated_at: any;
+        roles: any;
+    } | null)[]>;
     findOne(restaurantId: string, id: string): Promise<{
-        user_role: ({
-            role: {
-                id: string;
-                name: string;
-                createdAt: Date;
-                roleKey: string;
-            };
-        } & {
-            id: string;
-            created_at: Date;
-            role_id: string;
-            user_id: string;
-        })[];
-    } & {
-        id: string;
-        isActive: boolean;
-        createdAt: Date;
-        updatedAt: Date;
-        restaurantId: string;
-        email: string;
-        displayName: string;
-        passwordHash: string;
-        lastLoginAt: Date | null;
-    }>;
+        id: any;
+        restaurant_id: any;
+        email: any;
+        display_name: any;
+        password_hash: any;
+        is_active: any;
+        created_at: any;
+        updated_at: any;
+        roles: any;
+    } | null>;
     create(restaurantId: string, data: any): Promise<{
-        user_role: ({
-            role: {
-                id: string;
-                name: string;
-                createdAt: Date;
-                roleKey: string;
-            };
-        } & {
-            id: string;
-            created_at: Date;
-            role_id: string;
-            user_id: string;
-        })[];
-    } & {
-        id: string;
-        isActive: boolean;
-        createdAt: Date;
-        updatedAt: Date;
-        restaurantId: string;
-        email: string;
-        displayName: string;
-        passwordHash: string;
-        lastLoginAt: Date | null;
-    }>;
+        id: any;
+        restaurant_id: any;
+        email: any;
+        display_name: any;
+        password_hash: any;
+        is_active: any;
+        created_at: any;
+        updated_at: any;
+        roles: any;
+    } | null>;
     update(restaurantId: string, id: string, data: any): Promise<{
-        user_role: ({
-            role: {
-                id: string;
-                name: string;
-                createdAt: Date;
-                roleKey: string;
-            };
-        } & {
-            id: string;
-            created_at: Date;
-            role_id: string;
-            user_id: string;
-        })[];
-    } & {
-        id: string;
-        isActive: boolean;
-        createdAt: Date;
-        updatedAt: Date;
-        restaurantId: string;
-        email: string;
-        displayName: string;
-        passwordHash: string;
-        lastLoginAt: Date | null;
-    }>;
+        id: any;
+        restaurant_id: any;
+        email: any;
+        display_name: any;
+        password_hash: any;
+        is_active: any;
+        created_at: any;
+        updated_at: any;
+        roles: any;
+    } | null>;
     remove(restaurantId: string, id: string): Promise<{
-        id: string;
-        isActive: boolean;
-        createdAt: Date;
-        updatedAt: Date;
-        restaurantId: string;
-        email: string;
-        displayName: string;
-        passwordHash: string;
-        lastLoginAt: Date | null;
-    }>;
+        id: any;
+        restaurant_id: any;
+        email: any;
+        display_name: any;
+        password_hash: any;
+        is_active: any;
+        created_at: any;
+        updated_at: any;
+        roles: any;
+    } | null>;
 }

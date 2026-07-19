@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$StaffUser {
 
- String get id; String get restaurantId; String get email; String get displayName; String get passwordHash; bool get isActive; DateTime? get lastLoginAt; DateTime get createdAt; DateTime get updatedAt;
+ String get id; String get restaurantId; String get email; String get displayName; String get passwordHash; bool get isActive; DateTime? get lastLoginAt; DateTime get createdAt; DateTime get updatedAt; List<Role> get roles;
 /// Create a copy of StaffUser
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $StaffUserCopyWith<StaffUser> get copyWith => _$StaffUserCopyWithImpl<StaffUser>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StaffUser&&(identical(other.id, id) || other.id == id)&&(identical(other.restaurantId, restaurantId) || other.restaurantId == restaurantId)&&(identical(other.email, email) || other.email == email)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.passwordHash, passwordHash) || other.passwordHash == passwordHash)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.lastLoginAt, lastLoginAt) || other.lastLoginAt == lastLoginAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is StaffUser&&(identical(other.id, id) || other.id == id)&&(identical(other.restaurantId, restaurantId) || other.restaurantId == restaurantId)&&(identical(other.email, email) || other.email == email)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.passwordHash, passwordHash) || other.passwordHash == passwordHash)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.lastLoginAt, lastLoginAt) || other.lastLoginAt == lastLoginAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&const DeepCollectionEquality().equals(other.roles, roles));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,restaurantId,email,displayName,passwordHash,isActive,lastLoginAt,createdAt,updatedAt);
+int get hashCode => Object.hash(runtimeType,id,restaurantId,email,displayName,passwordHash,isActive,lastLoginAt,createdAt,updatedAt,const DeepCollectionEquality().hash(roles));
 
 @override
 String toString() {
-  return 'StaffUser(id: $id, restaurantId: $restaurantId, email: $email, displayName: $displayName, passwordHash: $passwordHash, isActive: $isActive, lastLoginAt: $lastLoginAt, createdAt: $createdAt, updatedAt: $updatedAt)';
+  return 'StaffUser(id: $id, restaurantId: $restaurantId, email: $email, displayName: $displayName, passwordHash: $passwordHash, isActive: $isActive, lastLoginAt: $lastLoginAt, createdAt: $createdAt, updatedAt: $updatedAt, roles: $roles)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $StaffUserCopyWith<$Res>  {
   factory $StaffUserCopyWith(StaffUser value, $Res Function(StaffUser) _then) = _$StaffUserCopyWithImpl;
 @useResult
 $Res call({
- String id, String restaurantId, String email, String displayName, String passwordHash, bool isActive, DateTime? lastLoginAt, DateTime createdAt, DateTime updatedAt
+ String id, String restaurantId, String email, String displayName, String passwordHash, bool isActive, DateTime? lastLoginAt, DateTime createdAt, DateTime updatedAt, List<Role> roles
 });
 
 
@@ -65,7 +65,7 @@ class _$StaffUserCopyWithImpl<$Res>
 
 /// Create a copy of StaffUser
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? restaurantId = null,Object? email = null,Object? displayName = null,Object? passwordHash = null,Object? isActive = null,Object? lastLoginAt = freezed,Object? createdAt = null,Object? updatedAt = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? restaurantId = null,Object? email = null,Object? displayName = null,Object? passwordHash = null,Object? isActive = null,Object? lastLoginAt = freezed,Object? createdAt = null,Object? updatedAt = null,Object? roles = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,restaurantId: null == restaurantId ? _self.restaurantId : restaurantId // ignore: cast_nullable_to_non_nullable
@@ -76,7 +76,8 @@ as String,isActive: null == isActive ? _self.isActive : isActive // ignore: cast
 as bool,lastLoginAt: freezed == lastLoginAt ? _self.lastLoginAt : lastLoginAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
-as DateTime,
+as DateTime,roles: null == roles ? _self.roles : roles // ignore: cast_nullable_to_non_nullable
+as List<Role>,
   ));
 }
 
@@ -161,10 +162,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String restaurantId,  String email,  String displayName,  String passwordHash,  bool isActive,  DateTime? lastLoginAt,  DateTime createdAt,  DateTime updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String restaurantId,  String email,  String displayName,  String passwordHash,  bool isActive,  DateTime? lastLoginAt,  DateTime createdAt,  DateTime updatedAt,  List<Role> roles)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _StaffUser() when $default != null:
-return $default(_that.id,_that.restaurantId,_that.email,_that.displayName,_that.passwordHash,_that.isActive,_that.lastLoginAt,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.restaurantId,_that.email,_that.displayName,_that.passwordHash,_that.isActive,_that.lastLoginAt,_that.createdAt,_that.updatedAt,_that.roles);case _:
   return orElse();
 
 }
@@ -182,10 +183,10 @@ return $default(_that.id,_that.restaurantId,_that.email,_that.displayName,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String restaurantId,  String email,  String displayName,  String passwordHash,  bool isActive,  DateTime? lastLoginAt,  DateTime createdAt,  DateTime updatedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String restaurantId,  String email,  String displayName,  String passwordHash,  bool isActive,  DateTime? lastLoginAt,  DateTime createdAt,  DateTime updatedAt,  List<Role> roles)  $default,) {final _that = this;
 switch (_that) {
 case _StaffUser():
-return $default(_that.id,_that.restaurantId,_that.email,_that.displayName,_that.passwordHash,_that.isActive,_that.lastLoginAt,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.restaurantId,_that.email,_that.displayName,_that.passwordHash,_that.isActive,_that.lastLoginAt,_that.createdAt,_that.updatedAt,_that.roles);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -202,10 +203,10 @@ return $default(_that.id,_that.restaurantId,_that.email,_that.displayName,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String restaurantId,  String email,  String displayName,  String passwordHash,  bool isActive,  DateTime? lastLoginAt,  DateTime createdAt,  DateTime updatedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String restaurantId,  String email,  String displayName,  String passwordHash,  bool isActive,  DateTime? lastLoginAt,  DateTime createdAt,  DateTime updatedAt,  List<Role> roles)?  $default,) {final _that = this;
 switch (_that) {
 case _StaffUser() when $default != null:
-return $default(_that.id,_that.restaurantId,_that.email,_that.displayName,_that.passwordHash,_that.isActive,_that.lastLoginAt,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.restaurantId,_that.email,_that.displayName,_that.passwordHash,_that.isActive,_that.lastLoginAt,_that.createdAt,_that.updatedAt,_that.roles);case _:
   return null;
 
 }
@@ -217,7 +218,7 @@ return $default(_that.id,_that.restaurantId,_that.email,_that.displayName,_that.
 @JsonSerializable()
 
 class _StaffUser implements StaffUser {
-  const _StaffUser({required this.id, required this.restaurantId, required this.email, required this.displayName, required this.passwordHash, this.isActive = true, this.lastLoginAt, required this.createdAt, required this.updatedAt});
+  const _StaffUser({required this.id, required this.restaurantId, required this.email, required this.displayName, required this.passwordHash, this.isActive = true, this.lastLoginAt, required this.createdAt, required this.updatedAt, final  List<Role> roles = const []}): _roles = roles;
   factory _StaffUser.fromJson(Map<String, dynamic> json) => _$StaffUserFromJson(json);
 
 @override final  String id;
@@ -229,6 +230,13 @@ class _StaffUser implements StaffUser {
 @override final  DateTime? lastLoginAt;
 @override final  DateTime createdAt;
 @override final  DateTime updatedAt;
+ final  List<Role> _roles;
+@override@JsonKey() List<Role> get roles {
+  if (_roles is EqualUnmodifiableListView) return _roles;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_roles);
+}
+
 
 /// Create a copy of StaffUser
 /// with the given fields replaced by the non-null parameter values.
@@ -243,16 +251,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _StaffUser&&(identical(other.id, id) || other.id == id)&&(identical(other.restaurantId, restaurantId) || other.restaurantId == restaurantId)&&(identical(other.email, email) || other.email == email)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.passwordHash, passwordHash) || other.passwordHash == passwordHash)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.lastLoginAt, lastLoginAt) || other.lastLoginAt == lastLoginAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _StaffUser&&(identical(other.id, id) || other.id == id)&&(identical(other.restaurantId, restaurantId) || other.restaurantId == restaurantId)&&(identical(other.email, email) || other.email == email)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.passwordHash, passwordHash) || other.passwordHash == passwordHash)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.lastLoginAt, lastLoginAt) || other.lastLoginAt == lastLoginAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&const DeepCollectionEquality().equals(other._roles, _roles));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,restaurantId,email,displayName,passwordHash,isActive,lastLoginAt,createdAt,updatedAt);
+int get hashCode => Object.hash(runtimeType,id,restaurantId,email,displayName,passwordHash,isActive,lastLoginAt,createdAt,updatedAt,const DeepCollectionEquality().hash(_roles));
 
 @override
 String toString() {
-  return 'StaffUser(id: $id, restaurantId: $restaurantId, email: $email, displayName: $displayName, passwordHash: $passwordHash, isActive: $isActive, lastLoginAt: $lastLoginAt, createdAt: $createdAt, updatedAt: $updatedAt)';
+  return 'StaffUser(id: $id, restaurantId: $restaurantId, email: $email, displayName: $displayName, passwordHash: $passwordHash, isActive: $isActive, lastLoginAt: $lastLoginAt, createdAt: $createdAt, updatedAt: $updatedAt, roles: $roles)';
 }
 
 
@@ -263,7 +271,7 @@ abstract mixin class _$StaffUserCopyWith<$Res> implements $StaffUserCopyWith<$Re
   factory _$StaffUserCopyWith(_StaffUser value, $Res Function(_StaffUser) _then) = __$StaffUserCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String restaurantId, String email, String displayName, String passwordHash, bool isActive, DateTime? lastLoginAt, DateTime createdAt, DateTime updatedAt
+ String id, String restaurantId, String email, String displayName, String passwordHash, bool isActive, DateTime? lastLoginAt, DateTime createdAt, DateTime updatedAt, List<Role> roles
 });
 
 
@@ -280,7 +288,7 @@ class __$StaffUserCopyWithImpl<$Res>
 
 /// Create a copy of StaffUser
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? restaurantId = null,Object? email = null,Object? displayName = null,Object? passwordHash = null,Object? isActive = null,Object? lastLoginAt = freezed,Object? createdAt = null,Object? updatedAt = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? restaurantId = null,Object? email = null,Object? displayName = null,Object? passwordHash = null,Object? isActive = null,Object? lastLoginAt = freezed,Object? createdAt = null,Object? updatedAt = null,Object? roles = null,}) {
   return _then(_StaffUser(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,restaurantId: null == restaurantId ? _self.restaurantId : restaurantId // ignore: cast_nullable_to_non_nullable
@@ -291,7 +299,8 @@ as String,isActive: null == isActive ? _self.isActive : isActive // ignore: cast
 as bool,lastLoginAt: freezed == lastLoginAt ? _self.lastLoginAt : lastLoginAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
-as DateTime,
+as DateTime,roles: null == roles ? _self._roles : roles // ignore: cast_nullable_to_non_nullable
+as List<Role>,
   ));
 }
 
