@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../providers/admin_dashboard_provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -41,7 +42,7 @@ class RevenueChartWidget extends ConsumerWidget {
                     return Column(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        Text('\$${(point.revenueMinor / 100).toStringAsFixed(0)}', style: const TextStyle(fontSize: 10, color: AppColors.inkMuted)),
+                        Text('${NumberFormat.compact().format(point.revenueMinor)} ₫', style: const TextStyle(fontSize: 10, color: AppColors.inkMuted)),
                         const SizedBox(height: 4),
                         Container(
                           width: 32,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../providers/admin_dashboard_provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -26,9 +27,9 @@ class KpiGridWidget extends ConsumerWidget {
             data: (data) => Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildKpi(context, 'Average Order Value', '\$${(data.averageOrderValueMinor / 100).toStringAsFixed(2)}'),
+                _buildKpi(context, 'Average Order Value', '${NumberFormat.decimalPattern().format(data.averageOrderValueMinor)} ₫'),
                 _buildKpi(context, 'Total Sessions', '${data.totalSessions}'),
-                _buildKpi(context, 'Total Revenue', '\$${(data.totalRevenueMinor / 100).toStringAsFixed(2)}'),
+                _buildKpi(context, 'Total Revenue', '${NumberFormat.decimalPattern().format(data.totalRevenueMinor)} ₫'),
               ],
             ),
             loading: () => const Center(child: CircularProgressIndicator()),
@@ -47,7 +48,7 @@ class KpiGridWidget extends ConsumerWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(pm.method.toUpperCase(), style: Theme.of(context).textTheme.bodyMedium),
-                      Text('\$${(pm.totalMinor / 100).toStringAsFixed(2)}', style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
+                      Text('${NumberFormat.decimalPattern().format(pm.totalMinor)} ₫', style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
                     ],
                   ),
                 )).toList(),

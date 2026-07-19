@@ -27,14 +27,30 @@ class WeatherForecastWidget extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
-          child: Text(
-            '7-DAY FORECAST',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 1.2,
-              color: const Color(0xFF829289), // Ink Muted
-            ),
+          child: Row(
+            children: [
+              const Text(
+                '7-DAY FORECAST',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 1.2,
+                  color: Color(0xFF829289), // Ink Muted
+                ),
+              ),
+              const SizedBox(width: 12),
+              Icon(Icons.location_on_rounded, size: 14, color: const Color(0xFF829289).withValues(alpha: 0.8)),
+              const SizedBox(width: 4),
+              Text(
+                'HO CHI MINH CITY',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 1.0,
+                  color: const Color(0xFF829289).withValues(alpha: 0.8),
+                ),
+              ),
+            ],
           ),
         ),
         SizedBox(
