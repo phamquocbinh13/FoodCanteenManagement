@@ -61,7 +61,7 @@ final adminRevenueProvider = Provider<String>((ref) {
   final kpis = ref.watch(adminKpisProvider).valueOrNull;
   if (kpis == null) return '...';
   
-  final total = kpis.totalRevenueMinor;
+  final total = kpis.totalRevenueMinor / 100;
   final formatter = NumberFormat.decimalPattern();
   return '${formatter.format(total)} ₫';
 });

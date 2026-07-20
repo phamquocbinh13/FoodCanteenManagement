@@ -27,9 +27,9 @@ class KpiGridWidget extends ConsumerWidget {
             data: (data) => Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildKpi(context, 'Average Order Value', '${NumberFormat.decimalPattern().format(data.averageOrderValueMinor)} ₫'),
+                _buildKpi(context, 'Average Order Value', '${NumberFormat.decimalPattern().format(data.averageOrderValueMinor / 100)} ₫'),
                 _buildKpi(context, 'Total Sessions', '${data.totalSessions}'),
-                _buildKpi(context, 'Total Revenue', '${NumberFormat.decimalPattern().format(data.totalRevenueMinor)} ₫'),
+                _buildKpi(context, 'Total Revenue', '${NumberFormat.decimalPattern().format(data.totalRevenueMinor / 100)} ₫'),
               ],
             ),
             loading: () => const Center(child: CircularProgressIndicator()),
@@ -48,7 +48,7 @@ class KpiGridWidget extends ConsumerWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(pm.method.toUpperCase(), style: Theme.of(context).textTheme.bodyMedium),
-                      Text('${NumberFormat.decimalPattern().format(pm.totalMinor)} ₫', style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
+                      Text('${NumberFormat.decimalPattern().format(pm.totalMinor / 100)} ₫', style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
                     ],
                   ),
                 )).toList(),

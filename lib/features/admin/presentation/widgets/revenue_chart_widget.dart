@@ -42,7 +42,7 @@ class RevenueChartWidget extends ConsumerWidget {
                     return Column(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        Text('${NumberFormat.compact().format(point.revenueMinor)} ₫', style: const TextStyle(fontSize: 10, color: AppColors.inkMuted)),
+                        Text('${NumberFormat.compact().format(point.revenueMinor / 100)} ₫', style: const TextStyle(fontSize: 10, color: AppColors.inkMuted)),
                         const SizedBox(height: 4),
                         Container(
                           width: 32,
