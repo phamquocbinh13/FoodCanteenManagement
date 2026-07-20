@@ -407,17 +407,28 @@ class _SessionPageState extends ConsumerState<SessionPage> {
                   onPressed: () async {
                     final url = await ordering.createVnpayIntent();
                     if (url != null && context.mounted) {
-                      await launchUrl(Uri.parse(url), mode: LaunchMode.inAppWebView);
+                      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
                       
-                      // Poll status every 2 seconds for up to 20 seconds to allow payment processing
-                      for (int i = 0; i < 10; i++) {
+                      // Poll status every 2 seconds for up to 5 minutes (150 iterations) to allow payment processing
+                      for (int i = 0; i < 150; i++) {
                         await Future.delayed(const Duration(seconds: 2));
                         if (!context.mounted) return;
                         final status = await ordering.checkPaymentStatus();
                         if (status == 'paid') {
+                          await closeInAppWebView();
                           if (!context.mounted) return;
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('Payment Successful!')),
+                          );
+                          await controller.refreshCurrentSession();
+                          if (!context.mounted) return;
+                          await ordering.refreshSessionOrdering(snapshot.session.id);
+                          return;
+                        } else if (status == 'failed') {
+                          await closeInAppWebView();
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Payment Failed or Canceled')),
                           );
                           await controller.refreshCurrentSession();
                           if (!context.mounted) return;

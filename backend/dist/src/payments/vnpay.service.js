@@ -49,7 +49,7 @@ let VnpayService = class VnpayService {
         url: process.env.VNP_URL || 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html',
         returnUrl: process.env.VNP_RETURN_URL || 'http://localhost/vnpay-return',
     };
-    createPaymentUrl(ipAddr, amountMinor, txnRef, orderInfo) {
+    createPaymentUrl(ipAddr, amountMinor, txnRef, orderInfo, customReturnUrl) {
         const date = new Date();
         const createDate = this.formatDate(date);
         const vnp_Params = {
@@ -62,7 +62,7 @@ let VnpayService = class VnpayService {
             vnp_OrderInfo: orderInfo,
             vnp_OrderType: 'other',
             vnp_Amount: Number(amountMinor),
-            vnp_ReturnUrl: this.config.returnUrl,
+            vnp_ReturnUrl: customReturnUrl || this.config.returnUrl,
             vnp_IpAddr: ipAddr,
             vnp_CreateDate: createDate,
         };

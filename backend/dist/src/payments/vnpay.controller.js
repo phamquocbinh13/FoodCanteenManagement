@@ -31,8 +31,10 @@ let VnpayController = class VnpayController {
         this.paymentsService = paymentsService;
         this.prisma = prisma;
     }
-    async createPayment(ctx) {
+    async createPayment(ctx, req) {
         const { restaurantId, sessionId } = ctx;
+        const host = req.headers.host || 'localhost:3000';
+        const customReturnUrl = `http://${host}/api/v1/payments/vnpay/return`;
         return await this.prisma.$transaction(async (tx) => {
             const session = await tx.dine_in_session.findFirst({
                 where: { id: sessionId, restaurant_id: restaurantId },
@@ -97,7 +99,7 @@ let VnpayController = class VnpayController {
                 data: { payment_status: 'waiting_payment', status: 'payment_pending' },
             });
             const orderInfo = `Pay ROMS Session ${sessionId.split('-')[0]}`;
-            const url = this.vnpayService.createPaymentUrl('127.0.0.1', totalAmountMinor, txnRef, orderInfo);
+            const url = this.vnpayService.createPaymentUrl('127.0.0.1', totalAmountMinor, txnRef, orderInfo, customReturnUrl);
             return { checkoutUrl: url };
         });
     }
@@ -178,6 +180,7 @@ let VnpayController = class VnpayController {
                 statusHtml = '<h2 style="color: orange;">Payment Failed / Canceled</h2><p>The payment was not completed.</p>';
             }
         }
+        const redirectUrl = isSuccess ? 'roms://payment-success' : 'roms://payment-failure';
         const html = `
       <!DOCTYPE html>
       <html>
@@ -187,15 +190,20 @@ let VnpayController = class VnpayController {
         <style>
           body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background-color: #f4f4f9; }
           .card { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); text-align: center; max-width: 400px; width: 90%; }
-          button { margin-top: 1.5rem; padding: 0.75rem 1.5rem; background: #000; color: #fff; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; }
+          .btn { display: inline-block; margin-top: 1.5rem; padding: 0.75rem 1.5rem; background: #000; color: #fff; text-decoration: none; border-radius: 4px; font-size: 1rem; font-weight: bold; cursor: pointer; border: none; }
         </style>
       </head>
       <body>
         <div class="card">
           ${statusHtml}
-          <button onclick="window.close()">Close Window</button>
+          <a href="${redirectUrl}" class="btn">Return to App</a>
           <p style="margin-top: 1rem; color: #666; font-size: 0.9rem;">Please return to the ROMS App to view your updated session status.</p>
         </div>
+        <script>
+          setTimeout(function() {
+            window.location.href = "${redirectUrl}";
+          }, 1000);
+        </script>
       </body>
       </html>
     `;
@@ -208,8 +216,9 @@ __decorate([
     (0, common_1.UseGuards)(session_token_guard_1.SessionTokenGuard),
     (0, swagger_1.ApiHeader)({ name: 'X-Session-Token', required: false }),
     __param(0, (0, current_session_decorator_1.CurrentSession)()),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], VnpayController.prototype, "createPayment", null);
 __decorate([

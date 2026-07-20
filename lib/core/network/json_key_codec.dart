@@ -2,6 +2,9 @@
 Map<String, dynamic> camelCaseKeysToSnake(Map<String, dynamic> input) {
   return input.map((key, value) {
     final snake = _camelToSnake(key);
+    if (key == 'selectionsJson' || key == 'selections_json') {
+      return MapEntry(snake, value);
+    }
     if (value is Map<String, dynamic>) {
       return MapEntry(snake, camelCaseKeysToSnake(value));
     }

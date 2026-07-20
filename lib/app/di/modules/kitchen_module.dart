@@ -16,6 +16,7 @@ import '../../../application/usecases/kitchen/complete_batch_item_use_case.dart'
 import '../../../application/usecases/batch/staff_confirm_batch_use_case.dart';
 import '../../../application/usecases/kitchen/get_kitchen_menu_panel_use_case.dart';
 import '../../../application/usecases/kitchen/get_kitchen_overview_use_case.dart';
+import '../../../application/usecases/kitchen/get_kitchen_workflow_use_case.dart';
 import '../../../application/usecases/kitchen/get_kitchen_queue_use_case.dart';
 import '../../../application/usecases/batch/update_batch_item_quantity_use_case.dart';
 import '../../../application/usecases/batch/remove_batch_item_use_case.dart';
@@ -199,6 +200,10 @@ abstract final class KitchenModule {
 
     sl.registerLazySingleton(
       () => GetKitchenOverviewUseCase(apiClient: sl<ApiClient>()),
+    );
+
+    sl.registerLazySingleton(
+      () => GetKitchenWorkflowUseCase(apiClient: sl<ApiClient>()),
     );
 
     sl.registerLazySingleton(

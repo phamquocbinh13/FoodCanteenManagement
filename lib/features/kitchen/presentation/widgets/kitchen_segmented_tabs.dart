@@ -23,6 +23,7 @@ class KitchenSegmentedTabs extends StatelessWidget {
       controller: controller,
       tabs: [
         StaffTabSpec(label: 'Overview', count: activeOrderCount),
+        StaffTabSpec(label: 'Workflow'),
         StaffTabSpec(label: 'Orders', count: pendingBatchCount),
         StaffTabSpec(label: 'Inventory', count: unavailableItemCount),
       ],

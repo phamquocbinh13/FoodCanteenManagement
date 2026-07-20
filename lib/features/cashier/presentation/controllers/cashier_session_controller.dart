@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../../../../application/kitchen/kitchen_view_models.dart';
@@ -68,6 +69,7 @@ final class CashierSessionController extends ChangeNotifier {
   List<CashierBatchSummaryView> _batchSummaries = [];
   SessionPaymentSummary? _bill;
   List<StaffRequest> _sessionRequests = [];
+  Timer? _pollingTimer;
 
   SessionEngineSnapshot? get activeSnapshot => _activeSnapshot;
   List<SessionEngineSnapshot> get activeSessions =>
@@ -431,5 +433,23 @@ final class CashierSessionController extends ChangeNotifier {
   void _setLoading(bool value) {
     _isLoading = value;
     notifyListeners();
+  }
+
+  void startPolling() {
+    _pollingTimer?.cancel();
+    _pollingTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      restore();
+    });
+  }
+
+  void stopPolling() {
+    _pollingTimer?.cancel();
+    _pollingTimer = null;
+  }
+
+  @override
+  void dispose() {
+    stopPolling();
+    super.dispose();
   }
 }

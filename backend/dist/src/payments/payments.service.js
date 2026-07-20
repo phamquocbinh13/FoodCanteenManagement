@@ -234,6 +234,39 @@ let PaymentsService = class PaymentsService {
                 where: { id: paymentId },
                 data: { payment_status: 'paid', paid_at: now },
             });
+            const settings = await tx.restaurantSettings.findUnique({
+                where: { restaurantId: session.restaurant_id },
+            });
+            if (settings) {
+                const bill = (0, payments_mapper_1.computeBillMinors)({
+                    lineTotals: batchItems.map((i) => i.line_total_minor),
+                    taxRateBps: settings.taxRateBps,
+                    serviceChargeBps: settings.serviceChargeBps,
+                });
+                await tx.dine_in_session.update({
+                    where: { id: sessionId },
+                    data: {
+                        status: 'closed',
+                        payment_status: 'paid',
+                        active_table_guard: null,
+                        payment_soft_lock: false,
+                        closed_at: now,
+                        payment_subtotal_minor: bill.subtotalMinor,
+                        payment_tax_minor: bill.taxAmountMinor,
+                        payment_service_charge_minor: bill.serviceChargeMinor,
+                        payment_total_minor: bill.totalAmountMinor,
+                        updated_at: now,
+                    },
+                });
+                await tx.restaurantTable.update({
+                    where: { id: session.table_id },
+                    data: { status: 'available', updatedAt: now },
+                });
+                await tx.session_auth_token.updateMany({
+                    where: { session_id: sessionId, revoked_at: null },
+                    data: { revoked_at: now },
+                });
+            }
             await tx.session_timeline_event.create({
                 data: {
                     id: (0, uuid_1.v4)(),
@@ -243,6 +276,20 @@ let PaymentsService = class PaymentsService {
                         paymentId,
                         paymentMethod: payment.payment_method,
                         amountMinor: Number(payment.total_amount_minor),
+                    },
+                    actor_type: 'system',
+                    occurred_at: now,
+                },
+            });
+            await tx.session_timeline_event.create({
+                data: {
+                    id: (0, uuid_1.v4)(),
+                    session_id: sessionId,
+                    event_type: 'payment_closed',
+                    payload_json: {
+                        closeType: 'payment',
+                        paymentId,
+                        paymentMethod: payment.payment_method,
                     },
                     actor_type: 'system',
                     occurred_at: now,

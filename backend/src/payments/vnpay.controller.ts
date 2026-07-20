@@ -1,5 +1,5 @@
-import { Controller, Get, Post, Query, UseGuards, Res } from '@nestjs/common';
-import type { Response } from 'express';
+import { Controller, Get, Post, Query, UseGuards, Res, Req } from '@nestjs/common';
+import type { Request, Response } from 'express';
 import { ApiHeader, ApiTags } from '@nestjs/swagger';
 import { CurrentSession } from '../sessions/decorators/current-session.decorator';
 import { SessionTokenGuard, type CustomerSessionContext } from '../sessions/guards/session-token.guard';
@@ -23,8 +23,11 @@ export class VnpayController {
   @ApiHeader({ name: 'X-Session-Token', required: false })
   async createPayment(
     @CurrentSession() ctx: CustomerSessionContext,
+    @Req() req: Request,
   ) {
     const { restaurantId, sessionId } = ctx;
+    const host = req.headers.host || 'localhost:3000';
+    const customReturnUrl = `http://${host}/api/v1/payments/vnpay/return`;
     
     return await this.prisma.$transaction(async (tx) => {
       // 1. Validate session
@@ -100,7 +103,7 @@ export class VnpayController {
       });
 
       const orderInfo = `Pay ROMS Session ${sessionId.split('-')[0]}`;
-      const url = this.vnpayService.createPaymentUrl('127.0.0.1', totalAmountMinor, txnRef, orderInfo);
+      const url = this.vnpayService.createPaymentUrl('127.0.0.1', totalAmountMinor, txnRef, orderInfo, customReturnUrl);
 
       return { checkoutUrl: url };
     });
@@ -197,6 +200,7 @@ export class VnpayController {
       }
     }
 
+    const redirectUrl = isSuccess ? 'roms://payment-success' : 'roms://payment-failure';
     const html = `
       <!DOCTYPE html>
       <html>
@@ -206,15 +210,20 @@ export class VnpayController {
         <style>
           body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background-color: #f4f4f9; }
           .card { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); text-align: center; max-width: 400px; width: 90%; }
-          button { margin-top: 1.5rem; padding: 0.75rem 1.5rem; background: #000; color: #fff; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; }
+          .btn { display: inline-block; margin-top: 1.5rem; padding: 0.75rem 1.5rem; background: #000; color: #fff; text-decoration: none; border-radius: 4px; font-size: 1rem; font-weight: bold; cursor: pointer; border: none; }
         </style>
       </head>
       <body>
         <div class="card">
           ${statusHtml}
-          <button onclick="window.close()">Close Window</button>
+          <a href="${redirectUrl}" class="btn">Return to App</a>
           <p style="margin-top: 1rem; color: #666; font-size: 0.9rem;">Please return to the ROMS App to view your updated session status.</p>
         </div>
+        <script>
+          setTimeout(function() {
+            window.location.href = "${redirectUrl}";
+          }, 1000);
+        </script>
       </body>
       </html>
     `;

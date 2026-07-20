@@ -218,24 +218,52 @@ export class CartService {
     }
 
     const now = new Date();
-    await this.prisma.$transaction([
-      this.prisma.session_cart_item.update({
-        where: { id: itemId },
-        data: {
-          selections_json: toInputJson({
-            ...selectionsJson,
-            __kitchenNotes: priced.kitchenNotes,
-          }),
-          unit_price_minor: priced.unitPriceMinor,
-          currency_code: priced.currencyCode,
-          updated_at: now,
+    await this.prisma.$transaction(async (tx) => {
+      const otherItems = await tx.session_cart_item.findMany({
+        where: {
+          session_cart_id: cart.id,
+          menu_item_id: item.menu_item_id,
+          id: { not: itemId },
         },
-      }),
-      this.prisma.session_cart.update({
+      });
+
+      const match = otherItems.find((i) => {
+        const stored = i.selections_json as any ?? {};
+        const { __kitchenNotes, ...rest } = stored;
+        return isDeepEqual(rest, selectionsJson);
+      });
+
+      if (match) {
+        await tx.session_cart_item.update({
+          where: { id: match.id },
+          data: {
+            quantity: match.quantity + item.quantity,
+            updated_at: now,
+          },
+        });
+        await tx.session_cart_item.delete({
+          where: { id: itemId },
+        });
+      } else {
+        await tx.session_cart_item.update({
+          where: { id: itemId },
+          data: {
+            selections_json: toInputJson({
+              ...selectionsJson,
+              __kitchenNotes: priced.kitchenNotes,
+            }),
+            unit_price_minor: priced.unitPriceMinor,
+            currency_code: priced.currencyCode,
+            updated_at: now,
+          },
+        });
+      }
+
+      await tx.session_cart.update({
         where: { id: cart.id },
         data: { version: cart.version + 1, updated_at: now },
-      }),
-    ]);
+      });
+    });
 
     return this.getCart(restaurantId, sessionId);
   }

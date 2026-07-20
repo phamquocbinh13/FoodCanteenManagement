@@ -22,5 +22,6 @@ final cashierSessionControllerProvider =
     closeWithPayment: sl(),
   );
   controller.restore();
+  controller.startPolling();
   return controller;
 });

@@ -1,4 +1,4 @@
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 import { type CustomerSessionContext } from '../sessions/guards/session-token.guard';
 import { PaymentsService } from './payments.service';
 import { VnpayService } from './vnpay.service';
@@ -8,7 +8,7 @@ export declare class VnpayController {
     private readonly paymentsService;
     private readonly prisma;
     constructor(vnpayService: VnpayService, paymentsService: PaymentsService, prisma: PrismaService);
-    createPayment(ctx: CustomerSessionContext): Promise<{
+    createPayment(ctx: CustomerSessionContext, req: Request): Promise<{
         checkoutUrl: string;
     }>;
     getStatus(ctx: CustomerSessionContext): Promise<{

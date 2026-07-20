@@ -22,6 +22,7 @@ export class VnpayService {
     amountMinor: bigint,
     txnRef: string,
     orderInfo: string,
+    customReturnUrl?: string,
   ): string {
     const date = new Date();
     const createDate = this.formatDate(date);
@@ -36,7 +37,7 @@ export class VnpayService {
       vnp_OrderInfo: orderInfo,
       vnp_OrderType: 'other',
       vnp_Amount: Number(amountMinor), // amountMinor is already VND * 100 in ROMS
-      vnp_ReturnUrl: this.config.returnUrl,
+      vnp_ReturnUrl: customReturnUrl || this.config.returnUrl,
       vnp_IpAddr: ipAddr,
       vnp_CreateDate: createDate,
     };

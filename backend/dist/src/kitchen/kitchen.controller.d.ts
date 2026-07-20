@@ -23,6 +23,51 @@ export declare class KitchenController {
             quantity: number;
         }>;
     }>;
+    workflow(restaurantId: string): Promise<{
+        buckets: {
+            URGENT: {
+                menuItemId: string;
+                name: string;
+                quantity: number;
+                oldestWaitingMinutes: number;
+                batchCount: number;
+            }[];
+            HIGH: {
+                menuItemId: string;
+                name: string;
+                quantity: number;
+                oldestWaitingMinutes: number;
+                batchCount: number;
+            }[];
+            NORMAL: {
+                menuItemId: string;
+                name: string;
+                quantity: number;
+                oldestWaitingMinutes: number;
+                batchCount: number;
+            }[];
+            NEW: {
+                menuItemId: string;
+                name: string;
+                quantity: number;
+                oldestWaitingMinutes: number;
+                batchCount: number;
+            }[];
+        };
+        preparationSummary: {
+            group: string;
+            options: {
+                name: string;
+                quantity: number;
+            }[];
+        }[];
+        stats: {
+            oldestTicketMinutes: number;
+            mostOrderedItem: string;
+            totalFoodQty: number;
+            averageWaitingTimeMinutes: number;
+        };
+    }>;
     complete(restaurantId: string, batchItemId: string, user: JwtPayload): Promise<{
         ok: boolean;
     }>;

@@ -6,7 +6,7 @@ export type VnpayConfig = {
 };
 export declare class VnpayService {
     private config;
-    createPaymentUrl(ipAddr: string, amountMinor: bigint, txnRef: string, orderInfo: string): string;
+    createPaymentUrl(ipAddr: string, amountMinor: bigint, txnRef: string, orderInfo: string, customReturnUrl?: string): string;
     verifyIpn(query: Record<string, any>): {
         isValid: boolean;
         isSuccess: boolean;

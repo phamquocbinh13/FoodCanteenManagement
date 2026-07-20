@@ -14,7 +14,9 @@ import '../providers/kitchen_provider.dart';
 import '../widgets/kitchen_inventory_tab.dart';
 import '../widgets/kitchen_orders_tab.dart';
 import '../widgets/kitchen_overview_tab.dart';
+import '../widgets/kitchen_workflow_tab.dart';
 import '../widgets/kitchen_segmented_tabs.dart';
+import '../providers/kitchen_workflow_provider.dart';
 
 /// Kitchen Display System — Overview + Orders + Inventory.
 class KitchenPage extends ConsumerStatefulWidget {
@@ -37,7 +39,7 @@ class _KitchenPageState extends ConsumerState<KitchenPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     _tabController.addListener(_onTabChanged);
     _startRefreshTimer();
   }
@@ -46,6 +48,7 @@ class _KitchenPageState extends ConsumerState<KitchenPage>
     _refreshTimer = Timer.periodic(const Duration(seconds: 10), (_) {
       if (!mounted) return;
       ref.invalidate(kitchenOverviewProvider);
+      ref.invalidate(kitchenWorkflowProvider);
       if (_ordersLoaded) {
         ref.read(kitchenControllerProvider).refresh();
       }
@@ -54,7 +57,7 @@ class _KitchenPageState extends ConsumerState<KitchenPage>
 
   void _onTabChanged() {
     setState(() {});
-    if ((_tabController.index == 1 || _tabController.index == 2) &&
+    if ((_tabController.index == 2 || _tabController.index == 3) &&
         !_ordersLoaded) {
       _ordersLoaded = true;
       ref.read(kitchenControllerProvider).refresh();
@@ -135,6 +138,7 @@ class _KitchenPageState extends ConsumerState<KitchenPage>
                   controller: _tabController,
                   children: [
                     const KitchenOverviewTab(),
+                    const KitchenWorkflowTab(),
                     KitchenOrdersTab(
                       highlightedBatchIds: _highlightedBatchIds,
                       onBatchesUpdated: _onBatchesUpdated,

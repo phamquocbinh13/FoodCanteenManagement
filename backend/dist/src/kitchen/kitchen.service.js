@@ -217,6 +217,171 @@ let KitchenService = class KitchenService {
         });
         return { ok: true };
     }
+    async getWorkflow(restaurantId) {
+        const restaurant = await this.prisma.restaurant.findUnique({
+            where: { id: restaurantId },
+        });
+        if (!restaurant) {
+            throw (0, api_exception_1.notFound)('RESTAURANT_NOT_FOUND', 'Restaurant not found');
+        }
+        const activeItems = await this.prisma.batch_item.findMany({
+            where: {
+                restaurant_id: restaurantId,
+                status: 'preparing',
+                kitchen_batch: {
+                    session_id: { not: null },
+                },
+            },
+            include: {
+                kitchen_batch: true,
+                menu_item: {
+                    include: {
+                        category: true,
+                    },
+                },
+            },
+        });
+        const now = Date.now();
+        const buckets = {
+            URGENT: {},
+            HIGH: {},
+            NORMAL: {},
+            NEW: {},
+        };
+        for (const item of activeItems) {
+            const confirmedAt = item.kitchen_batch.confirmed_at;
+            const waitingMinutes = Math.max(0, (now - confirmedAt.getTime()) / 60_000);
+            let bucketName = 'NEW';
+            if (waitingMinutes >= 20) {
+                bucketName = 'URGENT';
+            }
+            else if (waitingMinutes >= 10) {
+                bucketName = 'HIGH';
+            }
+            else if (waitingMinutes >= 5) {
+                bucketName = 'NORMAL';
+            }
+            const bucket = buckets[bucketName];
+            const key = item.menu_item_id;
+            if (!bucket[key]) {
+                bucket[key] = {
+                    menuItemId: item.menu_item_id,
+                    name: item.menu_item_name_snapshot,
+                    quantity: 0,
+                    oldestWaitingMinutes: 0,
+                    batchIds: new Set(),
+                };
+            }
+            bucket[key].quantity += item.quantity;
+            if (waitingMinutes > bucket[key].oldestWaitingMinutes) {
+                bucket[key].oldestWaitingMinutes = waitingMinutes;
+            }
+            bucket[key].batchIds.add(item.batch_id);
+        }
+        const formattedBuckets = {
+            URGENT: Object.values(buckets.URGENT).map(item => ({
+                menuItemId: item.menuItemId,
+                name: item.name,
+                quantity: item.quantity,
+                oldestWaitingMinutes: Math.round(item.oldestWaitingMinutes),
+                batchCount: item.batchIds.size,
+            })),
+            HIGH: Object.values(buckets.HIGH).map(item => ({
+                menuItemId: item.menuItemId,
+                name: item.name,
+                quantity: item.quantity,
+                oldestWaitingMinutes: Math.round(item.oldestWaitingMinutes),
+                batchCount: item.batchIds.size,
+            })),
+            NORMAL: Object.values(buckets.NORMAL).map(item => ({
+                menuItemId: item.menuItemId,
+                name: item.name,
+                quantity: item.quantity,
+                oldestWaitingMinutes: Math.round(item.oldestWaitingMinutes),
+                batchCount: item.batchIds.size,
+            })),
+            NEW: Object.values(buckets.NEW).map(item => ({
+                menuItemId: item.menuItemId,
+                name: item.name,
+                quantity: item.quantity,
+                oldestWaitingMinutes: Math.round(item.oldestWaitingMinutes),
+                batchCount: item.batchIds.size,
+            })),
+        };
+        const activeItemIds = activeItems.map(i => i.id);
+        const customizations = await this.prisma.batch_item_customization.findMany({
+            where: {
+                batch_item_id: { in: activeItemIds },
+            },
+            include: {
+                batch_item: {
+                    select: { quantity: true },
+                },
+            },
+        });
+        const summaryMap = {};
+        for (const c of customizations) {
+            if (!c.group_name_snapshot || !c.option_name_snapshot)
+                continue;
+            const groupName = c.group_name_snapshot;
+            const optionName = c.option_name_snapshot;
+            const qty = c.batch_item.quantity;
+            if (!summaryMap[groupName]) {
+                summaryMap[groupName] = {};
+            }
+            summaryMap[groupName][optionName] = (summaryMap[groupName][optionName] || 0) + qty;
+        }
+        const preparationSummary = Object.entries(summaryMap).map(([group, optionsMap]) => ({
+            group,
+            options: Object.entries(optionsMap).map(([name, quantity]) => ({
+                name,
+                quantity,
+            })),
+        }));
+        const oldestTicketMinutes = activeItems.length > 0
+            ? Math.max(...activeItems.map(i => (now - i.kitchen_batch.confirmed_at.getTime()) / 60_000))
+            : 0;
+        const demandMap = new Map();
+        for (const item of activeItems) {
+            demandMap.set(item.menu_item_name_snapshot, (demandMap.get(item.menu_item_name_snapshot) || 0) + item.quantity);
+        }
+        let mostOrderedItem = 'None';
+        let maxQty = 0;
+        for (const [name, qty] of demandMap.entries()) {
+            if (qty > maxQty) {
+                maxQty = qty;
+                mostOrderedItem = name;
+            }
+        }
+        let totalFoodQty = 0;
+        for (const item of activeItems) {
+            const categoryName = item.menu_item?.category?.name?.toLowerCase() ?? '';
+            const isDrink = categoryName.includes('drink') || categoryName.includes('beverage') || categoryName.includes('đồ uống');
+            if (!isDrink) {
+                totalFoodQty += item.quantity;
+            }
+        }
+        const activeBatchIds = new Set(activeItems.map(i => i.batch_id));
+        const activeBatches = await this.prisma.kitchen_batch.findMany({
+            where: {
+                id: { in: Array.from(activeBatchIds) },
+            },
+        });
+        const waitingMinutesList = activeBatches.map(b => (now - b.confirmed_at.getTime()) / 60_000);
+        const averageWaitingTimeMinutes = waitingMinutesList.length === 0
+            ? 0
+            : waitingMinutesList.reduce((sum, w) => sum + w, 0) / waitingMinutesList.length;
+        return {
+            buckets: formattedBuckets,
+            preparationSummary,
+            stats: {
+                oldestTicketMinutes: Math.round(oldestTicketMinutes),
+                mostOrderedItem,
+                totalFoodQty,
+                averageWaitingTimeMinutes: Math.round(averageWaitingTimeMinutes),
+            },
+        };
+    }
 };
 exports.KitchenService = KitchenService;
 exports.KitchenService = KitchenService = __decorate([

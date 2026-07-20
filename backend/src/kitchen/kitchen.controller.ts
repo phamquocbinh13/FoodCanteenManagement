@@ -37,6 +37,14 @@ export class KitchenController {
     return this.kitchen.getOverview(restaurantId);
   }
 
+  @Get('workflow')
+  @ApiOperation({
+    summary: 'Kitchen workflow aggregate — production priority buckets, customizations, and stats',
+  })
+  workflow(@Param('restaurantId') restaurantId: string) {
+    return this.kitchen.getWorkflow(restaurantId);
+  }
+
   @Post('items/:batchItemId/complete')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Mark batch item completed' })
