@@ -117,21 +117,23 @@ let AnalyticsService = AnalyticsService_1 = class AnalyticsService {
     async getKpis(restaurantId) {
         const sessions = await this.prisma.dine_in_session.aggregate({
             _count: { id: true },
-            _sum: { payment_total_minor: true },
             where: { restaurant_id: restaurantId, payment_status: 'paid' }
         });
         const totalSessions = sessions._count.id || 0;
-        const totalRevenue = Number(sessions._sum.payment_total_minor || 0);
-        const averageOrderValueMinor = totalSessions > 0 ? Math.floor(totalRevenue / totalSessions) : 0;
         const payments = await this.prisma.session_payment.groupBy({
             by: ['payment_method'],
             _sum: { total_amount_minor: true },
-            where: { dine_in_session: { restaurant_id: restaurantId } }
+            where: {
+                payment_status: 'paid',
+                dine_in_session: { restaurant_id: restaurantId }
+            }
         });
         const paymentMethods = payments.map(p => ({
             method: p.payment_method,
             total_minor: Number(p._sum.total_amount_minor || 0)
         }));
+        const totalRevenue = paymentMethods.reduce((sum, pm) => sum + pm.total_minor, 0);
+        const averageOrderValueMinor = totalSessions > 0 ? Math.floor(totalRevenue / totalSessions) : 0;
         return {
             average_order_value_minor: averageOrderValueMinor,
             total_sessions: totalSessions,
