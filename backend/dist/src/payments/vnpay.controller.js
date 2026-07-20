@@ -196,12 +196,20 @@ let VnpayController = class VnpayController {
       <body>
         <div class="card">
           ${statusHtml}
-          <a href="${redirectUrl}" class="btn">Return to App</a>
+          <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+            <a href="${redirectUrl}" class="btn">Return to App</a>
+            <button onclick="window.close()" class="btn" style="background: #555;">Close Tab</button>
+          </div>
           <p style="margin-top: 1rem; color: #666; font-size: 0.9rem;">Please return to the ROMS App to view your updated session status.</p>
         </div>
         <script>
           setTimeout(function() {
             window.location.href = "${redirectUrl}";
+            setTimeout(function() {
+              try {
+                window.close();
+              } catch (e) {}
+            }, 1000);
           }, 1000);
         </script>
       </body>

@@ -415,7 +415,9 @@ class _SessionPageState extends ConsumerState<SessionPage> {
                         if (!context.mounted) return;
                         final status = await ordering.checkPaymentStatus();
                         if (status == 'paid') {
-                          await closeInAppWebView();
+                          try {
+                            await closeInAppWebView();
+                          } catch (_) {}
                           if (!context.mounted) return;
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('Payment Successful!')),
@@ -425,7 +427,9 @@ class _SessionPageState extends ConsumerState<SessionPage> {
                           await ordering.refreshSessionOrdering(snapshot.session.id);
                           return;
                         } else if (status == 'failed') {
-                          await closeInAppWebView();
+                          try {
+                            await closeInAppWebView();
+                          } catch (_) {}
                           if (!context.mounted) return;
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('Payment Failed or Canceled')),
