@@ -329,6 +329,13 @@ class _CartLineTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(line.menuItemName, style: theme.textTheme.titleSmall),
+          if ((line.item.selectionsJson['__kitchenNotes'] as String?)?.isNotEmpty == true) ...[
+            const SizedBox(height: 2),
+            Text(
+              line.item.selectionsJson['__kitchenNotes'] as String,
+              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            ),
+          ],
           const SizedBox(height: AppSpacing.sm),
           Row(
             children: [

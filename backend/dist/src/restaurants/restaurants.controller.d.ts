@@ -5,9 +5,9 @@ export declare class RestaurantsController {
     findById(restaurantId: string): Promise<{
         settings: {
             id: string;
+            restaurantId: string;
             createdAt: Date;
             updatedAt: Date;
-            restaurantId: string;
             defaultCurrency: string;
             taxRateBps: number;
             serviceChargeBps: number;
@@ -17,21 +17,21 @@ export declare class RestaurantsController {
         } | null;
     } & {
         id: string;
-        name: string;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         slug: string;
         timezone: string;
     }>;
     listTables(restaurantId: string): Promise<{
         items: {
             id: string;
-            sortOrder: number;
+            restaurantId: string;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            restaurantId: string;
+            sortOrder: number;
             status: string;
             label: string;
             capacity: number;

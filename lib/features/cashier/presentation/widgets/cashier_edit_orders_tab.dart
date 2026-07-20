@@ -290,7 +290,11 @@ class _CashierEditOrdersTabState extends ConsumerState<CashierEditOrdersTab> {
                               ...b.items.map((item) => ListTile(
                                 contentPadding: EdgeInsets.zero,
                                 title: Text(item.name),
-                                subtitle: Text('Qty ${item.quantityLabel}'),
+                                subtitle: Text(
+                                  item.kitchenNotes.isNotEmpty
+                                      ? 'Qty ${item.quantityLabel} · ${item.kitchenNotes}'
+                                      : 'Qty ${item.quantityLabel}',
+                                ),
                                 trailing: b.completedAt != null ? null : Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
@@ -333,7 +337,11 @@ class _CashierEditOrdersTabState extends ConsumerState<CashierEditOrdersTab> {
                         child: ListTile(
                           contentPadding: EdgeInsets.zero,
                           title: Text(line.menuItemName),
-                          subtitle: Text('Qty ${line.item.quantity.value}'),
+                          subtitle: Text(
+                            (line.item.selectionsJson['__kitchenNotes'] as String?)?.isNotEmpty == true
+                                ? 'Qty ${line.item.quantity.value} · ${line.item.selectionsJson['__kitchenNotes']}'
+                                : 'Qty ${line.item.quantity.value}',
+                          ),
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [

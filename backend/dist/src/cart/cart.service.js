@@ -59,19 +59,43 @@ let CartService = class CartService {
         const now = new Date();
         await this.prisma.$transaction(async (tx) => {
             const cart = await this.getOrCreateCartTx(tx, sessionId, now);
-            await tx.session_cart_item.create({
-                data: {
-                    id: (0, uuid_1.v4)(),
-                    session_cart_id: cart.id,
-                    menu_item_id: menuItem.id,
-                    quantity: dto.quantity,
-                    selections_json: (0, cart_mapper_1.toInputJson)(selectionsJson),
-                    unit_price_minor: priced.unitPriceMinor,
-                    currency_code: priced.currencyCode,
-                    created_at: now,
-                    updated_at: now,
-                },
+            const existingItems = await tx.session_cart_item.findMany({
+                where: { session_cart_id: cart.id, menu_item_id: menuItem.id },
             });
+            const inputJsonString = JSON.stringify(selectionsJson);
+            const match = existingItems.find((i) => {
+                const stored = i.selections_json ?? {};
+                const { __kitchenNotes, ...rest } = stored;
+                return isDeepEqual(rest, selectionsJson);
+            });
+            const enrichedSelections = {
+                ...selectionsJson,
+                __kitchenNotes: priced.kitchenNotes,
+            };
+            if (match) {
+                await tx.session_cart_item.update({
+                    where: { id: match.id },
+                    data: {
+                        quantity: match.quantity + dto.quantity,
+                        updated_at: now,
+                    },
+                });
+            }
+            else {
+                await tx.session_cart_item.create({
+                    data: {
+                        id: (0, uuid_1.v4)(),
+                        session_cart_id: cart.id,
+                        menu_item_id: menuItem.id,
+                        quantity: dto.quantity,
+                        selections_json: (0, cart_mapper_1.toInputJson)(enrichedSelections),
+                        unit_price_minor: priced.unitPriceMinor,
+                        currency_code: priced.currencyCode,
+                        created_at: now,
+                        updated_at: now,
+                    },
+                });
+            }
             await tx.session_cart.update({
                 where: { id: cart.id },
                 data: { version: cart.version + 1, updated_at: now },
@@ -161,7 +185,10 @@ let CartService = class CartService {
             this.prisma.session_cart_item.update({
                 where: { id: itemId },
                 data: {
-                    selections_json: (0, cart_mapper_1.toInputJson)(selectionsJson),
+                    selections_json: (0, cart_mapper_1.toInputJson)({
+                        ...selectionsJson,
+                        __kitchenNotes: priced.kitchenNotes,
+                    }),
                     unit_price_minor: priced.unitPriceMinor,
                     currency_code: priced.currencyCode,
                     updated_at: now,
@@ -295,4 +322,21 @@ exports.CartService = CartService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService])
 ], CartService);
+function isDeepEqual(a, b) {
+    if (a === b)
+        return true;
+    if (typeof a !== 'object' || typeof b !== 'object' || a == null || b == null)
+        return false;
+    const keysA = Object.keys(a);
+    const keysB = Object.keys(b);
+    if (keysA.length !== keysB.length)
+        return false;
+    for (const key of keysA) {
+        if (!keysB.includes(key))
+            return false;
+        if (!isDeepEqual(a[key], b[key]))
+            return false;
+    }
+    return true;
+}
 //# sourceMappingURL=cart.service.js.map

@@ -4,9 +4,9 @@ export declare class SettingsService {
     constructor(prisma: PrismaService);
     getSettings(restaurantId: string): Promise<{
         id: string;
+        restaurantId: string;
         createdAt: Date;
         updatedAt: Date;
-        restaurantId: string;
         defaultCurrency: string;
         taxRateBps: number;
         serviceChargeBps: number;
@@ -16,9 +16,9 @@ export declare class SettingsService {
     }>;
     updateSettings(restaurantId: string, data: any): Promise<{
         id: string;
+        restaurantId: string;
         createdAt: Date;
         updatedAt: Date;
-        restaurantId: string;
         defaultCurrency: string;
         taxRateBps: number;
         serviceChargeBps: number;
