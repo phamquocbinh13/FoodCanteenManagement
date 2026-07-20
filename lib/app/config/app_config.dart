@@ -1,3 +1,6 @@
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
+
 import 'restaurant_context.dart';
 
 /// Application environment identifiers.
@@ -39,10 +42,17 @@ class AppConfig {
     AppEnvironment env, {
     RestaurantContext? restaurant,
   }) {
-    final apiBaseUrl = const String.fromEnvironment(
-      'API_BASE_URL',
-      defaultValue: 'http://localhost:3000/api/v1',
-    );
+    const envApiUrl = String.fromEnvironment('API_BASE_URL');
+    String apiBaseUrl = envApiUrl;
+    
+    if (apiBaseUrl.isEmpty) {
+      // Use 10.0.2.2 for Android emulator to reach host localhost, otherwise localhost
+      if (!kIsWeb && Platform.isAndroid) {
+        apiBaseUrl = 'http://10.0.2.2:3000/api/v1';
+      } else {
+        apiBaseUrl = 'http://localhost:3000/api/v1';
+      }
+    }
     final tenant = restaurant ?? RestaurantContext.fromEnvironment();
 
     return switch (env) {
